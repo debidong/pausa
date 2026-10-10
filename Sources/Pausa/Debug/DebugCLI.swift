@@ -9,7 +9,6 @@ enum DebugCLI {
         args.contains { $0.hasPrefix("--debug-") }
     }
 
-    @MainActor
     static func run(_ args: [String]) -> Never {
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
@@ -23,9 +22,14 @@ enum DebugCLI {
         _ = keep
 
         if let i = args.firstIndex(of: "--debug-render"), i + 1 < args.count {
-            #if DEBUG
-            BreakViewSnapshots.write(to: URL(fileURLWithPath: args[i + 1]))
-            #endif
+            let dir = URL(fileURLWithPath: args[i + 1])
+            Task { @MainActor in
+                #if DEBUG
+                BreakViewSnapshots.write(to: dir)
+                #endif
+                exit(0)
+            }
+            app.run()
             exit(0)
         }
         if args.contains("--debug-detect") {
