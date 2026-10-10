@@ -1,11 +1,25 @@
-// Placeholder entry point. Mitchell owns the real app shell (state machine,
-// menu bar, settings) and will replace this file. Until then it only routes
-// the debug flags used to test Detection/ and Overlay/ on a real Mac.
 import AppKit
 
 let args = CommandLine.arguments
-if DebugCLI.handles(args) {
-    DebugCLI.run(args)   // never returns
-} else {
-    print("Pausa app shell not implemented yet. Try: --debug-detect | --debug-short [sec] | --debug-long [sec]")
+if DebugCLI.handles(args) { DebugCLI.run(args) }   // never returns
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    var controller: AppController!
+    var menuBar: MenuBarController!
+    func applicationDidFinishLaunching(_ n: Notification) {
+        controller = AppController()
+        menuBar = MenuBarController(app: controller)
+        Settings.shared.enableLaunchAtLoginOnFirstRun()
+        controller.start()
+        menuBar.showWelcomeOnce()
+    }
+}
+
+MainActor.assumeIsolated {
+    let app = NSApplication.shared
+    app.setActivationPolicy(.accessory)   // menu bar only, no Dock icon
+    let delegate = AppDelegate()
+    app.delegate = delegate
+    app.run()
 }
