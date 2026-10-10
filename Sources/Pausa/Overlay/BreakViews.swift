@@ -4,40 +4,63 @@ import AppKit
 struct CountdownRing: View {
     @ObservedObject var countdown: Countdown
     var lineWidth: CGFloat
-    var color: Color
+    var color: Color = Theme.accent
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         ZStack {
-            Circle().stroke(color.opacity(0.18), lineWidth: lineWidth)
+            Circle().stroke(color.opacity(0.2), lineWidth: lineWidth)
             Circle()
-                .trim(from: 0, to: 1 - countdown.progress)
+                .trim(from: 0, to: max(0, 1 - countdown.progress))
                 .stroke(color, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 0.1), value: countdown.remaining)
+                .animation(reduceMotion ? nil : .linear(duration: 0.1), value: countdown.remaining)
         }
     }
 }
 
+/// Frosted glass that follows the system light/dark appearance.
+struct VisualEffectBackground: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSVisualEffectView {
+        let v = NSVisualEffectView()
+        v.material = .hudWindow
+        v.blendingMode = .behindWindow
+        v.state = .active
+        return v
+    }
+    func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
+}
+
 struct ShortBreakCapsule: View {
     @ObservedObject var countdown: Countdown
+    /// ImageRenderer cannot draw NSVisualEffectView; debug renders use a flat stand-in.
+    var flatBackground = false
 
     var body: some View {
-        HStack(spacing: 10) {
-            ZStack {
-                CountdownRing(countdown: countdown, lineWidth: 2.5, color: .accentColor)
-                Text("\(Int(countdown.remaining.rounded(.up)))")
-                    .font(.system(size: 11, weight: .semibold).monospacedDigit())
+        HStack(spacing: 11) {
+            CountdownRing(countdown: countdown, lineWidth: 2)
+                .frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(BreakOverlayController.Copy.short)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(.primary)
+                Text("\(Int(countdown.remaining.rounded(.up))) 秒")
+                    .font(.system(size: 11).monospacedDigit())
+                    .foregroundColor(.secondary)
             }
-            .frame(width: 26, height: 26)
-            Text(BreakOverlayController.Copy.short)
-                .font(.system(size: 13, weight: .medium))
-                .fixedSize()
+            .fixedSize()
         }
-        .padding(.leading, 8)
-        .padding(.trailing, 16)
-        .padding(.vertical, 7)
-        .background(.regularMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5))
+        .padding(.leading, 12)
+        .padding(.trailing, 18)
+        .padding(.vertical, 8)
+        .background {
+            if flatBackground {
+                Capsule().fill(Color(white: 0.16).opacity(0.92))
+            } else {
+                VisualEffectBackground().clipShape(Capsule())
+            }
+        }
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.1), lineWidth: 0.5))
         .padding(10) // room for the shadow
     }
 }
@@ -55,23 +78,33 @@ struct LongBreakView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(colors: [Color(red: 0.10, green: 0.12, blue: 0.16),
-                                    Color(red: 0.05, green: 0.06, blue: 0.08)],
-                           startPoint: .top, endPoint: .bottom)
-                .opacity(0.94)
-                .ignoresSafeArea()
+            GeometryReader { geo in
+                RadialGradient(colors: [Color(red: 0.09, green: 0.17, blue: 0.14),
+                                        Color(red: 0.06, green: 0.08, blue: 0.08),
+                                        Color(red: 0.03, green: 0.04, blue: 0.045)],
+                               center: .center, startRadius: 0,
+                               endRadius: max(geo.size.width, geo.size.height) * 0.7)
+            }
+            .opacity(0.96)
+            .ignoresSafeArea()
 
-            VStack(spacing: 36) {
-                Text(BreakOverlayController.Copy.long)
-                    .font(.system(size: 44, weight: .light))
-                    .foregroundColor(.white.opacity(0.92))
+            VStack(spacing: 0) {
                 ZStack {
-                    CountdownRing(countdown: countdown, lineWidth: 2, color: .white.opacity(0.85))
+                    CountdownRing(countdown: countdown, lineWidth: 3)
                     Text(timeText)
                         .font(.system(size: 22, weight: .regular).monospacedDigit())
                         .foregroundColor(.white.opacity(0.85))
                 }
-                .frame(width: 112, height: 112)
+                .frame(width: 120, height: 120)
+                .padding(.bottom, 36)
+
+                Text(BreakOverlayController.Copy.long)
+                    .font(.system(size: 44, weight: .light))
+                    .foregroundColor(.white.opacity(0.92))
+                Text(BreakOverlayController.Copy.longSubtitle)
+                    .font(.system(size: 16))
+                    .foregroundColor(.white.opacity(0.55))
+                    .padding(.top, 12)
 
                 if showControls {
                     HStack(spacing: 14) {
@@ -80,7 +113,7 @@ struct LongBreakView: View {
                     }
                     .buttonStyle(QuietButtonStyle())
                     .focusable(false) // stray Space/Return while typing must not snooze or skip
-                    .padding(.top, 8)
+                    .padding(.top, 40)
                 }
             }
         }
@@ -103,8 +136,8 @@ struct QuietButtonStyle: ButtonStyle {
 @MainActor
 enum BreakViewSnapshots {
     static func write(to dir: URL) {
-        let short = ImageRenderer(content: ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}))
-            .background(Color(white: 0.85)))
+        let short = ImageRenderer(content: ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}), flatBackground: true)
+            .background(Color(white: 0.85)).environment(\.colorScheme, .dark))
         short.scale = 2
         save(short.nsImage, dir.appendingPathComponent("pausa-render-short.png"))
         let long = ImageRenderer(content: LongBreakView(countdown: Countdown(total: 180, onDone: {}),

@@ -11,6 +11,7 @@ public final class BreakOverlayController {
     public enum Copy {
         public static let short = "看看 6 米外，眨眨眼"
         public static let long = "起来走动 3 分钟"
+        public static let longSubtitle = "喝口水，活动一下肩颈。"
         public static let snooze = "推迟 5 分钟"
         public static let skip = "跳过"
     }
