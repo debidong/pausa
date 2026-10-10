@@ -1,0 +1,39 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{box-sizing:border-box;margin:0}body{font-family:-apple-system,"PingFang SC","Noto Sans CJK SC",sans-serif;background:#1c1c1e;color:#f2f2f7;padding:40px;width:1600px}
+h2{font-size:15px;color:#8e8e93;font-weight:500;margin:0 0 14px;letter-spacing:.5px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:40px}
+.frame{border-radius:14px;overflow:hidden;height:440px;position:relative;background:linear-gradient(135deg,#3a4a5c,#6b7f8e 50%,#a7b6a9)}
+.bar{height:26px;background:rgba(30,30,32,.55);backdrop-filter:blur(20px);display:flex;justify-content:flex-end;align-items:center;gap:14px;padding:0 14px;font-size:13px}
+.ring{width:14px;height:14px;border-radius:50%;background:conic-gradient(#7fc8a9 0 70%,rgba(255,255,255,.25) 0)}
+.menu{position:absolute;right:60px;top:32px;width:280px;background:rgba(40,40,44,.82);backdrop-filter:blur(30px);border-radius:10px;padding:8px;font-size:13px;box-shadow:0 10px 40px rgba(0,0,0,.4);border:.5px solid rgba(255,255,255,.12)}
+.menu .h{padding:10px 10px 4px;font-size:22px;font-weight:600}.menu .s{padding:0 10px 10px;color:#8e8e93}
+.menu .p{margin:4px 6px 8px;padding:8px 10px;border-radius:7px;background:rgba(127,200,169,.15);color:#7fc8a9}
+.menu .i{padding:6px 10px;border-radius:5px}.menu .i:hover{background:#3a3a3e}.sep{height:.5px;background:rgba(255,255,255,.12);margin:6px 4px}
+.win{position:absolute;left:40px;top:60px;width:420px;height:300px;background:#f5f5f7;border-radius:10px;opacity:.9}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.18)}
+.pill{position:absolute;left:360px;top:200px;display:flex;align-items:center;gap:12px;padding:10px 16px 10px 12px;background:rgba(40,40,44,.75);backdrop-filter:blur(24px);border-radius:999px;font-size:14px;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.pring{width:30px;height:30px;border-radius:50%;background:conic-gradient(#7fc8a9 0 55%,rgba(255,255,255,.18) 0);display:grid;place-items:center}.pring::after{content:"";width:24px;height:24px;border-radius:50%;background:#2a2a2e}
+.cursor{position:absolute;left:340px;top:190px;width:0;height:0;border-left:7px solid #fff;border-bottom:12px solid transparent;transform:rotate(-20deg)}
+.full{background:radial-gradient(ellipse at 50% 40%,#2c3e3a,#141a1d 70%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+.big{width:150px;height:150px;border-radius:50%;background:conic-gradient(#7fc8a9 0 38%,rgba(255,255,255,.08) 0);display:grid;place-items:center}
+.big span{width:142px;height:142px;border-radius:50%;background:#182022;display:grid;place-items:center;font-size:34px;font-weight:300;letter-spacing:1px}
+.t1{font-size:26px;font-weight:500}.t2{color:#8e9a98;font-size:14px}
+.btns{display:flex;gap:10px;margin-top:6px}.btn{padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.08);font-size:13px;color:#c7c7cc}
+.set{background:#ececee;color:#1c1c1e;display:flex}
+.side{width:170px;background:#e2e2e5;padding:40px 10px;font-size:13px}.side div{padding:6px 10px;border-radius:6px;margin-bottom:2px}.side .a{background:#7fc8a9;color:#fff}
+.main{flex:1;padding:36px 28px;font-size:13px}.main h3{font-size:18px;margin-bottom:16px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:#fff;border-bottom:.5px solid #e5e5ea}.row:first-of-type{border-radius:8px 8px 0 0}.grp{margin-bottom:18px;border-radius:8px;overflow:hidden}
+.sw{width:32px;height:19px;border-radius:10px;background:#7fc8a9;position:relative}.sw::after{content:"";position:absolute;right:2px;top:2px;width:15px;height:15px;border-radius:50%;background:#fff}
+.v{color:#8e8e93}.note{color:#8e8e93;font-size:11.5px;margin:-10px 0 14px 4px}
+</style></head><body><div class="grid">
+<div><h2>1 · 菜单栏（已暂停：正在开会）</h2><div class="frame"><div class="bar"><span>􀙇</span><div class="ring" style="background:transparent;border:1.5px solid #fff"></div><span>周六 15:04</span></div>
+<div class="menu"><div class="h">已暂停</div><div class="s">会议结束 2 分钟后继续计时</div><div class="p">● 正在开会</div><div class="sep"></div>
+<div class="i">下次短休息　<span class="v">12 分钟</span></div><div class="i">下次长休息　<span class="v">38 分钟</span></div><div class="sep"></div><div class="i">立即休息</div><div class="i">暂停 1 小时</div><div class="sep"></div><div class="i">设置…　　　　　　　<span class="v">⌘,</span></div><div class="i">退出 Pausa</div></div></div></div>
+<div><h2>2 · 短休息：鼠标旁胶囊 + 屏幕轻微变暗</h2><div class="frame"><div class="bar"><div class="ring"></div><span>周六 15:04</span></div><div class="win"></div><div class="dim"></div><div class="cursor"></div>
+<div class="pill"><div class="pring"></div><div><div>看看窗外</div><div style="color:#8e8e93;font-size:12px">11 秒 · 眨眨眼</div></div></div></div></div>
+<div><h2>3 · 长休息：全屏柔和遮罩</h2><div class="frame full"><div class="big"><span>1:52</span></div><div class="t1">起来走一走</div><div class="t2">喝口水，活动一下肩颈。</div><div class="btns"><div class="btn">推迟 5 分钟</div><div class="btn">跳过</div></div></div></div>
+<div><h2>4 · 设置：休息节奏</h2><div class="frame set"><div class="side"><div class="a">休息节奏</div><div>自动暂停</div><div>外观</div><div>快捷键</div></div>
+<div class="main"><h3>休息节奏</h3><div class="grp"><div class="row">短休息<span class="v">每 20 分钟 · 20 秒</span></div><div class="row">长休息<span class="v">每 50 分钟 · 3 分钟</span></div></div>
+<div class="grp"><div class="row">工作时段<span class="v">09:30 – 19:00</span></div><div class="row">离开电脑时计入休息<div class="sw"></div></div></div><div class="note">锁屏、合盖算作离开；仅停止操作只计入长休息。</div>
+<div class="grp"><div class="row">开机时启动<div class="sw"></div></div></div></div></div></div>
+</div></body></html>
