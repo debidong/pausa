@@ -12,7 +12,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuBar = MenuBarController(app: controller)
         Settings.shared.enableLaunchAtLoginOnFirstRun()
         controller.start()
-        menuBar.showWelcomeOnce()
+        // Let the system "Login Item Added" notice pass first.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in self?.menuBar.showWelcomeOnce() }
     }
 }
 
