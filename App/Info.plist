@@ -4,6 +4,7 @@
   <key>CFBundleName</key><string>Pausa</string>
   <key>CFBundleDisplayName</key><string>Pausa</string>
   <key>CFBundleIdentifier</key><string>app.getpausa.Pausa</string>
+  <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundleExecutable</key><string>Pausa</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>0.1.0</string>
@@ -12,5 +13,6 @@
   <key>LSUIElement</key><true/>
   <key>LSApplicationCategoryType</key><string>public.app-category.healthcare-fitness</string>
   <key>NSHighResolutionCapable</key><true/>
+  <key>CFBundleLocalizations</key><array><string>en</string><string>zh-Hans</string><string>zh-Hant</string><string>es</string><string>ru</string><string>fr</string><string>vi</string></array>
   <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
 </dict></plist>

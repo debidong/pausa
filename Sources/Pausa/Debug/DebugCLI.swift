@@ -4,6 +4,9 @@ import AppKit
 ///   --debug-detect [seconds]        print detector state every second (default 10s)
 ///   --debug-short [seconds]         show the short break (default 5s), then exit
 ///   --debug-long [seconds]          show the long break (default 8s), then exit
+///   --debug-about [seconds]         show the About panel (default 8s), then exit
+///   --debug-render-long <dir> [--night]  long break per theme, 16:10 + 16:9, countdown 2:47
+///   --debug-render-short <out.png> [sample.png]  offscreen render of the short-break blur
 enum DebugCLI {
     static func handles(_ args: [String]) -> Bool {
         args.contains { $0.hasPrefix("--debug-") }
@@ -32,6 +35,29 @@ enum DebugCLI {
             app.run()
             exit(0)
         }
+        if let i = args.firstIndex(of: "--debug-render-long"), i + 1 < args.count {
+            let dir = URL(fileURLWithPath: args[i + 1])
+            Task { @MainActor in
+                #if DEBUG
+                BreakViewSnapshots.writeLong(to: dir, night: args.contains("--night"))
+                #endif
+                exit(0)
+            }
+            app.run()
+            exit(0)
+        }
+        if let i = args.firstIndex(of: "--debug-render-short"), i + 1 < args.count {
+            let out = URL(fileURLWithPath: args[i + 1])
+            let sample = (i + 2 < args.count && !args[i + 2].hasPrefix("--")) ? NSImage(contentsOfFile: args[i + 2]) : nil
+            Task { @MainActor in
+                #if DEBUG
+                BreakViewSnapshots.writeShortBlur(to: out, sample: sample)
+                #endif
+                exit(0)
+            }
+            app.run()
+            exit(0)
+        }
         if args.contains("--debug-detect") {
             let secs = num(after: "--debug-detect", 10)
             print("== audio input devices ==")
@@ -48,9 +74,14 @@ enum DebugCLI {
             keep.append(sub as AnyObject)
             detector.start()
             DispatchQueue.main.asyncAfter(deadline: .now() + secs) { exit(0) }
+        } else if args.contains("--debug-about") {
+            MainActor.assumeIsolated { MenuBarController.showAbout() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + num(after: "--debug-about", 8)) { exit(0) }
         } else if args.contains("--debug-short") {
             let secs = num(after: "--debug-short", 5)
-            overlay.showShort(duration: secs) { print("short: finished"); exit(0) }
+            overlay.showShort(duration: secs,
+                              onSkip: { print("short: skipped"); exit(0) },
+                              onFinish: { print("short: finished"); exit(0) })
         } else if args.contains("--debug-long") {
             let secs = num(after: "--debug-long", 8)
             overlay.showLong(duration: secs,

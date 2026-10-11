@@ -8,6 +8,7 @@ public enum BreakKind: Equatable { case short, long }
 
 public enum PauseReason: Hashable, Comparable {
   case meeting, fullscreen   // order = display priority
+  case outsideHours          // outside the user's Pausa 时段 (lowest priority)
 }
 
 public enum AwayKind { case locked, idle }   // locked covers lid-close/sleep/screen lock
@@ -59,6 +60,11 @@ public struct Scheduler {
     let l = config.longEvery - sinceLong
     if l <= s { return (.long, max(0, l), min(1, sinceLong / config.longEvery)) }
     return (.short, max(0, s), min(1, sinceShort / config.shortEvery))
+  }
+
+  /// Seconds until each kind of break is due, for the menu's two countdown rows.
+  public var remaining: (short: Double, long: Double) {
+    (max(0, config.shortEvery - sinceShort), max(0, config.longEvery - sinceLong))
   }
 
   /// Call about once a second.
@@ -118,16 +124,29 @@ public struct Scheduler {
   /// The machine was away (locked, lid closed, or idle) for `seconds`.
   /// Call on return; time spent away is never counted as work.
   public mutating func away(_ kind: AwayKind, seconds: Double, now: Double) {
-    lastTick = now
-    if case .onBreak = phase { phase = .working }
     switch kind {
     case .locked:
+      // Screen off: none of this time is work, and it rests the eyes.
+      lastTick = now
+      if case .onBreak = phase { phase = .working }
       if seconds >= config.longLength { reset(.long) }
       else if seconds >= config.shortLength { reset(.short) }
     case .idle:
-      // Not touching input != eyes rested (reading, phone). Only offsets the long break.
+      // Not touching input != eyes rested (reading code, watching). The short-break
+      // clock keeps running; only the long break ("get up") is offset.
       if seconds >= config.longLength { sinceLong = 0 }
     }
+  }
+
+  /// Forget the gap since the last tick without counting it (e.g. after a manual pause).
+  public mutating func resync(now: Double) { lastTick = now }
+
+  /// A Pausa 时段 window just opened: start the day's counters fresh.
+  public mutating func startFresh(now: Double) {
+    if case .onBreak = phase { return }
+    sinceShort = 0; sinceLong = 0; snoozes = 0; dueSince = nil
+    lastTick = now
+    phase = .working
   }
 
   /// Menu bar "立即休息".

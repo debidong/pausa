@@ -1,0 +1,141 @@
+{
+  "version": 2,
+  "date": "2026-10-10",
+  "width": 3840,
+  "height": 2400,
+  "colorSpace": "sRGB",
+  "sourceSize": [
+    1586,
+    992
+  ],
+  "export": "Lanczos resize; exported 4K size, not native 4K detail",
+  "safeArea": {
+    "x": 1152,
+    "y": 840,
+    "width": 1536,
+    "height": 720
+  },
+  "themes": [
+    {
+      "key": "forest",
+      "base": "forest-base.png",
+      "layers": [
+        {
+          "file": "forest-layer.png",
+          "opacity": 0.25
+        }
+      ],
+      "centerWhiteContrastAt95Percentile": 1.44,
+      "uiScrimRecommended": true
+    },
+    {
+      "key": "ocean",
+      "base": "ocean-base.png",
+      "layers": [
+        {
+          "file": "ocean-layer.png",
+          "opacity": 0.6
+        },
+        {
+          "file": "ocean-glints-layer.png",
+          "opacity": 0.22
+        }
+      ],
+      "centerWhiteContrastAt95Percentile": 1.73,
+      "uiScrimRecommended": true
+    },
+    {
+      "key": "dusk",
+      "base": "dusk-base.png",
+      "layers": [
+        {
+          "file": "dusk-layer.png",
+          "opacity": 0.58
+        }
+      ],
+      "centerWhiteContrastAt95Percentile": 2.77,
+      "uiScrimRecommended": true
+    },
+    {
+      "key": "night",
+      "base": "night-base.png",
+      "layers": [
+        {
+          "file": "night-layer.png",
+          "opacity": 0.22
+        }
+      ],
+      "centerWhiteContrastAt95Percentile": 2.95,
+      "uiScrimRecommended": true
+    },
+    {
+      "key": "system",
+      "base": "system-base.png",
+      "layers": [],
+      "centerWhiteContrastAt95Percentile": 1.65,
+      "uiScrimRecommended": true
+    }
+  ],
+  "files": [
+    {
+      "name": "dusk-base.png",
+      "bytes": 6965393,
+      "sha256": "9b1ed6fdc64691ad1776accf8ee065332e97eb4c22323fffa6cfa6229cdd81e3"
+    },
+    {
+      "name": "dusk-layer.png",
+      "bytes": 2863666,
+      "sha256": "d3c6d8671a82d72c71015a1be390a48ddee1d5c05e9268e52a7d02fe25d65629",
+      "alphaStats": "0,1,0.07254",
+      "centralAlphaMax": 0.00392157
+    },
+    {
+      "name": "forest-base.png",
+      "bytes": 9199197,
+      "sha256": "bb7deacf68a69f22518f3ad759700f4cfac00c701c0fcaee74ca5a890c74e24a"
+    },
+    {
+      "name": "forest-layer.png",
+      "bytes": 1948116,
+      "sha256": "280c9962f9287736baf783d7538a871db8224d52a3835a4d50d4435ed6e84fb0",
+      "alphaStats": "0,0.992157,0.0491278",
+      "centralAlphaMax": 0.00392157
+    },
+    {
+      "name": "night-base.png",
+      "bytes": 8621061,
+      "sha256": "701de6b6ed06aa1ee3d5c9c9fb107c94e6a20c1776441d16f871b408827591aa"
+    },
+    {
+      "name": "night-layer.png",
+      "bytes": 1919666,
+      "sha256": "95f9faf75f0c832d6a3e353541520ebf0002cfc58eb5c970a47d52030bf2cfac",
+      "alphaStats": "0,0.984314,0.0305452",
+      "centralAlphaMax": 0.00392157
+    },
+    {
+      "name": "ocean-base.png",
+      "bytes": 9026353,
+      "sha256": "ea5c7e8dd87ef59313badbf7877283ba7707c100cd9f2b467e13ba07a0bc0354"
+    },
+    {
+      "name": "ocean-glints-layer.png",
+      "bytes": 777416,
+      "sha256": "f0cd7a8c730446f4a027f38505e348dd508153195f0c69ded7a5c89a4e5365e5",
+      "alphaStats": "0,0.992157,0.00611804",
+      "centralAlphaMax": 0.00392157
+    },
+    {
+      "name": "ocean-layer.png",
+      "bytes": 1120817,
+      "sha256": "819c98be58745943d21b6c8f0d9c0cc8b58c1a146659990c5214d531b03c365a",
+      "alphaStats": "0,1,0.045829",
+      "centralAlphaMax": 0.00392157
+    },
+    {
+      "name": "system-base.png",
+      "bytes": 7523467,
+      "sha256": "b90ae57a01a89470822b3ff7fada5a584f3748ecba08dc1f1448f3d379fb66ff"
+    }
+  ]
+}

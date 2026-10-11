@@ -10,8 +10,8 @@ public enum PauseReason: Hashable, CustomStringConvertible {
     /// Menu bar copy, e.g. 「已暂停：正在开会」.
     public var displayText: String {
         switch self {
-        case .meeting: return "正在开会"
-        case .fullscreen(let name): return "\(name) 全屏中"
+        case .meeting: return L("正在开会")
+        case .fullscreen(let name): return L("%@ 全屏中", name)
         }
     }
 
