@@ -153,6 +153,18 @@ final class AppController {
                                  show15: scheduler.postponeBudget(.long) >= Self.postponeLong,
                                  can15: scheduler.deferralLeft >= Self.postponeLong,
                                  mustNotDefer: scheduler.longMustNotDefer)
+            case .resumeBreak(.short, let left):
+                overlay.showShort(duration: left,
+                                  onSkip: { [weak self] in self?.finish(.skipped) },
+                                  onFinish: { [weak self] in self?.today.record(done: true); self?.finish(.completed) })
+            case .resumeBreak(.long, let left):
+                overlay.showLong(duration: left,
+                                 onSnooze: { [weak self] m in self?.snooze(minutes: m) },
+                                 onSkip: { [weak self] in self?.finish(.skipped) },
+                                 onFinish: { [weak self] in self?.finish(.completed) },
+                                 show15: scheduler.postponeBudget(.long) >= Self.postponeLong,
+                                 can15: scheduler.deferralLeft >= Self.postponeLong,
+                                 mustNotDefer: scheduler.longMustNotDefer)
             case .endBreak:
                 overlay.dismiss()
                 onBreakEnded?()
@@ -200,7 +212,11 @@ final class AppController {
         case .end:
             let secs = awaySince.map { now - $0 } ?? 0
             awaySince = nil
-            scheduler.away(.locked, seconds: secs, now: now)
+            let wasShortBreak: Bool
+            if case .onBreak(.short, _) = scheduler.phase { wasShortBreak = true } else { wasShortBreak = false }
+            let cmds = scheduler.away(.locked, seconds: secs, now: now)
+            if wasShortBreak && cmds.contains(.endBreak) { today.record(done: true) }
+            apply(cmds)
         }
         onChange?()
     }
@@ -219,8 +235,11 @@ final class AppController {
     }
 
     func pauseForAnHour() {
+        if case .onBreak = scheduler.phase {
+            // Past the 90-minute line the long break can't be skipped, so it can't be paused away.
+            if scheduler.finish(.skipped, now: Self.now()).isEmpty { return }
+        }
         overlay.dismiss()
-        if case .onBreak = scheduler.phase { _ = scheduler.finish(.skipped, now: Self.now()) }
         manualPauseUntil = Self.now() + 3600
         onChange?()
     }

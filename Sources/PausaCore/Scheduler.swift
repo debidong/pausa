@@ -94,6 +94,7 @@ public enum Phase: Equatable {
 public enum Command: Equatable {
   case showWarning(BreakKind, secondsLeft: Double)
   case startBreak(BreakKind, length: Double)
+  case resumeBreak(BreakKind, remaining: Double)   // back from a lock mid-break: show the rest
   case endBreak
 }
 
@@ -242,6 +243,8 @@ public struct Scheduler {
   /// User skipped, snoozed, or the overlay finished.
   public mutating func finish(_ outcome: BreakOutcome, now: Double) -> [Command] {
     guard case .onBreak(let kind, _) = phase else { return [] }
+    // Past the 90-minute line the long break can't be skipped or snoozed, whatever the UI shows.
+    if kind == .long && outcome != .completed && mustNotDefer(.long) { return [] }
     phase = .working
     clearDeferral()
     switch outcome {
@@ -249,13 +252,7 @@ public struct Scheduler {
       if kind == .long { sinceLongDone = 0; noDeferNextLong = false }
       reset(kind)   // counts toward the cycle
     case .skipped:
-      // Holding Esc always works (presentations), but past 90 minutes it costs the next long break
-      // its right to be deferred. A skip is not a completed long break.
-      if kind == .long && sinceLongDone >= config.hardLine { noDeferNextLong = true }
-      reset(kind)
-    case .snoozed where kind == .long && mustNotDefer(.long):
-      reset(kind)   // past the line snooze is not offered as a deferral; treat like skip
-      noDeferNextLong = true
+      reset(kind)   // a skip is not a completed long break: sinceLongDone keeps counting
     case .snoozed where snoozes < config.maxSnoozes:
       snoozes += 1
       let back = config.snoozeLength
@@ -268,12 +265,19 @@ public struct Scheduler {
 
   /// The machine was away (locked, lid closed, or idle) for `seconds`.
   /// Call on return; time spent away is never counted as work.
-  public mutating func away(_ kind: AwayKind, seconds: Double, now: Double) {
+  /// Locked during a break: the locked time counts toward that break (endsAt is on the same
+  /// clock, which includes sleep). Back before it ends: the break resumes with what is left.
+  /// Back after: the break is completed, exactly as if the overlay had run out.
+  @discardableResult
+  public mutating func away(_ kind: AwayKind, seconds: Double, now: Double) -> [Command] {
     switch kind {
     case .locked:
       // Screen off: none of this time is work, and it rests the eyes.
       lastTick = now
-      if case .onBreak = phase { phase = .working }
+      if case .onBreak(let k, let endsAt) = phase {
+        if now >= endsAt { return finish(.completed, now: now) }
+        return [.resumeBreak(k, remaining: endsAt - now)]
+      }
       if seconds >= config.longLength { reset(.long); sinceLongDone = 0; noDeferNextLong = false; clearDeferral() }
       else if seconds >= config.shortLength { snoozes = 0; sinceBreak = 0 }   // eyes rested, cycle unchanged
     case .idle:
@@ -281,6 +285,7 @@ public struct Scheduler {
       // clock keeps running; only the long break ("get up") is offset.
       if seconds >= config.longLength { breaksSinceLong = 0 }
     }
+    return []
   }
 
   /// 暂停提醒 1 小时 (Steve, round 7b): no reminders at all, but the time since the last long break

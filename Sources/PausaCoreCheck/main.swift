@@ -479,23 +479,53 @@ final class DeferralTests {
     var s2 = Scheduler(config: c)
     XCTAssertEqual(startAt(&s2, from: 0, to: 9000, d: [.typing, .focusApp()]) ?? -1, 5700 + 120, accuracy: 2)
   }
-  func testSkipPastLineMeansNextLongCannotWait() {
+  func testSkipPastLineIsRefused() {
     let c = cfg(95)
     var s = Scheduler(config: c)
     let t0 = startAt(&s, from: 0, to: 9000) ?? -1
-    _ = s.finish(.skipped, now: t0)
-    let t1 = startAt(&s, from: t0 + 1, to: t0 + 9000, d: [.typing, .focusApp()]) ?? -1
-    XCTAssertEqual(t1 - t0, 5700, accuracy: 2)   // not even typing defers it
-    _ = s.finish(.completed, now: t1)
-    let t2 = startAt(&s, from: t1 + 1, to: t1 + 9000, d: [.typing]) ?? -1
-    XCTAssertEqual(t2 - t1, 5820, accuracy: 2)   // completed clears the flag; 95 > 90 so only typing may wait
+    XCTAssertEqual(s.finish(.skipped, now: t0), [])      // core refuses, not just the UI
+    XCTAssertEqual(s.finish(.snoozed, now: t0), [])
+    if case .onBreak(.long, _) = s.phase {} else { XCTAssertTrue(false) }
+    XCTAssertEqual(s.finish(.completed, now: t0 + 300), [.endBreak])
+    XCTAssertEqual(s.sinceLastLongBreak, 0)
   }
-  func testEscStillWorksPastLine() {
-    let c = cfg(95)
-    var s = Scheduler(config: c)
+  func testSkipBeforeLineStillWorks() {
+    var s = longOnly()
     let t0 = startAt(&s, from: 0, to: 9000) ?? -1
     XCTAssertEqual(s.finish(.skipped, now: t0), [.endBreak])
     XCTAssertEqual(s.phase, .working)
+  }
+  // Locking mid-break (Steve's spec, round v0.2): locked time counts toward the break.
+  func testLockShortlyDuringLongBreakResumesRest() {
+    var s = Scheduler()
+    _ = s.breakNow(.long, now: 1000)                       // 300 s break, ends at 1300
+    let cmds = s.away(.locked, seconds: 10, now: 1010)
+    XCTAssertEqual(cmds, [.resumeBreak(.long, remaining: 290)])
+    if case .onBreak(.long, let e) = s.phase { XCTAssertEqual(e, 1300, accuracy: 0.001) } else { XCTAssertTrue(false) }
+    XCTAssertEqual(s.tick(now: 1300, reasons: [], inputIdle: 10), [.endBreak])
+    XCTAssertEqual(s.sinceLastLongBreak, 0)
+  }
+  func testLockThroughLongBreakCompletesIt() {
+    var s = Scheduler()
+    _ = s.breakNow(.long, now: 1000)
+    XCTAssertEqual(s.away(.locked, seconds: 400, now: 1400), [.endBreak])
+    XCTAssertEqual(s.phase, .working)
+    XCTAssertEqual(s.sinceLastLongBreak, 0)
+  }
+  func testLockCannotEndForcedLongBreakEarly() {
+    let c = cfg(95)
+    var s = Scheduler(config: c)
+    let t0 = startAt(&s, from: 0, to: 9000) ?? -1
+    XCTAssertTrue(s.longMustNotDefer)
+    let cmds = s.away(.locked, seconds: 10, now: t0 + 10)
+    XCTAssertEqual(cmds, [.resumeBreak(.long, remaining: c.longLength - 10)])
+    XCTAssertTrue(s.longMustNotDefer)                       // 10 s of lock is not a long break
+  }
+  func testLockDuringShortBreakResumesRest() {
+    var s = Scheduler()
+    _ = s.breakNow(.short, now: 0)                         // 20 s
+    XCTAssertEqual(s.away(.locked, seconds: 5, now: 5), [.resumeBreak(.short, remaining: 15)])
+    XCTAssertEqual(s.away(.locked, seconds: 30, now: 35), [.endBreak])
   }
   func testVideoBoundedByBudget() {
     var s = longOnly()
@@ -637,7 +667,7 @@ final class PersistenceTests {
     XCTAssertEqual(r.postponeLeft, 0)
     // Skipped past the line (noDeferNextLong set): still binding after a restart.
     _ = s.manualPauseEnded(now: 7200)
-    _ = s.finish(.skipped, now: 7210)
+    XCTAssertEqual(s.finish(.skipped, now: 7210), [])   // refused past the line
     var q = Scheduler()
     q.restore(s.saved(wallClock: 900), wallClock: 930, now: 0)
     XCTAssertTrue(q.longMustNotDefer)
@@ -665,7 +695,9 @@ let cases: [(String, () -> Void)] = [
  ("defer.typing2min", dt.testTypingCappedAt2Min), ("defer.shortBudget", dt.testShortBudgetCapsFocusApp),
  ("defer.focusShortOnly", dt.testFocusModeShortOnlyDoesNotDeferLong), ("defer.concurrentOnce", dt.testSharedBudgetConcurrentCountsOnce),
  ("defer.sequential30", dt.testSharedBudgetSequentialStopsAt30), ("defer.ninetyLine", dt.testNinetyMinuteLineStopsFocusButTypingWaits),
- ("defer.skipPastLine", dt.testSkipPastLineMeansNextLongCannotWait), ("defer.escPastLine", dt.testEscStillWorksPastLine),
+ ("defer.skipPastLineRefused", dt.testSkipPastLineIsRefused), ("defer.skipBeforeLine", dt.testSkipBeforeLineStillWorks),
+ ("lock.longResumes", dt.testLockShortlyDuringLongBreakResumesRest), ("lock.longCompletes", dt.testLockThroughLongBreakCompletesIt),
+ ("lock.forcedNotEnded", dt.testLockCannotEndForcedLongBreakEarly), ("lock.shortResumes", dt.testLockDuringShortBreakResumesRest),
  ("defer.videoBudget", dt.testVideoBoundedByBudget), ("defer.videoNinety", dt.testVideoStopsAtNinetyLine),
  ("defer.shareMakeUp", dt.testScreenShareKeepsWaitingThenMakeUp), ("defer.videoMakeUp", dt.testVideoEndMakeUpLongBreak),
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
