@@ -14,7 +14,8 @@ public final class BreakOverlayController {
         /// 「休息延后 5 分钟」: postpone buttons in the popover and on the long-break screen.
         public static var ending: String { L("break.short.ending") }
         public static func snooze(_ minutes: Int) -> String { L("休息延后 %d 分钟", minutes) }
-        public static var holdSpace: String { L("break.holdSpace") }
+        public static var holdToSkip: String { L("break.holdToSkip") }
+        public static var spaceKey: String { L("key.space") }
     }
 
     private enum Mode {
@@ -98,7 +99,7 @@ public final class BreakOverlayController {
         // Card only on the screen under the mouse; other screens just dim.
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
-        capsules = screen.map { [makeCapsule(countdown: cd, on: $0)] } ?? []
+        capsules = screen.map { [makeCapsule(countdown: cd, on: $0), makeShortControls(countdown: cd, on: $0)] } ?? []
         let front = NSWorkspace.shared.frontmostApplication
         if front?.processIdentifier != ProcessInfo.processInfo.processIdentifier { previousApp = front }
         fadeIn(dimWindows, short: true)
@@ -205,7 +206,7 @@ public final class BreakOverlayController {
             let mouse = NSEvent.mouseLocation
             let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
             if let cd = countdown, let screen {
-                capsules = [makeCapsule(countdown: cd, on: screen)]
+                capsules = [makeCapsule(countdown: cd, on: screen), makeShortControls(countdown: cd, on: screen)]
                 capsules.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
             } else { capsules = [] }
         case .long:
@@ -233,7 +234,7 @@ public final class BreakOverlayController {
             w.hold = Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip)
             let view = LongBreakView(countdown: cd, showControls: screen == primary,
                                      onSnooze: { [weak self] in self?.snooze($0) },
-                                     seed: sceneSeed, hold: holdToSkip, quote: longQuote,
+                                     seed: sceneSeed, hold: Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip), quote: longQuote,
                                      show15: show15, can15: can15, locked: mustNotDefer)
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
             let frame = NSRect(origin: .zero, size: screen.frame.size)
@@ -302,6 +303,30 @@ public final class BreakOverlayController {
         p.isReleasedWhenClosed = false
         p.animationBehavior = .none
         host.frame = NSRect(origin: .zero, size: vf.size)
+        p.contentView = host
+        p.alphaValue = 0
+        return p
+    }
+
+    /// Short-break ring + skip capsule: a small clickable panel at the bottom center (40 pt up, same
+    /// spot as the long-break controls) so the capsule takes a long-press; the content panel and the
+    /// dim windows stay click-through. It hears Space too, in case a click makes it key.
+    private func makeShortControls(countdown: Countdown, on screen: NSScreen) -> NSPanel {
+        let host = NSHostingView(rootView: ShortBreakControls(countdown: countdown, hold: holdToSkip))
+        let size = host.fittingSize
+        let f = screen.frame
+        let rect = NSRect(x: f.midX - size.width / 2, y: f.minY + 40 - 12, width: size.width, height: size.height)
+        let p = ShortBreakPanel(contentRect: rect, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        p.hold = holdToSkip
+        p.level = .statusBar + 2
+        p.sharingType = .none
+        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
+        p.isOpaque = false
+        p.backgroundColor = .clear
+        p.hasShadow = false
+        p.isReleasedWhenClosed = false
+        p.animationBehavior = .none
+        host.frame = NSRect(origin: .zero, size: size)
         p.contentView = host
         p.alphaValue = 0
         return p

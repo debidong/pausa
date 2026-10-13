@@ -41,20 +41,28 @@ struct ShortBreakCapsule: View {
                            flat: flatBackground, monospaced: false)
                     .frame(maxWidth: g.size.width - 80)
                     .accessibilityLabel(BreakOverlayController.Copy.shortTitle)
-                if let hold {
-                    VStack {
-                        Spacer()
-                        HStack(spacing: 12) {
-                            BreakRing(countdown: countdown, fixedRemaining: fixedRemaining)
-                            HoldCapsule(hold: hold, glass: !flatBackground)
-                        }
-                        .modifier(GlassGroup(on: !flatBackground))
-                            .padding(.bottom, 40)
-                    }
-                }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .environment(\.colorScheme, .dark)
+        .environment(\.locale, Theme.appLocale)
+    }
+}
+
+/// Short-break bottom: ring 12 pt above the hold-to-skip capsule (in its glass container). Lives in a
+/// small clickable panel so the capsule takes a long-press; the rest of the screen stays click-through.
+struct ShortBreakControls: View {
+    let countdown: Countdown
+    let hold: HoldToSkip
+    var flat = false
+    var fixedRemaining: Double? = nil
+    var body: some View {
+        VStack(spacing: 12) {
+            BreakRing(countdown: countdown, fixedRemaining: fixedRemaining)
+            HoldCapsule(hold: hold, glass: !flat)
+                .modifier(GlassGroup(on: !flat))
+        }
+        .padding(12)   // room for the glass edge
         .environment(\.colorScheme, .dark)
         .environment(\.locale, Theme.appLocale)
     }
@@ -75,11 +83,13 @@ struct BreakRing: View {
             Image(nsImage: MenuBarController.icon(fraction: fraction(ProcessInfo.processInfo.systemUptime),
                                                   paused: false, warning: false))
                 .renderingMode(.template)
+                .resizable()
                 .foregroundColor(.white.opacity(0.9))
-                .frame(width: 16, height: 16)
+                .frame(width: BreakRing.size, height: BreakRing.size)
         }
         .accessibilityHidden(true)
     }
+    static let size: CGFloat = 20
 }
 
 /// Big break clock, shared by long and short. macOS 26: `.clear` Liquid Glass letters over a soft dark
@@ -90,12 +100,16 @@ struct GlassClock: View {
     var flat = false
     /// false for words (short-break prompt): proportional figures, one line, scales down if needed.
     var monospaced = true
+    /// Max lines (wraps centered); scales down only if it still doesn't fit.
+    var lines = 1
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var body: some View {
         let base = Font.system(size: size, weight: LongBreakView.countdownWeight)
         let digits = Text(text)
             .font(monospaced ? base.monospacedDigit() : base)
-            .lineLimit(1).minimumScaleFactor(0.3)
+            .lineLimit(lines).minimumScaleFactor(0.3)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
         if !flat, !reduceTransparency, #available(macOS 26, *) {
             ZStack {
                 digits.foregroundColor(.black.opacity(0.28)).blur(radius: size * 0.06)
@@ -110,22 +124,6 @@ struct GlassClock: View {
     }
 }
 
-/// Line under the clock (long: rest quote; short: the prompt). Text on the art, no card.
-struct BreakSubtitle: View {
-    let text: String
-    var body: some View {
-        Text(text)
-            .font(.system(size: 20, weight: .medium))
-            .foregroundColor(.white.opacity(0.95))
-            .multilineTextAlignment(.center)
-            .lineLimit(3)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: 560)
-            .padding(.top, 14)
-            .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
-            .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
-    }
-}
 
 /// `.clear` Liquid Glass on macOS 26+; translucent fill below 26 / Reduce Transparency / renders.
 struct ClearGlass<S: Shape>: ViewModifier {
@@ -149,9 +147,19 @@ struct HoldCapsule: View {
     var glass = true
     var body: some View {
         let p = max(0, min(1, fixed ?? hold.progress))
-        Text(BreakOverlayController.Copy.holdSpace)
-            .font(.system(size: 13, weight: .medium))
-            .foregroundColor(.white.opacity(0.9))
+        HStack(spacing: 6) {
+            Text(BreakOverlayController.Copy.holdToSkip)
+                .font(.system(size: HoldCapsule.bodySize, weight: .medium))
+            // Keycap: the system's name for the Space key, one size smaller, thin rounded outline.
+            Text(BreakOverlayController.Copy.spaceKey)
+                .font(.system(size: HoldCapsule.bodySize - 1, weight: .medium))
+                .padding(.horizontal, 5).padding(.vertical, 1)
+                .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(Color.white.opacity(0.6), lineWidth: 0.75))
+        }
+        .lineLimit(1)
+        .fixedSize()
+        .foregroundColor(.white.opacity(0.9))
             .padding(.horizontal, 16).padding(.vertical, 7)
             .background(alignment: .leading) {
                 GeometryReader { g in
@@ -160,7 +168,35 @@ struct HoldCapsule: View {
                 .clipShape(Capsule())
             }
             .modifier(ClearGlass(on: glass, shape: Capsule()))
+            .overlay {
+                // Mouse long-press: same HoldToSkip as Space (same duration, fill, retract).
+                GeometryReader { g in
+                    Color.clear.contentShape(Capsule())
+                        .gesture(DragGesture(minimumDistance: 0)
+                            .onChanged { v in
+                                let inside = CGRect(origin: .zero, size: g.size).contains(v.location)
+                                PointerHold.changed(hold, inside: inside, cancelled: &pointerCancelled)
+                            }
+                            .onEnded { _ in PointerHold.ended(hold, cancelled: &pointerCancelled) })
+                }
+            }
             .accessibilityElement(children: .combine)
+    }
+    @State private var pointerCancelled = false
+    static let bodySize: CGFloat = 13
+}
+
+/// Press-and-hold with the mouse on the skip capsule. Shares HoldToSkip with Space: press inside
+/// begins (idempotent), dragging out cancels for the rest of this press, release cancels (a hold that
+/// already reached 1 has skipped). No hold (forced long break) = nothing happens.
+enum PointerHold {
+    static func changed(_ hold: HoldToSkip?, inside: Bool, cancelled: inout Bool) {
+        guard let hold, !cancelled else { return }
+        if inside { hold.begin() } else { cancelled = true; hold.cancel(animated: true) }
+    }
+    static func ended(_ hold: HoldToSkip?, cancelled: inout Bool) {
+        cancelled = false
+        hold?.cancel(animated: true)
     }
 }
 
@@ -255,7 +291,14 @@ struct LongBreakView: View {
             VStack(spacing: 0) {
                 GlassClock(text: timeText, size: clockSize, flat: flatControls)
                     .accessibilityLabel(timeText)
-                if let quote { BreakSubtitle(text: quote) }
+                // Glass prompt, same style as the clock at 1/3 size, one line.
+                // Rest quote (RestQuotes, unchanged) as glass text: 1/3 clock size, centered, max 2 lines.
+                if let quote {
+                    GlassClock(text: quote, size: clockSize / 3, flat: flatControls, monospaced: false, lines: 2)
+                        .frame(maxWidth: clockSize * 9)
+                        .padding(.top, 16)
+                        .accessibilityLabel(quote)
+                }
             }
             .background(halo)
             .padding(40)
@@ -271,7 +314,9 @@ struct LongBreakView: View {
                             if show15 {
                                 Button(BreakOverlayController.Copy.snooze(15)) { onSnooze(15) }.disabled(!can15)
                             }
-                            HoldCapsule(hold: hold ?? LongBreakView.idleHold, fixed: debugHoldProgress, glass: !flatControls)
+                            if let h = hold ?? (debugHoldProgress != nil ? LongBreakView.idleHold : nil) {
+                                HoldCapsule(hold: h, fixed: debugHoldProgress, glass: !flatControls)
+                            }
                         }
                     }
                     .buttonStyle(QuietButtonStyle(glass: !flatControls))

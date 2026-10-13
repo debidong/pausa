@@ -59,6 +59,58 @@ enum DebugCLI {
             check("locked: repeat consumed", SpaceHold.handle(key(49, true, repeat: true), hold: nil, shownAt: old))
             check("locked: release consumed", SpaceHold.handle(key(49, false, repeat: false), hold: nil, shownAt: old))
             check("locked: overlay passes no hold", BreakOverlayController.holdFor(mustNotDefer: true, HoldToSkip()) == nil)
+            // Mouse long-press on the capsule: same HoldToSkip, so same duration as Space (within 0.1 s).
+            func timeToSkip(_ start: (HoldToSkip) -> Void) -> Double? {
+                let h = HoldToSkip(); var at: Double?
+                let t0 = ProcessInfo.processInfo.systemUptime
+                h.onComplete = { at = ProcessInfo.processInfo.systemUptime - t0 }
+                start(h)
+                RunLoop.main.run(until: Date().addingTimeInterval(HoldToSkip.duration + 0.4))
+                return at
+            }
+            var c = false
+            let tSpace = timeToSkip { _ = SpaceHold.handle(key(49, true, repeat: false), hold: $0, shownAt: old) }
+            let tMouse = timeToSkip { PointerHold.changed($0, inside: true, cancelled: &c) }
+            print("     space \(tSpace.map { String(format: "%.3f", $0) } ?? "-") s, mouse \(tMouse.map { String(format: "%.3f", $0) } ?? "-") s")
+            check("mouse vs space within 0.1 s", tSpace != nil && tMouse != nil && abs(tSpace! - tMouse!) <= 0.1)
+            do {   // half press, released: no skip, fill back to 0
+                let h = HoldToSkip(); var skipped = false; h.onComplete = { skipped = true }; c = false
+                PointerHold.changed(h, inside: true, cancelled: &c)
+                RunLoop.main.run(until: Date().addingTimeInterval(1.0))
+                PointerHold.ended(h, cancelled: &c)
+                RunLoop.main.run(until: Date().addingTimeInterval(1.5))
+                check("mouse half press: no skip", !skipped)
+                check("mouse half press: retracted", h.progress == 0)
+            }
+            do {   // drag out cancels; coming back in during the same press does not restart
+                let h = HoldToSkip(); var skipped = false; h.onComplete = { skipped = true }; c = false
+                PointerHold.changed(h, inside: true, cancelled: &c)
+                RunLoop.main.run(until: Date().addingTimeInterval(0.5))
+                PointerHold.changed(h, inside: false, cancelled: &c)
+                PointerHold.changed(h, inside: true, cancelled: &c)
+                RunLoop.main.run(until: Date().addingTimeInterval(2.2))
+                check("mouse drag out: no skip", !skipped)
+                PointerHold.ended(h, cancelled: &c)
+            }
+            do {   // forced long break: no hold reaches the view or the key path
+                let forced = BreakOverlayController.holdFor(mustNotDefer: true, HoldToSkip())
+                c = false
+                PointerHold.changed(forced, inside: true, cancelled: &c)
+                check("locked: mouse has no hold", forced == nil)
+            }
+            // Capsule copy + keycap and the short glass prompt: present in all 8 locales, one line.
+            for (lang, t) in L10nTables.all.sorted(by: { $0.key.rawValue < $1.key.rawValue }) {
+                let src = L10nTables.zhHans
+                func v(_ k: String) -> String { t[k] ?? src[k] ?? "" }
+                func w(_ str: String, _ size: CGFloat, _ weight: NSFont.Weight) -> CGFloat {
+                    (str as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: size, weight: weight)]).width
+                }
+                let cap = w(v("break.holdToSkip"), 13, .medium) + 6 + w(v("key.space"), 12, .medium) + 10 + 32
+                let shortW = w(v("break.short.hint"), 108 * 0.7, .semibold)
+                print("     \(lang.rawValue): capsule \(Int(cap)) pt, short hint \(Int(shortW)) pt")
+                check("\(lang.rawValue): keys present", !v("break.holdToSkip").isEmpty && !v("key.space").isEmpty && !v("break.short.hint").isEmpty)
+                check("\(lang.rawValue): one line on a 1280-pt screen", cap < 600 && shortW < 1200)
+            }
             print(ok ? "SPACEHOLD PASS" : "SPACEHOLD FAIL"); exit(ok ? 0 : 1)
         }
         if args.contains("--debug-selftest-settings-window") {
