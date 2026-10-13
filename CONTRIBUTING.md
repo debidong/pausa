@@ -1,17 +1,60 @@
-# Contributing / ownership
+# Contributing to Pausa
 
-| Path | Owner | What |
-|---|---|---|
-| `Sources/PausaCore/`, `Sources/PausaCoreCheck/` | Mitchell | Scheduler / state machine, pure logic, no UI; check program |
-| `Sources/Pausa/Core/`, `Sources/Pausa/MenuBar/`, `App/`, `Sources/Pausa/main.swift` | Mitchell | App shell, wiring, menu bar, settings (main.swift is a placeholder to replace) |
-| `Sources/Pausa/Detection/` | Linus | `PauseDetector`: meeting (mic/camera, virtual devices excluded, 2 min grace), allowlisted fullscreen, lock/sleep `onAway` |
-| `Sources/Pausa/Overlay/` | Linus | `BreakOverlayController`: short capsule + dim, long full-screen break on every display |
-| `Sources/Pausa/Debug/` | Linus | `--debug-detect`, `--debug-short`, `--debug-long`, `--debug-render <dir>` |
+Thanks for helping improve Pausa. This guide explains how to build the app,
+run the checks, and get a pull request merged.
 
-Contract:
-- The overlay layer does no scheduling. The scheduler decides when; overlay reports back with callbacks:
-  `showShort(duration:onFinish:)`, `showLong(duration:onSnooze:onSkip:onFinish:)`, `dismiss()`.
-- The detector publishes `reasons: Set<PauseReason>` (main thread) and `onAway(.start/.end)`; the scheduler decides what they mean.
-- Stay inside your own directories; change the interface by PR.
+## Requirements
 
-Build: `swift build` on macOS 13+. Check: `swift run PausaCoreCheck`.
+- macOS 13 or later
+- Swift 5.9 or later (Xcode or the Swift toolchain)
+
+## Build
+
+To build the package for development, run:
+
+```sh
+swift build
+```
+
+To build `Pausa.app` (universal, ad-hoc signed) into `build/`, run:
+
+```sh
+App/build-app.sh
+```
+
+## Run the checks
+
+The scheduling logic in `Sources/PausaCore` has a check program. Run it
+before you open a pull request:
+
+```sh
+swift run PausaCoreCheck
+```
+
+All checks must pass.
+
+## Open a pull request
+
+1. Fork the repository and create a branch for your change.
+1. Keep each pull request focused on one change.
+1. Make sure `swift build` and `swift run PausaCoreCheck` pass.
+1. Open the pull request against `main`.
+
+## Sign the CLA
+
+Before we can merge your first pull request, you must sign the
+[Contributor License Agreement](CLA.md). You sign it once, and it covers
+your future contributions.
+
+When you open a pull request, the CLA Assistant bot posts a comment. To sign,
+reply on the pull request with this exact text:
+
+```
+I have read the CLA Document and I hereby sign the CLA
+```
+
+If the check doesn't update, comment `recheck`.
+
+## License
+
+Pausa is source-available under the [PolyForm Shield License 1.0.0](LICENSE).
