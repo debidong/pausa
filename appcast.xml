@@ -3,6 +3,14 @@
   <channel>
     <title>Pausa</title>
     <item>
+      <title>0.1.2</title>
+      <pubDate>Tue, 13 Oct 2026 13:41:04 +0000</pubDate>
+      <sparkle:version>14</sparkle:version>
+      <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.1.2/Pausa-0.1.2.zip" type="application/octet-stream" sparkle:edSignature="eaKlyPEryb7evv5wbwmAXX7VOeFSl2ecpagYidU2xPfR51gVR2YC12GlwY/Ibsq9g6lbfV+jyNFhIPiLWWWgBQ==" length="10508340"/>
+    </item>
+    <item>
       <title>0.1.1</title>
       <pubDate>Tue, 13 Oct 2026 13:30:28 +0000</pubDate>
       <sparkle:version>11</sparkle:version>
