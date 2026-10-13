@@ -5,6 +5,10 @@
 <h1 align="center">Pausa</h1>
 
 <p align="center">
+  Did you know you have the right to look away from your screen? The Constitution doesn't say so, but your eyes do. Pausa reminds you to rest, every once in a while. In a meeting? Watching a video? Sharing your screen? Pausa stays quiet. It's on your side. And it's free.
+</p>
+
+<p align="center">
   <b>Better use Pausa!</b>
 </p>
 
@@ -18,8 +22,6 @@
 <p align="center">
   <img src="docs/images/hero.png" width="100%" alt="A Pausa long break">
 </p>
-
-Did you know you have the right to look away from your screen? The Constitution doesn't say so, but your eyes do. Pausa reminds you to rest, every once in a while. In a meeting? Watching a video? Sharing your screen? Pausa stays quiet. It's on your side. And it's free.
 
 ## Install
 
