@@ -3,6 +3,8 @@
 # Ad-hoc signed (no Developer ID). Env (optional):
 #                 VERSION   CFBundleShortVersionString (e.g. 1.2.0, from the git tag)
 #                 BUILD     CFBundleVersion, must strictly increase for Sparkle (CI: commit count)
+#                 DEV=1     build "Pausa Dev.app": bundle ID app.getpausa.Pausa.dev, own settings and
+#                           timer state, no Sparkle feed (never auto-updates). Can sit next to Pausa.
 set -eu
 cd "$(dirname "$0")/.."
 # Universal binary (arm64 + x86_64). Build each arch into its own scratch dir so the slices
@@ -22,13 +24,25 @@ else
   BIN="$1"   # one arch: no lipo (a one-slice fat file makes vtool segfault)
 fi
 echo "archs: $(lipo -archs "$BIN")"
-APP=build/Pausa.app
+if [ "${DEV:-}" = 1 ]; then APP="build/Pausa Dev.app"; else APP=build/Pausa.app; fi
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 cp App/Info.plist "$APP/Contents/Info.plist"
 cp "$BIN" "$APP/Contents/MacOS/Pausa"
 if [ -n "${VERSION:-}" ]; then /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"; fi
 if [ -n "${BUILD:-}" ]; then /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$APP/Contents/Info.plist"; fi
+if [ "${DEV:-}" = 1 ]; then
+  PL="$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier app.getpausa.Pausa.dev" "$PL"
+  /usr/libexec/PlistBuddy -c "Delete :CFBundleName" "$PL" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :CFBundleName string Pausa Dev" "$PL"
+  /usr/libexec/PlistBuddy -c "Delete :CFBundleDisplayName" "$PL" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string Pausa Dev" "$PL"
+  # No feed, no checks: a dev build is only ever replaced by hand.
+  /usr/libexec/PlistBuddy -c "Delete :SUFeedURL" "$PL" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Delete :SUEnableAutomaticChecks" "$PL" 2>/dev/null || true
+  /usr/libexec/PlistBuddy -c "Add :SUEnableAutomaticChecks bool false" "$PL"
+fi
 # Sparkle.framework: SwiftPM drops the binary framework next to the executable; embed it in
 # Contents/Frameworks and make the binary look there.
 FW_SRC="$BIN_DIR/Sparkle.framework"
