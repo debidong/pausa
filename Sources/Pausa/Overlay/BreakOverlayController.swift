@@ -15,6 +15,7 @@ public final class BreakOverlayController {
         public static var ending: String { L("break.short.ending") }
         public static func snooze(_ minutes: Int) -> String { L("休息延后 %d 分钟", minutes) }
         public static var holdToSkip: String { L("break.holdToSkip") }
+        public static var spaceKey: String { L("key.space") }
     }
 
     private enum Mode {

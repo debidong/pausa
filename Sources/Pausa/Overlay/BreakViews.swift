@@ -142,13 +142,29 @@ struct ClearGlass<S: Shape>: ViewModifier {
 /// 「按住空格键跳过」 as a glass capsule. Fills left to right while Space is held; retracts on release
 /// (HoldToSkip.cancel animates progress back to 0). Not a button.
 struct HoldCapsule: View {
+    /// Text before and after %@, trimmed (the HStack spacing replaces the spaces).
+    static func split(_ s: String) -> (String, String) {
+        guard let r = s.range(of: "%@") else { return (s, "") }
+        return (String(s[..<r.lowerBound]).trimmingCharacters(in: .whitespaces),
+                String(s[r.upperBound...]).trimmingCharacters(in: .whitespaces))
+    }
     @ObservedObject var hold: HoldToSkip
     var fixed: Double? = nil
     var glass = true
     var body: some View {
         let p = max(0, min(1, fixed ?? hold.progress))
-        Text(BreakOverlayController.Copy.holdToSkip)
-            .font(.system(size: HoldCapsule.bodySize, weight: .medium))
+        // "长按 %@ 跳过": the keycap renders where %@ sits, text on either side.
+        let parts = HoldCapsule.split(BreakOverlayController.Copy.holdToSkip)
+        HStack(spacing: 4) {
+            if !parts.0.isEmpty { Text(parts.0).font(.system(size: HoldCapsule.bodySize, weight: .medium)) }
+            // Keycap: the system's name for the Space key, one size smaller, thin rounded outline.
+            Text(BreakOverlayController.Copy.spaceKey)
+                .font(.system(size: HoldCapsule.bodySize - 1, weight: .medium))
+                .padding(.horizontal, 5).padding(.vertical, 1)
+                .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(Color.white.opacity(0.6), lineWidth: 0.75))
+            if !parts.1.isEmpty { Text(parts.1).font(.system(size: HoldCapsule.bodySize, weight: .medium)) }
+        }
         .lineLimit(1)
         .fixedSize()
         .foregroundColor(.white.opacity(0.9))

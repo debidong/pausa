@@ -108,10 +108,12 @@ enum DebugCLI {
                 func w(_ str: String, _ size: CGFloat, _ weight: NSFont.Weight) -> CGFloat {
                     (str as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: size, weight: weight)]).width
                 }
-                let cap = w(v("break.holdToSkip"), 13, .medium) + 32
+                let (pre, post) = HoldCapsule.split(v("break.holdToSkip"))
+                let gaps = CGFloat((pre.isEmpty ? 0 : 1) + (post.isEmpty ? 0 : 1)) * 4
+                let cap = w(pre, 13, .medium) + w(post, 13, .medium) + gaps + w(v("key.space"), 12, .medium) + 10 + 32
                 let shortW = w(v("break.short.hint"), 108 * 0.7, .semibold)
                 print("     \(lang.rawValue): capsule \(Int(cap)) pt, short hint \(Int(shortW)) pt")
-                check("\(lang.rawValue): keys present", !v("break.holdToSkip").isEmpty && !v("break.short.hint").isEmpty)
+                check("\(lang.rawValue): keys present", v("break.holdToSkip").contains("%@") && !v("key.space").isEmpty && !v("break.short.hint").isEmpty)
                 check("\(lang.rawValue): one line on a 1280-pt screen", cap < 600 && shortW < 1200)
             }
             // Forced long break (past the 90-minute line), end to end through the same wiring the overlay uses.
