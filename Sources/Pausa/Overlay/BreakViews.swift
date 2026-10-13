@@ -19,7 +19,8 @@ struct VisualEffectBackground: NSViewRepresentable {
 /// Bottom: the same glass container, holding only hold-Space-to-skip. Click-through: Space is heard
 /// by the key panel; nothing here needs a click.
 struct ShortBreakCapsule: View {
-    @ObservedObject var countdown: Countdown
+    /// Not observed: the center never re-renders during the break; only BreakRing animates.
+    let countdown: Countdown
     /// ImageRenderer cannot draw glass; debug renders use the flat fallback.
     var flatBackground = false
     var theme: ThemeID = .current
@@ -43,8 +44,11 @@ struct ShortBreakCapsule: View {
                 if let hold {
                     VStack {
                         Spacer()
-                        HoldCapsule(hold: hold, glass: !flatBackground)
-                            .modifier(GlassGroup(on: !flatBackground))
+                        HStack(spacing: 12) {
+                            BreakRing(countdown: countdown, fixedRemaining: fixedRemaining)
+                            HoldCapsule(hold: hold, glass: !flatBackground)
+                        }
+                        .modifier(GlassGroup(on: !flatBackground))
                             .padding(.bottom, 40)
                     }
                 }
@@ -53,6 +57,28 @@ struct ShortBreakCapsule: View {
         }
         .environment(\.colorScheme, .dark)
         .environment(\.locale, Theme.appLocale)
+    }
+}
+
+/// Short-break time left: the menu-bar ring (MenuBarController.icon, same drawing), white, 16 pt.
+/// Drains full -> empty continuously, sampled per display frame from the countdown's own clock.
+struct BreakRing: View {
+    let countdown: Countdown
+    var fixedRemaining: Double? = nil
+    private func fraction(_ now: TimeInterval) -> Double {
+        if let fixedRemaining { return fixedRemaining / countdown.total }
+        guard countdown.startedAt > 0 else { return 1 }
+        return max(0, min(1, 1 - (now - countdown.startedAt) / countdown.total))
+    }
+    var body: some View {
+        TimelineView(.animation) { _ in
+            Image(nsImage: MenuBarController.icon(fraction: fraction(ProcessInfo.processInfo.systemUptime),
+                                                  paused: false, warning: false))
+                .renderingMode(.template)
+                .foregroundColor(.white.opacity(0.9))
+                .frame(width: 16, height: 16)
+        }
+        .accessibilityHidden(true)
     }
 }
 

@@ -472,7 +472,7 @@ final class HoldToSkip: ObservableObject {
 final class Countdown: ObservableObject {
     let total: TimeInterval
     @Published private(set) var remaining: TimeInterval
-    private var startedAt: TimeInterval = 0
+    private(set) var startedAt: TimeInterval = 0
     private var timer: Timer?
     private let onDone: () -> Void
 
