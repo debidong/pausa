@@ -281,6 +281,8 @@ struct LongBreakView: View {
     var can15 = true
     /// Round 7b: past the 90-minute line. No skip hint and no postpone buttons, just the reason.
     var locked = false
+    /// Hero mock (DEV): only the hold-to-skip capsule, no postpone buttons.
+    var skipOnly = false
 
     private var timeText: String {
         let s = Int((fixedRemaining ?? countdown.remaining).rounded(.up))
@@ -318,8 +320,8 @@ struct LongBreakView: View {
                             Text(L("已连续使用 90 分钟，长休息不能再推迟。"))
                                 .font(.system(size: 13, weight: .medium)).foregroundColor(.white.opacity(0.85))
                         } else {
-                            Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) }
-                            if show15 {
+                            if !skipOnly { Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) } }
+                            if show15, !skipOnly {
                                 Button(BreakOverlayController.Copy.snooze(15)) { onSnooze(15) }.disabled(!can15)
                             }
                             if showsSkipCapsule {

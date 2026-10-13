@@ -11,9 +11,11 @@ cd "$(dirname "$0")/.."
 # never share a bin path (SwiftPM 6.x uses one .build/out for every triple), then lipo.
 ARCHS="${ARCHS:-arm64 x86_64}"
 SLICES=""
+# DEV=1 also compiles the DEV-only tools (Sources/Pausa/Debug/HeroMock.swift).
+FLAGS=""; if [ "${DEV:-}" = 1 ]; then FLAGS="-Xswiftc -DPAUSA_DEV"; fi
 for a in $ARCHS; do
-  swift build -c release --product Pausa --triple "$a-apple-macosx13.0" --scratch-path ".build/arch-$a"
-  SLICES="$SLICES $(swift build -c release --triple "$a-apple-macosx13.0" --scratch-path ".build/arch-$a" --show-bin-path)/Pausa"
+  swift build -c release $FLAGS --product Pausa --triple "$a-apple-macosx13.0" --scratch-path ".build/arch-$a"
+  SLICES="$SLICES $(swift build -c release $FLAGS --triple "$a-apple-macosx13.0" --scratch-path ".build/arch-$a" --show-bin-path)/Pausa"
 done
 BIN_DIR="$(dirname $(echo $SLICES | cut -d' ' -f1))"
 set -- $SLICES

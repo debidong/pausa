@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/hero.png" width="100%" alt="A Pausa long break">
+  <img src="docs/images/hero.png" width="100%" alt="Pausa's long-break screen over five backgrounds, with a glass clock and message in the center and a &quot;Hold Space to skip&quot; button at the bottom.">
 </p>
 
 ## Install

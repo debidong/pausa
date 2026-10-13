@@ -3,6 +3,9 @@ import AppKit
 import PausaCore
 
 let args = CommandLine.arguments
+#if PAUSA_DEV
+if HeroMock.handles(args) { MainActor.assumeIsolated { HeroMock.run(args) } }
+#endif   // before the AppleLanguages mirror below: the mock writes no settings
 if let j = args.firstIndex(of: "--lang"), j + 1 < args.count { AppLanguage.override = AppLanguage(rawValue: args[j + 1]) }
 // AppKit's own strings (About panel "Version", standard menus) follow AppleLanguages, read at launch.
 // Mirror the in-app language there; .system clears it. Takes effect on the next launch.
