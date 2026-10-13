@@ -25,7 +25,7 @@ public struct Deferral: Hashable {
   public init(_ kind: DeferralKind, cap: Double, kinds: Set<BreakKind> = [.short, .long]) {
     self.kind = kind; self.cap = cap; self.kinds = kinds
   }
-  public static let typing = Deferral(.typing, cap: 2 * 60)
+  public static let typing = Deferral(.typing, cap: 30)
   public static func focusApp() -> Deferral { Deferral(.focusApp, cap: 15 * 60) }
   public static func focusMode(shortOnly: Bool) -> Deferral {
     Deferral(.focusMode, cap: 15 * 60, kinds: shortOnly ? [.short] : [.short, .long])
@@ -215,7 +215,7 @@ public struct Scheduler {
     let hard = mustNotDefer(kind)
     let usable = deferrals.filter { d in
       d.kinds.contains(kind) && (deferBySource[d.kind] ?? 0) < d.cap
-        && (!hard || (d.kind == .typing && !noDeferNextLong))   // §0 R3: typing may still wait ≤ 2 min
+        && !hard   // R20: past the 90-minute line nothing defers the long break, not even typing
     }
     if !usable.isEmpty && deferUsed < budget {
       deferUsed += dt
@@ -224,10 +224,14 @@ public struct Scheduler {
       return []
     }
 
-    // Wait for a pause in typing, but not forever.
+    // Wait for a pause in typing, but not forever (R19, R21): the wait comes out of the shared
+    // budget, and stops when the budget is spent or the 90-minute line is reached.
     let since = dueSince ?? now
     dueSince = since
-    if inputIdle < config.typingIdle && now - since < config.typingGrace { return [] }
+    if !hard && deferUsed < budget && inputIdle < config.typingIdle && now - since < config.typingGrace {
+      deferUsed += dt
+      return []
+    }
     dueSince = nil
     return startBreak(kind, now: now)
   }

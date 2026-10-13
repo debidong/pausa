@@ -435,9 +435,40 @@ final class DeferralTests {
     return nil
   }
 
-  func testTypingCappedAt2Min() {
+  func testTypingCappedAt30s() {
     var s = Scheduler()
-    XCTAssertEqual(startAt(&s, from: 0, to: 2000, d: [.typing]) ?? -1, 1200 + 120, accuracy: 2)
+    XCTAssertEqual(startAt(&s, from: 0, to: 2000, d: [.typing]) ?? -1, 1200 + 30, accuracy: 2)
+  }
+  /// R21: the wait for a pause in typing comes out of the shared budget.
+  func testTypingGraceUsesBudget() {
+    var s = Scheduler()
+    var t = 0.0
+    while t < 1200 { _ = s.tick(now: t, reasons: [], inputIdle: 10); t += 1 }
+    let before = s.deferralLeft
+    while t < 1215 { _ = s.tick(now: t, reasons: [], inputIdle: 0.1); t += 1 }
+    XCTAssertEqual(before - s.deferralLeft, 15, accuracy: 2)
+  }
+  /// R21: budget spent, typing no longer delays the break.
+  func testTypingGraceStopsWhenBudgetSpent() {
+    var s = Scheduler()
+    _ = s.tick(now: 0, reasons: [], inputIdle: 10)
+    XCTAssertTrue(s.postpone(by: 300)); XCTAssertTrue(s.postpone(by: 300))   // short budget spent
+    var t = 1.0, start = -1.0
+    while t < 3000 && start < 0 {
+      for c in s.tick(now: t, reasons: [], inputIdle: 0.1) { if case .startBreak = c { start = t } }
+      t += 1
+    }
+    XCTAssertEqual(start, 1800, accuracy: 2)
+  }
+  /// R20: past the 90-minute line the long break starts on time even mid-typing.
+  func testTypingNeverDelaysForcedLong() {
+    var s = Scheduler(config: cfg(95))
+    var t = 0.0, start = -1.0
+    while t < 9000 && start < 0 {
+      for c in s.tick(now: t, reasons: [], deferrals: [.typing], inputIdle: 0.1) { if case .startBreak = c { start = t } }
+      t += 1
+    }
+    XCTAssertEqual(start, 5700, accuracy: 2)
   }
   func testMenuPostponeShortBudget() {
     var s = Scheduler()   // short budget 10 min: +5, +5, then greyed out
@@ -477,7 +508,7 @@ final class DeferralTests {
     var s = Scheduler(config: c)   // long due at 95 min, already past the 90-min line
     XCTAssertEqual(startAt(&s, from: 0, to: 9000, d: [.focusApp()]) ?? -1, 5700, accuracy: 2)
     var s2 = Scheduler(config: c)
-    XCTAssertEqual(startAt(&s2, from: 0, to: 9000, d: [.typing, .focusApp()]) ?? -1, 5700 + 120, accuracy: 2)
+    XCTAssertEqual(startAt(&s2, from: 0, to: 9000, d: [.typing, .focusApp()]) ?? -1, 5700, accuracy: 2)   // R20
   }
   func testSkipPastLineIsRefused() {
     let c = cfg(95)
@@ -692,7 +723,8 @@ let cases: [(String, () -> Void)] = [
  ("hours.pauseThenFresh", st.testSchedulerPausesOutsideHoursAndStartsFresh), ("hours.windowEnd", st.testWindowEndPausesMidCount),
  ("hours.meetingOutranks", st.testMeetingOutranksOutsideHours), ("hours.manualBreak", st.testManualBreakOutsideHours),
  ("schedule.nextChange", st.testNextChange),
- ("defer.typing2min", dt.testTypingCappedAt2Min), ("defer.shortBudget", dt.testShortBudgetCapsFocusApp),
+ ("defer.typing30s", dt.testTypingCappedAt30s), ("typing.graceBudget", dt.testTypingGraceUsesBudget),
+ ("typing.budgetSpent", dt.testTypingGraceStopsWhenBudgetSpent), ("typing.forcedLong", dt.testTypingNeverDelaysForcedLong), ("defer.shortBudget", dt.testShortBudgetCapsFocusApp),
  ("defer.focusShortOnly", dt.testFocusModeShortOnlyDoesNotDeferLong), ("defer.concurrentOnce", dt.testSharedBudgetConcurrentCountsOnce),
  ("defer.sequential30", dt.testSharedBudgetSequentialStopsAt30), ("defer.ninetyLine", dt.testNinetyMinuteLineStopsFocusButTypingWaits),
  ("defer.skipPastLineRefused", dt.testSkipPastLineIsRefused), ("defer.skipBeforeLine", dt.testSkipBeforeLineStillWorks),
