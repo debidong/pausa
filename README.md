@@ -1,33 +1,41 @@
-# Pausa
+<p align="center">
+  <img src="App/logo/icon-watercolor-fullbleed@1024.png" width="128" alt="Pausa icon">
+</p>
 
-为中文工作环境做的 macOS 休息提醒：开会、全屏时不打扰，到点轻轻提醒。当前阶段只给自己用。
+<h1 align="center">Pausa</h1>
 
-## 安装 / Install
+<p align="center">
+  <b>Better use Pausa!</b>
+</p>
 
-### 中文
+<p align="center">
+  <a href="https://github.com/debidong/pausa/releases/latest"><img src="https://img.shields.io/github/v/release/debidong/pausa?label=download" alt="Download"></a>
+  <img src="https://img.shields.io/badge/macOS-13%2B-black" alt="macOS 13+">
+  <img src="https://img.shields.io/badge/Apple%20silicon%20%26%20Intel-universal-black" alt="Universal">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Shield-blue" alt="License"></a>
+</p>
 
-1. 从 [Releases](https://github.com/debidong/pausa/releases) 下载最新的 `Pausa-x.y.z.dmg`，打开后把 Pausa 拖进「应用程序」。
-2. 第一次打开时，macOS 会提示无法验证开发者，并拦下它。这是因为 Pausa 没有使用 Apple 开发者证书签名。
-3. 打开「系统设置 › 隐私与安全性」，滚到「安全性」部分，点击 Pausa 旁边的「仍要打开」，再确认一次。
+<p align="center">
+  <img src="docs/images/break.png" width="760" alt="A Pausa long break">
+</p>
 
-   <!-- TODO: 截图 docs/images/open-anyway.png -->
+<p align="center">
+  <img src="docs/images/menu.png" width="360" alt="Menu bar">
+  <img src="docs/images/settings.png" width="420" alt="Settings">
+</p>
 
-之后 Pausa 就能正常打开，后续版本会自动更新，不用再重复这一步。
+## Install
 
-### English
+1. Download `Pausa-x.y.z.dmg` from [Releases](https://github.com/debidong/pausa/releases/latest) and drag Pausa to **Applications**.
+2. Open it. macOS will block it the first time, because Pausa isn't signed with an Apple Developer certificate.
+3. Go to **System Settings › Privacy & Security**, scroll to **Security**, and click **Open Anyway**.
 
-1. Download the latest `Pausa-x.y.z.dmg` from [Releases](https://github.com/debidong/pausa/releases), open it, and drag Pausa to Applications.
-2. The first time you open it, macOS blocks it because the developer can't be verified. Pausa isn't signed with an Apple Developer certificate.
-3. Open **System Settings › Privacy & Security**, scroll to **Security**, click **Open Anyway** next to Pausa, and confirm.
+That's the only time you'll need to do this.
 
-   <!-- TODO: screenshot docs/images/open-anyway.png -->
+## Contributing
 
-After that, Pausa opens normally. Later versions update automatically, so you only do this once.
+PRs are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first; you'll sign the [CLA](CLA.md) in your first PR.
 
-发布流程见 / For releases, see `docs/release.md`.
+## License
 
-## 许可 / License
-
-Pausa 可以免费使用，包括在工作中使用。不能用 Pausa 的代码做与它竞争的产品。详见 [LICENSE](LICENSE)（PolyForm Shield 1.0.0）。
-
-Pausa is free to use, including at work. You may not use its code to build a competing product. See [LICENSE](LICENSE) (PolyForm Shield 1.0.0).
+Source-available under [PolyForm Shield 1.0.0](LICENSE). Free to use, including at work. Just don't use the code to build a competing product.
