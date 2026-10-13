@@ -30,7 +30,7 @@ enum DebugCLI {
         _ = keep
 
         if let i = args.firstIndex(of: "--debug-render-glass"), i + 1 < args.count {
-            GlassProto.renderAll(URL(fileURLWithPath: args[i + 1])); exit(0)
+            MainActor.assumeIsolated { GlassProto.renderAll(URL(fileURLWithPath: args[i + 1])) }; exit(0)
         }
         if args.contains("--debug-selftest-spacehold") {
             // Round 7b: repeats are consumed (no beep) and never start a hold; a first press does after the grace.
