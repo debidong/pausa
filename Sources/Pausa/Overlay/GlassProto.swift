@@ -13,8 +13,7 @@ struct LockClockText: View {
     var size: CGFloat = 132
     var body: some View {
         Text(text)
-            .font(.system(size: size, weight: .bold, design: .default).width(.expanded).monospacedDigit())
-            .kerning(-2)
+            .font(.system(size: size, weight: .semibold).monospacedDigit())
     }
 }
 
@@ -26,14 +25,26 @@ struct GlassSurface<S: Shape>: ViewModifier {
         if path == .liquid, #available(macOS 26, *) {
             content.glassEffect(.regular, in: shape)
         } else {
-            content.background(.ultraThinMaterial, in: shape)
-                .overlay(shape.stroke(Color.white.opacity(0.18), lineWidth: 1))
+            content.background(VisualEffectBackground().clipShape(shape))
         }
     }
 }
 
 struct GlassLongBreak: View {
     let path: GlassPath
+    /// Steve's test: `.clear` glass letters on 26 (falls back to white if contrast < 4.5:1).
+    var glassText = false
+    var height: CGFloat = 900
+    @ViewBuilder var clock: some View {
+        let t = LockClockText(text: time, size: height * 0.12)
+        if glassText, path == .liquid, #available(macOS 26, *) {
+            Color.clear.frame(width: height * 0.6, height: height * 0.15)
+                .glassEffect(.clear, in: Rectangle())
+                .mask(t)
+        } else {
+            t.foregroundStyle(.white.opacity(night ? 0.82 : 0.95))
+        }
+    }
     var night = false
     var time = "4:47"
     var quote = "Let your eyes rest on something far away."
@@ -42,25 +53,15 @@ struct GlassLongBreak: View {
             // Current oil-painting scenery stays; glass sits on top of it.
             SceneryView(theme: .forest, animate: false, night: night)
             VStack(spacing: 6) {
-                Text(Date(timeIntervalSince1970: 1_792_000_000), format: .dateTime.weekday(.wide).month().day())
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                LockClockText(text: time).foregroundStyle(.white.opacity(night ? 0.82 : 0.95))
+                Text("Long break").font(.system(size: 16, weight: .medium)).foregroundStyle(.secondary)
+                clock
                 Text(quote).font(.system(size: 18, weight: .medium)).foregroundStyle(.white.opacity(0.9))
                     .padding(.top, 8)
             }
-            .shadow(color: .black.opacity(0.25), radius: 10, y: 2)
-            .padding(.horizontal, 56).padding(.vertical, 32)
-            .modifier(GlassSurface(path: path, shape: RoundedRectangle(cornerRadius: 40, style: .continuous)))
-            .offset(y: -120)
+            .shadow(color: .black.opacity(glassText ? 0 : 0.3), radius: 10, y: 2)
+            .offset(y: -height * 0.12)
             VStack { Spacer()
-                HStack(spacing: 12) {
-                    ForEach(["Hold Space to skip", "Snooze 5 min", "Snooze 15 min"], id: \.self) { s in
-                        Text(s).font(.system(size: 13, weight: .medium)).foregroundStyle(.white)
-                            .padding(.horizontal, 16).padding(.vertical, 8)
-                            .modifier(GlassSurface(path: path, shape: Capsule()))
-                    }
-                }.padding(.bottom, 48)
+                controls.padding(.bottom, 48)
             }
             if night { Color.black.opacity(0.25).allowsHitTesting(false) } // night dim over everything
         }
@@ -69,6 +70,31 @@ struct GlassLongBreak: View {
 }
 
 /// Short break: static background (no motion); the "look far away" line is the largest element.
+extension GlassLongBreak {
+    static let labels = ["Hold Space to skip", "Snooze 5 min", "Snooze 15 min"]
+    @ViewBuilder var controls: some View {
+        if path == .liquid, #available(macOS 26, *) {
+            GlassEffectContainer(spacing: 12) {
+                HStack(spacing: 12) {
+                    ForEach(Self.labels, id: \.self) { s in
+                        Text(s).font(.system(size: 13, weight: .medium)).foregroundStyle(.white)
+                            .padding(.horizontal, 16).padding(.vertical, 8)
+                            .glassEffect(.clear, in: Capsule())
+                    }
+                }
+            }
+        } else {
+            HStack(spacing: 12) {
+                ForEach(Self.labels, id: \.self) { s in
+                    Text(s).font(.system(size: 13, weight: .medium)).foregroundStyle(.white)
+                        .padding(.horizontal, 16).padding(.vertical, 8)
+                        .background(VisualEffectBackground().clipShape(Capsule()))
+                }
+            }
+        }
+    }
+}
+
 struct GlassShortBreak: View {
     let path: GlassPath
     let dark: Bool
@@ -80,8 +106,8 @@ struct GlassShortBreak: View {
                            startPoint: .topLeading, endPoint: .bottomTrailing)
             VStack(spacing: 14) {
                 Text("Look at something 6 m away")
-                    .font(.system(size: 54, weight: .bold).width(.expanded))
-                Text("0:17").font(.system(size: 22, weight: .semibold).monospacedDigit())
+                    .font(.system(size: 30, weight: .semibold))
+                Text("17").font(.system(size: 17, weight: .regular).monospacedDigit())
                     .foregroundStyle(.secondary)
             }
             .foregroundStyle(dark ? Color.white : Color.black.opacity(0.85))
@@ -118,6 +144,10 @@ enum GlassProto {
         for p in [GlassPath.liquid, .fallback] {
             render(GlassLongBreak(path: p, night: false), dark: false, to: dir.appendingPathComponent("long-\(p.rawValue)-light.png"))
             render(GlassLongBreak(path: p, night: true), dark: true, to: dir.appendingPathComponent("long-\(p.rawValue)-dark.png"))
+            if p == .liquid {
+                render(GlassLongBreak(path: p, glassText: true), dark: false, to: dir.appendingPathComponent("long-liquid-glasstext-light.png"))
+                render(GlassLongBreak(path: p, glassText: true, night: true), dark: true, to: dir.appendingPathComponent("long-liquid-glasstext-dark.png"))
+            }
             render(GlassShortBreak(path: p, dark: false), dark: false, to: dir.appendingPathComponent("short-\(p.rawValue)-light.png"))
             render(GlassShortBreak(path: p, dark: true), dark: true, to: dir.appendingPathComponent("short-\(p.rawValue)-dark.png"))
         }
