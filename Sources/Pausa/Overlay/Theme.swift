@@ -144,7 +144,13 @@ enum Scenery {
                                  tilt: Double = 0, peak: Double? = nil) {
         let ph = (0..<6).map { _ in r.unit() * 6.28 }
         // 5 octaves (not 6): the finest one is what made stair-step jaggies at 320 px.
-        func n(_ x: Double) -> Double { (0..<5).reduce(0) { $0 + pow(0.5, Double($1)) * sin(x * 0.01 * pow(2, Double($1)) + ph[$1]) } }
+        func n(_ x: Double) -> Double {
+            var sum = 0.0
+            for i in 0..<5 {
+                sum += pow(0.5, Double(i)) * sin(x * 0.01 * pow(2.0, Double(i)) + ph[i])
+            }
+            return sum
+        }
         func f(_ x: Double) -> Double {
             let pk = peak.map { pow(max(0, 1 - abs(x - $0) / 90), 1.6) * 1.8 } ?? 0
             return n(x) + pk + tilt * (x - Double(p.w) / 2) / amp
