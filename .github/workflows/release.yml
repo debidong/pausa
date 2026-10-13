@@ -1,0 +1,82 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write   # create the Release and push gh-pages
+
+jobs:
+  release:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # BUILD = commit count, must increase every release
+
+      - name: Check EdDSA key
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          [ -n "$SPARKLE_ED_PRIVATE_KEY" ] || { echo "::error::Secret SPARKLE_ED_PRIVATE_KEY is not set (see docs/release.md)"; exit 1; }
+
+      - name: Version
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+          echo "BUILD=$(git rev-list --count HEAD)" >> "$GITHUB_ENV"
+
+      - name: Build universal (arm64 + x86_64, ad-hoc signed)
+        run: App/build-app.sh
+
+      - name: Verify universal binary
+        run: |
+          set -eu
+          A=build/Pausa.app
+          check() { got=$(lipo -archs "$1" | tr ' ' '\n' | sort | xargs); [ "$got" = "arm64 x86_64" ] || { echo "::error::$1 is '$got', want arm64 x86_64"; exit 1; }; echo "ok $1"; }
+          check "$A/Contents/MacOS/Pausa"
+          SP="$A/Contents/Frameworks/Sparkle.framework/Versions/B"
+          check "$SP/Sparkle"; check "$SP/Autoupdate"; check "$SP/Updater.app/Contents/MacOS/Updater"
+          for x in "$SP"/XPCServices/*.xpc; do check "$x/Contents/MacOS/$(basename "$x" .xpc)"; done
+          codesign --verify --deep --strict "$A"
+
+      - name: Zip
+        run: |
+          ZIP="Pausa-$VERSION.zip"
+          ditto -c -k --sequesterRsrc --keepParent build/Pausa.app "build/$ZIP"
+          echo "ZIP=$ZIP" >> "$GITHUB_ENV"
+
+      - name: DMG
+        run: |
+          DMG="Pausa-$VERSION.dmg"
+          STAGE="$RUNNER_TEMP/dmg"
+          mkdir -p "$STAGE"
+          cp -R build/Pausa.app "$STAGE/"
+          ln -s /Applications "$STAGE/Applications"
+          hdiutil create -volname "Pausa" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov "build/$DMG"
+          echo "DMG=$DMG" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "build/$DMG" "build/$ZIP" --title "Pausa $VERSION" --generate-notes
+
+      - name: EdDSA sign and update appcast.xml on gh-pages
+        env:
+          SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
+        run: |
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${GITHUB_REF_NAME}/${ZIP}"
+          PAGES="$RUNNER_TEMP/pages"
+          if git fetch origin gh-pages; then
+            git worktree add "$PAGES" origin/gh-pages
+          else
+            git worktree add --detach "$PAGES"
+            (cd "$PAGES" && git checkout --orphan gh-pages && git rm -rfq .)
+          fi
+          scripts/update-appcast.sh "build/$ZIP" "$VERSION" "$BUILD" "$URL" "$PAGES/appcast.xml"
+          cd "$PAGES"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appcast.xml
+          git commit -m "appcast: $VERSION"
+          git push origin HEAD:gh-pages

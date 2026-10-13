@@ -1,0 +1,140 @@
+import AppKit
+import SwiftUI
+import PausaCore
+
+/// Everything the popover shows, as plain values. Built from AppController each tick (or by hand
+/// for offscreen renders), so the view has no logic of its own.
+struct PopoverState: Equatable {
+    var kind: BreakKind = .short
+    var length: Double = 20             // seconds of the next break
+    var remaining: Double = 0           // until the next break
+    var held = false                    // paused / on break: the status line replaces the top line
+    var status: String?                 // 「已暂停：正在开会」 etc. while held
+    var hardLine = false                // long break due and can no longer be postponed
+    var canBreak = true
+    var can5 = true, can15 = true
+    var show15 = true                   // this break type's total allowance reaches 15 min (round 3 §7)
+    var manualPaused = false
+    var autoPaused = false
+    var canPause = true                 // round 7b: greyed while the long break must not be deferred
+    var update: String?                 // a downloaded update waiting for a restart (「有新版本 x.y.z」)
+    var canInstall = true               // false during a break: installing relaunches the app
+}
+
+struct PopoverActions {
+    var breakNow: () -> Void = {}
+    var postpone: (Double) -> Void = { _ in }
+    var togglePause: () -> Void = {}
+    var settings: () -> Void = {}
+    var about: () -> Void = {}
+    var installUpdate: () -> Void = {}
+    var quit: () -> Void = {}
+}
+
+final class PopoverModel: ObservableObject {
+    @Published var state = PopoverState()
+}
+
+struct MenuPopoverView: View {
+    @ObservedObject var model: PopoverModel
+    var actions = PopoverActions()
+    static let width: CGFloat = 300
+
+    private var s: PopoverState { model.state }
+
+    static func kindTitle(_ k: BreakKind) -> String { k == .long ? L("长休息") : L("短休息") }
+    static func lengthText(_ sec: Double) -> String {
+        sec < 60 ? L("%d 秒", Int(sec.rounded())) : L("%d 分钟", Int((sec / 60).rounded()))
+    }
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack {
+                Text("Pausa").font(.system(size: 13, weight: .semibold))
+                Spacer()
+            }
+            .frame(height: 22)
+
+            // Round 3 §6: one line says how long, which break, and how long it lasts.
+            Text(s.held ? (s.status ?? "") : topLine)
+                .font(.system(size: 15, weight: .semibold)).monospacedDigit()
+                .foregroundColor(s.held ? .secondary : .primary)
+                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 12)
+            if s.hardLine {
+                Text(L("已连续使用 90 分钟，长休息不能再推迟。"))
+                    .font(.system(size: 11)).foregroundColor(Color(nsColor: .systemOrange))
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, 4)
+            }
+
+            // One row when it fits; long translations wrap to break-now over the postpones.
+            // Round 7b: 暂停提醒 1 小时 / 恢复提醒 is a bordered button like 休息延后, alone and centred
+            // on the next row, one button gap (6 pt) below. Hidden during an automatic pause.
+            VStack(spacing: Self.buttonGap) {
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: Self.buttonGap) { breakButton; postponeButtons }
+                    VStack(spacing: Self.buttonGap) { breakButton; HStack(spacing: Self.buttonGap) { postponeButtons } }
+                }
+                if s.manualPaused || !s.autoPaused {
+                    Button(s.manualPaused ? L("恢复提醒") : L("暂停提醒 1 小时"), action: actions.togglePause)
+                        .buttonStyle(.bordered).fixedSize()
+                        .disabled(!s.manualPaused && !s.canPause)
+                }
+            }
+            .controlSize(.small)
+            .padding(.top, 10)
+
+            // Steve: the old ⋯ menu becomes two text buttons; 关于 lives in Settings → 关于.
+            Divider().padding(.top, 12)
+            if let v = s.update {
+                // Only when an update is downloaded: one click restarts into it (never mid-break).
+                Button(action: actions.installUpdate) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Image(systemName: "arrow.down.circle.fill")
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(L("有新版本 %@", v))
+                            if !s.canInstall { Text(L("休息结束后安装")).font(.system(size: 11)).foregroundStyle(.secondary) }
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.borderless).disabled(!s.canInstall)
+                .padding(.top, 8)
+                Divider().padding(.top, 8)
+            }
+            HStack {
+                Button(L("设置"), action: actions.settings).keyboardShortcut(",")
+                Spacer()
+                Button(L("退出 Pausa"), action: actions.quit).keyboardShortcut("q")
+            }
+            .buttonStyle(.borderless)
+            .padding(.top, 8)
+        }
+        .font(.system(size: 13))
+        .padding(.horizontal, 14).padding(.top, 12).padding(.bottom, 14)
+        .frame(width: Self.width)
+        .environment(\.locale, AppLanguage.current.locale)
+    }
+
+    static let buttonGap: CGFloat = 6
+
+    private var breakButton: some View {
+        Button(L("现在休息"), action: actions.breakNow)
+            .buttonStyle(.borderedProminent)
+            .disabled(!s.canBreak).fixedSize()
+    }
+
+    private var topLine: String {
+        L(s.kind == .long ? "%@ 后开始长休息，%@" : "%@ 后开始短休息，%@", AppController.clock(s.remaining), Self.lengthText(s.length))
+    }
+
+    /// At the 90-minute line only 「现在休息」 is left. 15 is hidden when the allowance can never reach it.
+    private var postponeButtons: some View {
+        ForEach(s.hardLine ? [] : (s.show15 ? [5, 15] : [5]), id: \.self) { m in
+            Button(BreakOverlayController.Copy.snooze(m)) { actions.postpone(Double(m * 60)) }
+                .buttonStyle(.bordered).fixedSize()
+                .disabled(m == 5 ? !s.can5 : !s.can15)
+        }
+    }
+}
