@@ -10,6 +10,9 @@ import AppKit
 ///   --debug-render-quotes <dir> --lang <code>  short + long break with the longest quote
 ///   --debug-selftest-spacehold      Space/repeat handling with synthesized events (no window)
 ///   --debug-selftest-break-key      SHOWS short + long breaks (2 s each) and asserts the break window is key; dev Macs only
+///   --debug-render-prebreak <dir>  pre-break card: short/long/90-min line × light/dark × zh/en (no window)
+///   --debug-render-pill <dir>      cursor pill: countdown/typing × light/dark × zh/en (no window)
+///   --debug-selftest-prebreak      pill geometry + card content rules (no window)
 ///   --debug-render-short <out.png> [sample.png]  offscreen render of the short-break blur [--hint 0-5] [--opacity 0-1]
 enum DebugCLI {
     static func handles(_ args: [String]) -> Bool {
@@ -247,6 +250,18 @@ enum DebugCLI {
             }
             app.run()
             exit(0)
+        }
+        for flag in ["--debug-render-prebreak", "--debug-render-pill"] {
+            guard let i = args.firstIndex(of: flag), i + 1 < args.count else { continue }
+            let dir = URL(fileURLWithPath: args[i + 1])
+            MainActor.assumeIsolated {
+                PreBreakSnapshots.write(to: dir, cards: flag == "--debug-render-prebreak", pills: flag == "--debug-render-pill")
+            }
+            exit(0)
+        }
+        if args.contains("--debug-selftest-prebreak") {
+            let ok = MainActor.assumeIsolated { PreBreakSnapshots.selftest() }
+            print(ok ? "PREBREAK PASS" : "PREBREAK FAIL"); exit(ok ? 0 : 1)
         }
         if let i = args.firstIndex(of: "--debug-render-long"), i + 1 < args.count {
             if let j = args.firstIndex(of: "--oil"), j + 1 < args.count,

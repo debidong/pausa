@@ -103,6 +103,8 @@ enum L10nTables {
     ]
 
     static let zhHant: [String: String] = [
+        // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
+        "马上休息一下": "馬上休息一下", "长休息快到了": "長休息快到了", "休息 %d 秒": "休息 %d 秒", "休息 %d 分钟": "休息 %d 分鐘", "跳过这次": "跳過這次", "推迟 %d 分钟": "延後 %d 分鐘", "还能推迟 %d 分钟": "還能延後 %d 分鐘", "推迟额度用完了": "延後額度用完了", "已连续工作 %d 分钟": "已連續工作 %d 分鐘", "刚休息过": "剛休息過", "%d 秒后休息": "%d 秒後休息", "写完这句再休息": "寫完這句再休息", "关闭提醒": "關閉提醒",
         "随机": "隨機",
         // Update UI (About row, popover line)
         "检查更新": "檢查更新", "正在检查…": "正在檢查…", "已是最新版本": "已是最新版本", "正在下载 %@": "正在下載 %@", "%@ 已就绪，重启后生效": "%@ 已就緒，重新啟動後生效", "暂时无法检查更新": "暫時無法檢查更新", "有新版本 %@": "有新版本 %@", "休息结束后安装": "休息結束後安裝", "立即重启": "立即重新啟動", "自动检查更新": "自動檢查更新",
@@ -185,6 +187,8 @@ enum L10nTables {
     ]
 
     static let en: [String: String] = [
+        // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
+        "马上休息一下": "Short break coming up", "长休息快到了": "Long break coming up", "休息 %d 秒": "%d-second break", "休息 %d 分钟": "%d-minute break", "跳过这次": "Skip this one", "推迟 %d 分钟": "%d min later", "还能推迟 %d 分钟": "%d min of postponing left", "推迟额度用完了": "No postponing left", "已连续工作 %d 分钟": "Working for %d min", "刚休息过": "Just had a break", "%d 秒后休息": "Break in %d s", "写完这句再休息": "Finish your sentence", "关闭提醒": "Dismiss",
         "随机": "Random",
         // Update UI (About row, popover line)
         "检查更新": "Check for updates", "正在检查…": "Checking…", "已是最新版本": "Pausa is up to date", "正在下载 %@": "Downloading %@", "%@ 已就绪，重启后生效": "%@ is ready and takes effect after a restart", "暂时无法检查更新": "Can't check for updates right now", "有新版本 %@": "New version %@", "休息结束后安装": "Installs after the break", "立即重启": "Restart now", "自动检查更新": "Checks for updates automatically",
@@ -247,7 +251,7 @@ enum L10nTables {
         "退出 Pausa": "Quit Pausa",
         // menu popover
         "短休息": "Short break", "%d 秒": "%d sec", "%d 分钟": "%d min",
-        "现在休息": "Break now", "已连续使用 90 分钟，长休息不能再推迟。": "You've been working for 90 minutes. The long break can't be postponed.",
+        "现在休息": "Break now", "已连续使用 90 分钟，长休息不能再推迟。": "You've been at it for 90 minutes. This long break can't wait.",
         "Pausa 已开始，%d 分钟后提醒你看看远处": "Pausa is running. In %d minutes it will remind you to look into the distance.",
         "分钟": "min", "秒": "s", 
         "主题": "Theme", "预览": "Preview", "语言": "Language",
@@ -267,6 +271,8 @@ enum L10nTables {
     ]
 
     static let es: [String: String] = [
+        // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
+        "马上休息一下": "Descanso corto en breve", "长休息快到了": "Descanso largo en breve", "休息 %d 秒": "Descanso de %d s", "休息 %d 分钟": "Descanso de %d min", "跳过这次": "Saltar este", "推迟 %d 分钟": "%d min más tarde", "还能推迟 %d 分钟": "Puedes posponer %d min más", "推迟额度用完了": "Ya no puedes posponer", "已连续工作 %d 分钟": "Trabajando desde hace %d min", "刚休息过": "Acabas de descansar", "%d 秒后休息": "Descanso en %d s", "写完这句再休息": "Termina la frase", "关闭提醒": "Cerrar aviso",
         "随机": "Aleatorio",
         // Update UI (About row, popover line)
         "检查更新": "Buscar actualizaciones", "正在检查…": "Buscando…", "已是最新版本": "Pausa está actualizada", "正在下载 %@": "Descargando %@", "%@ 已就绪，重启后生效": "La versión %@ está lista y se aplicará al reiniciar", "暂时无法检查更新": "No se pueden buscar actualizaciones por ahora", "有新版本 %@": "Nueva versión %@", "休息结束后安装": "Se instalará al terminar el descanso", "立即重启": "Reiniciar ahora", "自动检查更新": "Busca actualizaciones automáticamente",
@@ -349,6 +355,8 @@ enum L10nTables {
     ]
 
     static let ru: [String: String] = [
+        // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
+        "马上休息一下": "Скоро короткий перерыв", "长休息快到了": "Скоро длинный перерыв", "休息 %d 秒": "Перерыв %d с", "休息 %d 分钟": "Перерыв %d мин", "跳过这次": "Пропустить", "推迟 %d 分钟": "Через %d мин", "还能推迟 %d 分钟": "Можно отложить ещё на %d мин", "推迟额度用完了": "Откладывать больше нельзя", "已连续工作 %d 分钟": "Вы работаете %d мин", "刚休息过": "Вы только что отдохнули", "%d 秒后休息": "Перерыв через %d с", "写完这句再休息": "Допишите фразу", "关闭提醒": "Закрыть напоминание",
         "随机": "Случайно",
         // Update UI (About row, popover line)
         "检查更新": "Проверить обновления", "正在检查…": "Проверка…", "已是最新版本": "Установлена последняя версия", "正在下载 %@": "Загрузка %@", "%@ 已就绪，重启后生效": "Версия %@ готова и заработает после перезапуска", "暂时无法检查更新": "Сейчас не удаётся проверить обновления", "有新版本 %@": "Новая версия %@", "休息结束后安装": "Установится после перерыва", "立即重启": "Перезапустить", "自动检查更新": "Обновления проверяются автоматически",
@@ -431,6 +439,8 @@ enum L10nTables {
     ]
 
     static let fr: [String: String] = [
+        // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
+        "马上休息一下": "Pause courte imminente", "长休息快到了": "Pause longue imminente", "休息 %d 秒": "Pause de %d s", "休息 %d 分钟": "Pause de %d min", "跳过这次": "Passer celle-ci", "推迟 %d 分钟": "Dans %d min", "还能推迟 %d 分钟": "Encore %d min de report possible", "推迟额度用完了": "Plus de report possible", "已连续工作 %d 分钟": "Au travail depuis %d min", "刚休息过": "Pause toute récente", "%d 秒后休息": "Pause dans %d s", "写完这句再休息": "Finissez votre phrase", "关闭提醒": "Fermer le rappel",
         "随机": "Aléatoire",
         // Update UI (About row, popover line)
         "检查更新": "Rechercher les mises à jour", "正在检查…": "Recherche…", "已是最新版本": "Pausa est à jour", "正在下载 %@": "Téléchargement de %@", "%@ 已就绪，重启后生效": "La version %@ est prête et s'appliquera au redémarrage", "暂时无法检查更新": "Impossible de rechercher les mises à jour pour le moment", "有新版本 %@": "Nouvelle version %@", "休息结束后安装": "S'installera après la pause", "立即重启": "Redémarrer maintenant", "自动检查更新": "Recherche les mises à jour automatiquement",
@@ -513,6 +523,8 @@ enum L10nTables {
     ]
 
     static let vi: [String: String] = [
+        // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
+        "马上休息一下": "Sắp đến giờ nghỉ ngắn", "长休息快到了": "Sắp đến giờ nghỉ dài", "休息 %d 秒": "Nghỉ %d giây", "休息 %d 分钟": "Nghỉ %d phút", "跳过这次": "Bỏ qua lần này", "推迟 %d 分钟": "Hoãn %d phút", "还能推迟 %d 分钟": "Còn hoãn được %d phút", "推迟额度用完了": "Đã hết lượt hoãn", "已连续工作 %d 分钟": "Đã làm việc %d phút", "刚休息过": "Vừa nghỉ xong", "%d 秒后休息": "Nghỉ sau %d giây", "写完这句再休息": "Viết xong câu đã", "关闭提醒": "Đóng lời nhắc",
         "随机": "Ngẫu nhiên",
         // Update UI (About row, popover line)
         "检查更新": "Kiểm tra cập nhật", "正在检查…": "Đang kiểm tra…", "已是最新版本": "Đã là phiên bản mới nhất", "正在下载 %@": "Đang tải %@", "%@ 已就绪，重启后生效": "Bản %@ đã sẵn sàng, có hiệu lực sau khi khởi động lại", "暂时无法检查更新": "Tạm thời không kiểm tra được bản cập nhật", "有新版本 %@": "Có phiên bản mới %@", "休息结束后安装": "Sẽ cài sau khi nghỉ xong", "立即重启": "Khởi động lại ngay", "自动检查更新": "Tự động kiểm tra cập nhật",
@@ -595,6 +607,8 @@ enum L10nTables {
     ]
 
     static let th: [String: String] = [
+        // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
+        "马上休息一下": "ใกล้ถึงเวลาพักสั้น", "长休息快到了": "ใกล้ถึงเวลาพักยาว", "休息 %d 秒": "พัก %d วินาที", "休息 %d 分钟": "พัก %d นาที", "跳过这次": "ข้ามครั้งนี้", "推迟 %d 分钟": "เลื่อน %d นาที", "还能推迟 %d 分钟": "เลื่อนได้อีก %d นาที", "推迟额度用完了": "เลื่อนไม่ได้แล้ว", "已连续工作 %d 分钟": "ทำงานมา %d นาที", "刚休息过": "เพิ่งพักไป", "%d 秒后休息": "พักใน %d วินาที", "写完这句再休息": "พิมพ์ให้จบประโยคก่อน", "关闭提醒": "ปิดการแจ้งเตือน",
         "随机": "สุ่ม",
         // Update UI (About row, popover line)
         "检查更新": "ตรวจหาอัปเดต", "正在检查…": "กำลังตรวจหา…", "已是最新版本": "เป็นเวอร์ชันล่าสุดแล้ว", "正在下载 %@": "กำลังดาวน์โหลด %@", "%@ 已就绪，重启后生效": "%@ พร้อมแล้ว จะมีผลหลังเปิดแอปใหม่", "暂时无法检查更新": "ยังตรวจหาอัปเดตไม่ได้ในขณะนี้", "有新版本 %@": "มีเวอร์ชันใหม่ %@", "休息结束后安装": "จะติดตั้งหลังพักเสร็จ", "立即重启": "เปิดใหม่ตอนนี้", "自动检查更新": "ตรวจหาอัปเดตโดยอัตโนมัติ",
