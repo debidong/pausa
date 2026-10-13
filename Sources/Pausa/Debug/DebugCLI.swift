@@ -105,11 +105,35 @@ enum DebugCLI {
                 func w(_ str: String, _ size: CGFloat, _ weight: NSFont.Weight) -> CGFloat {
                     (str as NSString).size(withAttributes: [.font: NSFont.systemFont(ofSize: size, weight: weight)]).width
                 }
-                let cap = w(v("break.holdToSkip"), 13, .medium) + 6 + w(v("key.space"), 12, .medium) + 10 + 32
+                let cap = w(v("break.holdToSkip"), 13, .medium) + 32
                 let shortW = w(v("break.short.hint"), 108 * 0.7, .semibold)
                 print("     \(lang.rawValue): capsule \(Int(cap)) pt, short hint \(Int(shortW)) pt")
-                check("\(lang.rawValue): keys present", !v("break.holdToSkip").isEmpty && !v("key.space").isEmpty && !v("break.short.hint").isEmpty)
+                check("\(lang.rawValue): keys present", !v("break.holdToSkip").isEmpty && !v("break.short.hint").isEmpty)
                 check("\(lang.rawValue): one line on a 1280-pt screen", cap < 600 && shortW < 1200)
+            }
+            // Forced long break (past the 90-minute line), end to end through the same wiring the overlay uses.
+            MainActor.assumeIsolated {
+                let real = HoldToSkip(); var skipped = false; real.onComplete = { skipped = true }
+                let forced = BreakOverlayController.holdFor(mustNotDefer: true, real)
+                let view = LongBreakView(countdown: Countdown(total: 300, onDone: {}), showControls: true, onSnooze: { _ in },
+                                         hold: forced, locked: true)
+                print("[forced] hold passed to window/view: \(forced == nil ? "nil" : "HoldToSkip")")
+                print("[forced] skip capsule shown: \(view.showsSkipCapsule)")
+                let t0 = ProcessInfo.processInfo.systemUptime
+                print("[forced] Space down consumed=\(SpaceHold.handle(key(49, true, repeat: false), hold: forced, shownAt: old))")
+                c = false
+                PointerHold.changed(forced, inside: true, cancelled: &c)
+                print("[forced] mouse long-press begun on capsule area (hold=\(forced == nil ? "nil" : "set"))")
+                RunLoop.main.run(until: Date().addingTimeInterval(HoldToSkip.duration + 1))
+                print(String(format: "[forced] after %.2f s held: skipped=%@ progress=%.2f", ProcessInfo.processInfo.systemUptime - t0, skipped ? "true" : "false", real.progress))
+                _ = SpaceHold.handle(key(49, false, repeat: false), hold: forced, shownAt: old)
+                PointerHold.ended(forced, cancelled: &c)
+                let open = LongBreakView(countdown: Countdown(total: 300, onDone: {}), showControls: true, onSnooze: { _ in },
+                                         hold: BreakOverlayController.holdFor(mustNotDefer: false, real), locked: false)
+                print("[normal] skip capsule shown: \(open.showsSkipCapsule)")
+                check("forced: capsule hidden", !view.showsSkipCapsule)
+                check("forced: neither Space nor mouse skipped", !skipped && real.progress == 0)
+                check("normal: capsule shown", open.showsSkipCapsule)
             }
             print(ok ? "SPACEHOLD PASS" : "SPACEHOLD FAIL"); exit(ok ? 0 : 1)
         }

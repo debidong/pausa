@@ -147,16 +147,8 @@ struct HoldCapsule: View {
     var glass = true
     var body: some View {
         let p = max(0, min(1, fixed ?? hold.progress))
-        HStack(spacing: 6) {
-            Text(BreakOverlayController.Copy.holdToSkip)
-                .font(.system(size: HoldCapsule.bodySize, weight: .medium))
-            // Keycap: the system's name for the Space key, one size smaller, thin rounded outline.
-            Text(BreakOverlayController.Copy.spaceKey)
-                .font(.system(size: HoldCapsule.bodySize - 1, weight: .medium))
-                .padding(.horizontal, 5).padding(.vertical, 1)
-                .overlay(RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(Color.white.opacity(0.6), lineWidth: 0.75))
-        }
+        Text(BreakOverlayController.Copy.holdToSkip)
+            .font(.system(size: HoldCapsule.bodySize, weight: .medium))
         .lineLimit(1)
         .fixedSize()
         .foregroundColor(.white.opacity(0.9))
@@ -314,8 +306,8 @@ struct LongBreakView: View {
                             if show15 {
                                 Button(BreakOverlayController.Copy.snooze(15)) { onSnooze(15) }.disabled(!can15)
                             }
-                            if let h = hold ?? (debugHoldProgress != nil ? LongBreakView.idleHold : nil) {
-                                HoldCapsule(hold: h, fixed: debugHoldProgress, glass: !flatControls)
+                            if showsSkipCapsule {
+                                HoldCapsule(hold: hold ?? LongBreakView.idleHold, fixed: debugHoldProgress, glass: !flatControls)
                             }
                         }
                     }
@@ -333,6 +325,8 @@ extension LongBreakView {
     /// SF Pro Semibold digits; debug renders compare weights.
     static var countdownWeight: Font.Weight = .semibold
     static let idleHold = HoldToSkip()
+    /// The skip capsule is drawn only when skipping is possible (never past the 90-minute line).
+    var showsSkipCapsule: Bool { !locked && (hold != nil || debugHoldProgress != nil) }
     static func clockSize(_ height: CGFloat) -> CGFloat { max(76, height * 0.12) }
 
     /// Per-theme faint local halo, only where the digits measured < 3:1 without it. 0 = none.
