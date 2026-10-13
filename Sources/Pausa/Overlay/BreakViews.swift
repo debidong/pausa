@@ -170,13 +170,31 @@ struct LongBreakView: View {
             .environment(\.locale, Theme.appLocale)
     }
 
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    /// Long-break clock. macOS 26: `.clear` Liquid Glass letters over a soft dark backing of the
+    /// same digits (legibility on bright scenery). Earlier systems / renders / Reduce Transparency: white text.
+    @ViewBuilder private func clock(size: CGFloat) -> some View {
+        let digits = Text(timeText)
+            .font(.system(size: size, weight: LongBreakView.countdownWeight).monospacedDigit())
+        if !flatControls, !reduceTransparency, #available(macOS 26, *) {
+            ZStack {
+                digits.foregroundColor(.black.opacity(0.28)).blur(radius: size * 0.06)
+                digits.foregroundColor(.white.opacity(0.18))
+                    .overlay(Color.clear.glassEffect(.clear, in: Rectangle()).mask(digits))
+            }
+        } else {
+            digits.foregroundColor(.white)
+                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
+                .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
+        }
+    }
+
     private func content(clockSize: CGFloat) -> some View {
         ZStack {
             SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night)
             VStack(spacing: 0) {
-                Text(timeText)
-                    .font(.system(size: clockSize, weight: LongBreakView.countdownWeight).monospacedDigit())
-                    .foregroundColor(.white)
+                clock(size: clockSize)
                     .accessibilityLabel(timeText)
                 if let quote {
                     Text(quote)
@@ -187,11 +205,11 @@ struct LongBreakView: View {
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: 560)
                         .padding(.top, 14)
+                        // Text on the art, no card: soft wide shadow + tight contact shadow.
+                        .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
+                        .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
                 }
             }
-            // Text on the art, no card: soft wide shadow + tight contact shadow.
-            .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
-            .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
             .background(halo)
             .padding(40)
             if showControls {
