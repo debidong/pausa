@@ -23,7 +23,7 @@ struct ShortBreakCapsule: View {
     var theme: ThemeID = .current
     /// Hold-Space-to-skip progress; fills the ring in the hint.
     var hold: HoldToSkip? = nil
-    /// One-action line for this break (ShortHints); it fades out with the card.
+    /// One-action line for this break (ShortHints); stays for the whole break (glass proto).
     var hint: String = BreakOverlayController.Copy.shortTitle
     /// Debug renders only: pretend this many seconds are left.
     var fixedRemaining: Double? = nil
@@ -35,26 +35,25 @@ struct ShortBreakCapsule: View {
 
     private var remaining: Double { fixedRemaining ?? countdown.remaining }
     private var ending: Bool { remaining <= Self.clearFor }
-    private var visible: Bool { countdown.total - remaining < Self.clearFor || ending }
 
+    /// Glass proto: the one-action line is the largest element and stays for the whole break;
+    /// seconds are secondary; 「即将结束」 replaces the seconds for the last 3 s.
     var body: some View {
-        VStack(spacing: 6) {
-            Text(ending ? BreakOverlayController.Copy.ending : hint)
-                .font(.system(size: 17, weight: .semibold))
+        VStack(spacing: 10) {
+            Text(hint)
+                .font(.system(size: 30, weight: .semibold))
                 .foregroundColor(.white)
                 .fixedSize()
-            Text(L("%d 秒", max(0, Int(remaining.rounded(.up)))))
-                .font(.system(size: 34, weight: .semibold).monospacedDigit())
-                .foregroundColor(.white)
+            Text(ending ? BreakOverlayController.Copy.ending : L("%d 秒", max(0, Int(remaining.rounded(.up)))))
+                .font(.system(size: 17, weight: .regular).monospacedDigit())
+                .foregroundColor(.white.opacity(0.7))
                 .fixedSize()
         }
-        .padding(.horizontal, 36).padding(.vertical, 18)
+        .padding(.horizontal, 60).padding(.vertical, 36)
         .frame(minWidth: 220)
         .modifier(CapsuleSurface(flat: flatBackground))
         .overlay(CardShape.shape.stroke(Color.white.opacity(0.25), lineWidth: 0.5))
         .shadow(color: .black.opacity(0.25), radius: 16, x: 0, y: 4)
-        .opacity(visible ? 1 : 0)
-        .animation(visible ? .easeOut(duration: Self.fade) : .easeIn(duration: Self.fade), value: visible)   // opacity only, kept under Reduce Motion
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .overlay(alignment: .bottom) {
             HoldHint(hold: hold ?? LongBreakView.idleHold).padding(.bottom, 40)
@@ -166,11 +165,17 @@ struct LongBreakView: View {
     }
 
     var body: some View {
+        GeometryReader { g in content(clockSize: max(76, g.size.height * 0.12)) }
+            .environment(\.colorScheme, .dark)
+            .environment(\.locale, Theme.appLocale)
+    }
+
+    private func content(clockSize: CGFloat) -> some View {
         ZStack {
             SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night)
             VStack(spacing: 0) {
                 Text(timeText)
-                    .font(.system(size: 76, weight: LongBreakView.countdownWeight).monospacedDigit())
+                    .font(.system(size: clockSize, weight: LongBreakView.countdownWeight).monospacedDigit())
                     .foregroundColor(.white)
                     .accessibilityLabel(timeText)
                 if let quote {
@@ -204,14 +209,13 @@ struct LongBreakView: View {
                             }
                         }
                     }
-                    .buttonStyle(QuietButtonStyle())
+                    .buttonStyle(QuietButtonStyle(glass: !flatControls))
                     .focusable(false) // stray Space/Return while typing must not snooze or skip
+                    .modifier(GlassGroup(on: !flatControls))
                     .padding(.bottom, 40)
                 }
             }
         }
-        .environment(\.colorScheme, .dark)
-        .environment(\.locale, Theme.appLocale)
     }
 }
 
@@ -234,14 +238,29 @@ extension LongBreakView {
 }
 
 struct QuietButtonStyle: ButtonStyle {
+    /// Glass proto: `.clear` Liquid Glass capsules on macOS 26+ (inside one GlassEffectContainer).
+    var glass = false
     @Environment(\.isEnabled) private var enabled
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     func makeBody(configuration: Configuration) -> some View {
-        configuration.label
+        let label = configuration.label
             .opacity(enabled ? 1 : 0.4)
             .font(.system(size: 13, weight: .medium))
-            .foregroundColor(.white.opacity(0.85))
+            .foregroundColor(.white.opacity(0.9))
             .padding(.horizontal, 16).padding(.vertical, 7)
-            .background(Capsule().fill(Color.white.opacity(configuration.isPressed ? 0.22 : 0.12)))
+        if glass, !reduceTransparency, #available(macOS 26, *) {
+            label.glassEffect(.clear.interactive(), in: Capsule())
+        } else {
+            label.background(Capsule().fill(Color.white.opacity(configuration.isPressed ? 0.22 : 0.12)))
+        }
+    }
+}
+
+/// One GlassEffectContainer around the long-break controls on macOS 26+; no-op below.
+struct GlassGroup: ViewModifier {
+    let on: Bool
+    func body(content: Content) -> some View {
+        if on, #available(macOS 26, *) { GlassEffectContainer(spacing: 10) { content } } else { content }
     }
 }
 
