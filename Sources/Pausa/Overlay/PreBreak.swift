@@ -51,7 +51,7 @@ enum PreBreakCopy {
     static var hardLine: String { L("已连续使用 90 分钟，长休息不能再推迟。") }
     static func pill(_ s: Int) -> String { L("%d 秒后休息", s) }
     static var typing: String { L("写完这句再休息") }
-    static var closeA11y: String { L("关闭提醒") }
+    static var closeA11y: String { L("收起") }
 }
 
 /// Live model the panels observe, so each tick redraws without rebuilding the windows.
