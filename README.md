@@ -16,13 +16,10 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/break.png" width="760" alt="A Pausa long break">
+  <img src="docs/images/hero.png" width="100%" alt="A Pausa long break">
 </p>
 
-<p align="center">
-  <img src="docs/images/menu.png" width="360" alt="Menu bar">
-  <img src="docs/images/settings.png" width="420" alt="Settings">
-</p>
+Pausa reminds you to look away from the screen and get up and move, every once in a while. It stays quiet while you're in a meeting, watching a video, or sharing your screen. And it's free.
 
 ## Install
 
