@@ -445,7 +445,7 @@ struct SceneryView: View {
 
     private func artCanvas(_ art: SceneryArt, t: Double) -> some View {
         Canvas(rendersAsynchronously: false) { ctx, size in
-            let iw = Double(art.base.width), ih = Double(art.base.height)
+            let iw = CGFloat(art.base.width), ih = CGFloat(art.base.height)
             let s = max(size.width / iw, size.height / ih) * SceneryArt.overscale
             let rect = CGRect(x: (size.width - iw * s) / 2, y: (size.height - ih * s) / 2, width: iw * s, height: ih * s)
             ctx.clip(to: Path(CGRect(origin: .zero, size: size)))
