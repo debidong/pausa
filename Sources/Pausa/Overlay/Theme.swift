@@ -446,7 +446,7 @@ struct SceneryView: View {
     private func artCanvas(_ art: SceneryArt, t: Double) -> some View {
         Canvas(rendersAsynchronously: false) { ctx, size in
             let iw = CGFloat(art.base.width), ih = CGFloat(art.base.height)
-            let s = max(size.width / iw, size.height / ih) * SceneryArt.overscale
+            let s: CGFloat = max(size.width / iw, size.height / ih) * SceneryArt.overscale
             let rect = CGRect(x: (size.width - iw * s) / 2, y: (size.height - ih * s) / 2, width: iw * s, height: ih * s)
             ctx.clip(to: Path(CGRect(origin: .zero, size: size)))
             ctx.draw(Image(decorative: art.base, scale: 1), in: rect)
@@ -532,7 +532,7 @@ struct SceneryArt {
 
     static let designWidth = 3840.0
     /// Slack of ≥36 source px per side even when width is the tight axis (16:9).
-    static let overscale = 1.02
+    static let overscale: CGFloat = 1.02
     /// After-dark multiply for the bright art: 65% brightness.
     static let nightDim = 0.35
     /// Daytime full-screen dim so white text sits on the art without a card (Steve option A).
