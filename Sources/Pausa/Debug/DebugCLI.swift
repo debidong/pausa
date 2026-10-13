@@ -10,6 +10,7 @@ import AppKit
 ///   --debug-render-quotes <dir> --lang <code>  short + long break with the longest quote
 ///   --debug-selftest-spacehold      Space/repeat handling with synthesized events (no window)
 ///   --debug-selftest-break-key      SHOWS short + long breaks (2 s each) and asserts the break window is key; dev Macs only
+///   --debug-render-glass <dir>     PROTOTYPE: Liquid Glass vs fallback break screens (no window)
 ///   --debug-render-short <out.png> [sample.png]  offscreen render of the short-break blur [--hint 0-5] [--opacity 0-1]
 enum DebugCLI {
     static func handles(_ args: [String]) -> Bool {
@@ -28,6 +29,9 @@ enum DebugCLI {
         var keep: [AnyObject] = [detector, overlay]
         _ = keep
 
+        if let i = args.firstIndex(of: "--debug-render-glass"), i + 1 < args.count {
+            GlassProto.renderAll(URL(fileURLWithPath: args[i + 1])); exit(0)
+        }
         if args.contains("--debug-selftest-spacehold") {
             // Round 7b: repeats are consumed (no beep) and never start a hold; a first press does after the grace.
             func key(_ code: UInt16, _ down: Bool, repeat r: Bool) -> NSEvent {
