@@ -13,75 +13,116 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
-/// Short break (round 3 §2): a glass card in the middle of the screen, clear for the first 3 s,
-/// then fully gone in 0.5 s (nothing left behind), clear again for the last 3 s with 「即将结束」.
-/// The hold-Space hint sits at the bottom of the screen for the whole break.
+/// Short break (glass proto): same language as the long break. No card: the prompt, its
+/// description and a small glass countdown sit straight on the static blur; only controls are glass.
+/// The controls live in their own clickable panel (ShortBreakControls) so this one stays click-through.
 struct ShortBreakCapsule: View {
     @ObservedObject var countdown: Countdown
-    /// ImageRenderer cannot draw NSVisualEffectView; debug renders use a flat stand-in.
+    /// ImageRenderer cannot draw glass / NSVisualEffectView; debug renders use flat stand-ins.
     var flatBackground = false
     var theme: ThemeID = .current
-    /// Hold-Space-to-skip progress; fills the ring in the hint.
     var hold: HoldToSkip? = nil
-    /// One-action line for this break (ShortHints); stays for the whole break (glass proto).
-    var hint: String = BreakOverlayController.Copy.shortTitle
+    /// Hint index for this break (ShortHints): prompt `break.hint.N`, description `break.short.desc.N`.
+    var hintIndex: Int = 0
     /// Debug renders only: pretend this many seconds are left.
     var fixedRemaining: Double? = nil
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    static let clearFor: Double = 3      // seconds clear at the start, and again at the end
-    /// Card appear / disappear, mirrored: 0.5 s ease-out in, 0.5 s ease-in out.
+    static let clearFor: Double = 3
     static let fade: Double = 0.5
 
     private var remaining: Double { fixedRemaining ?? countdown.remaining }
     private var ending: Bool { remaining <= Self.clearFor }
+    private var progress: Double { countdown.total > 0 ? max(0, min(1, 1 - remaining / countdown.total)) : 0 }
 
-    /// Glass proto: the one-action line is the largest element and stays for the whole break;
-    /// seconds are secondary; 「即将结束」 replaces the seconds for the last 3 s.
     var body: some View {
-        VStack(spacing: 10) {
-            Text(hint)
+        VStack(spacing: 0) {
+            Text(ShortHints.text(hintIndex))
                 .font(.system(size: 30, weight: .semibold))
                 .foregroundColor(.white)
-                .fixedSize()
-            Text(ending ? BreakOverlayController.Copy.ending : L("%d 秒", max(0, Int(remaining.rounded(.up)))))
-                .font(.system(size: 17, weight: .regular).monospacedDigit())
+                .multilineTextAlignment(.center)
+            Text(ShortHints.desc(hintIndex))
+                .font(.system(size: 17, weight: .regular))
                 .foregroundColor(.white.opacity(0.7))
-                .fixedSize()
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 520)
+                .padding(.top, 10)
+            VStack(spacing: 6) {
+                Text(ending ? BreakOverlayController.Copy.ending : L("%d 秒", max(0, Int(remaining.rounded(.up)))))
+                    .font(.system(size: 17, weight: .medium).monospacedDigit())
+                    .foregroundColor(.white.opacity(0.9))
+                    .fixedSize()
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.white.opacity(0.2))
+                    Capsule().fill(Color.white.opacity(0.85)).frame(width: 64 * progress)
+                }
+                .frame(width: 64, height: 2)
+            }
+            .padding(.horizontal, 18).padding(.vertical, 9)
+            .modifier(ClearGlass(on: !flatBackground, shape: Capsule()))
+            .padding(.top, 28)
         }
-        .padding(.horizontal, 60).padding(.vertical, 36)
-        .frame(minWidth: 220)
-        .modifier(CapsuleSurface(flat: flatBackground))
-        .overlay(CardShape.shape.stroke(Color.white.opacity(0.25), lineWidth: 0.5))
-        .shadow(color: .black.opacity(0.25), radius: 16, x: 0, y: 4)
+        .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 1)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .overlay(alignment: .bottom) {
-            HoldHint(hold: hold ?? LongBreakView.idleHold).padding(.bottom, 40)
-        }
         .environment(\.colorScheme, .dark)
         .environment(\.locale, Theme.appLocale)
         .accessibilityElement(children: .combine)
     }
 }
 
-/// 「◯ 按住空格键跳过」: the ring fills while Space is held (round 3 §4). Not a button.
-struct HoldHint: View {
+/// Short-break controls: same glass row as the long break (postpone, then hold-Space-to-skip).
+struct ShortBreakControls: View {
+    var hold: HoldToSkip?
+    var canPostpone = true
+    var flat = false
+    let onSnooze: (Int) -> Void
+    var body: some View {
+        HStack(spacing: 10) {
+            if canPostpone { Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) } }
+            if let hold { HoldCapsule(hold: hold, glass: !flat) }
+        }
+        .buttonStyle(QuietButtonStyle(glass: !flat))
+        .focusable(false)
+        .modifier(GlassGroup(on: !flat))
+        .padding(12)   // room for the glass edge
+        .environment(\.colorScheme, .dark)
+        .environment(\.locale, Theme.appLocale)
+    }
+}
+
+/// `.clear` Liquid Glass on macOS 26+; translucent fill below 26 / Reduce Transparency / renders.
+struct ClearGlass<S: Shape>: ViewModifier {
+    var on = true
+    let shape: S
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    func body(content: Content) -> some View {
+        if on, !reduceTransparency, #available(macOS 26, *) {
+            content.glassEffect(.clear, in: shape)
+        } else {
+            content.background(shape.fill(Color.white.opacity(reduceTransparency ? 0.22 : 0.12)))
+        }
+    }
+}
+
+/// 「按住空格键跳过」 as a glass capsule. Fills left to right while Space is held; retracts on release
+/// (HoldToSkip.cancel animates progress back to 0). Not a button.
+struct HoldCapsule: View {
     @ObservedObject var hold: HoldToSkip
     var fixed: Double? = nil
+    var glass = true
     var body: some View {
-        HStack(spacing: 7) {
-            ZStack {
-                Circle().fill(Color.white.opacity(0.25))
-                PieSlice(progress: fixed ?? hold.progress).fill(Color.white.opacity(0.9))
+        let p = max(0, min(1, fixed ?? hold.progress))
+        Text(BreakOverlayController.Copy.holdSpace)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(.white.opacity(0.9))
+            .padding(.horizontal, 16).padding(.vertical, 7)
+            .background(alignment: .leading) {
+                GeometryReader { g in
+                    Rectangle().fill(Color.white.opacity(0.28)).frame(width: g.size.width * p)
+                }
+                .clipShape(Capsule())
             }
-            .frame(width: 13, height: 13)
-            Text(BreakOverlayController.Copy.holdSpace)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundColor(.white.opacity(0.9))
-        }
-        .padding(.horizontal, 12).padding(.vertical, 6)
-        .background(Capsule().fill(Color.black.opacity(0.35)))
-        .accessibilityElement(children: .combine)
+            .modifier(ClearGlass(on: glass, shape: Capsule()))
+            .accessibilityElement(children: .combine)
     }
 }
 
@@ -220,11 +261,11 @@ struct LongBreakView: View {
                             Text(L("已连续使用 90 分钟，长休息不能再推迟。"))
                                 .font(.system(size: 13, weight: .medium)).foregroundColor(.white.opacity(0.85))
                         } else {
-                            HoldHint(hold: hold ?? LongBreakView.idleHold, fixed: debugHoldProgress)
                             Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) }
                             if show15 {
                                 Button(BreakOverlayController.Copy.snooze(15)) { onSnooze(15) }.disabled(!can15)
                             }
+                            HoldCapsule(hold: hold ?? LongBreakView.idleHold, fixed: debugHoldProgress, glass: !flatControls)
                         }
                     }
                     .buttonStyle(QuietButtonStyle(glass: !flatControls))
@@ -383,7 +424,7 @@ enum BreakViewSnapshots {
             .frame(width: 1440, height: 900).blur(radius: 30, opaque: true).clipped()
             Color.black.opacity(BreakOverlayController.shortDim)
             ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}), flatBackground: true,
-                              hint: ShortHints.text(hint), fixedRemaining: 19).opacity(opacity)
+                              hintIndex: hint, fixedRemaining: 19).opacity(opacity)
         }.frame(width: 1440, height: 900))
         save(r.nsImage, url)
     }
