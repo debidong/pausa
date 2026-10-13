@@ -13,16 +13,17 @@ struct VisualEffectBackground: NSViewRepresentable {
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {}
 }
 
-/// Short break (glass proto): same language as the long break. No card: the prompt, its
-/// description and a small glass countdown sit straight on the static blur; only controls are glass.
-/// The controls live in their own clickable panel (ShortBreakControls) so this one stays click-through.
+/// Short break (glass proto): the long break's design at smaller scope. Same blurred backdrop and
+/// dark layer (the dim windows use the same makeBlurView/tint), the same glass clock, one prompt in
+/// the long-break subtitle style, and the same glass container holding only hold-Space-to-skip.
+/// Click-through: Space is heard by the key panel, nothing here needs a click.
 struct ShortBreakCapsule: View {
     @ObservedObject var countdown: Countdown
-    /// ImageRenderer cannot draw glass / NSVisualEffectView; debug renders use flat stand-ins.
+    /// ImageRenderer cannot draw glass; debug renders use the flat fallback.
     var flatBackground = false
     var theme: ThemeID = .current
     var hold: HoldToSkip? = nil
-    /// Hint index for this break (ShortHints): prompt `break.hint.N`, description `break.short.desc.N`.
+    /// Prompt `break.hint.N` (ShortHints).
     var hintIndex: Int = 0
     /// Debug renders only: pretend this many seconds are left.
     var fixedRemaining: Double? = nil
@@ -30,62 +31,73 @@ struct ShortBreakCapsule: View {
     static let clearFor: Double = 3
     static let fade: Double = 0.5
 
-    private var remaining: Double { fixedRemaining ?? countdown.remaining }
-    private var ending: Bool { remaining <= Self.clearFor }
-    private var progress: Double { countdown.total > 0 ? max(0, min(1, 1 - remaining / countdown.total)) : 0 }
+    private var timeText: String {
+        AppController.colonPair(Int((fixedRemaining ?? countdown.remaining).rounded(.up)))
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text(ShortHints.text(hintIndex))
-                .font(.system(size: 30, weight: .semibold))
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-            Text(ShortHints.desc(hintIndex))
-                .font(.system(size: 17, weight: .regular))
-                .foregroundColor(.white.opacity(0.7))
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 520)
-                .padding(.top, 10)
-            VStack(spacing: 6) {
-                Text(ending ? BreakOverlayController.Copy.ending : L("%d 秒", max(0, Int(remaining.rounded(.up)))))
-                    .font(.system(size: 17, weight: .medium).monospacedDigit())
-                    .foregroundColor(.white.opacity(0.9))
-                    .fixedSize()
-                ZStack(alignment: .leading) {
-                    Capsule().fill(Color.white.opacity(0.2))
-                    Capsule().fill(Color.white.opacity(0.85)).frame(width: 64 * progress)
+        GeometryReader { g in
+            ZStack {
+                VStack(spacing: 0) {
+                    GlassClock(text: timeText, size: LongBreakView.clockSize(g.size.height), flat: flatBackground)
+                        .accessibilityLabel(timeText)
+                    BreakSubtitle(text: ShortHints.text(hintIndex))
                 }
-                .frame(width: 64, height: 2)
+                .padding(40)
+                if let hold {
+                    VStack {
+                        Spacer()
+                        HoldCapsule(hold: hold, glass: !flatBackground)
+                            .modifier(GlassGroup(on: !flatBackground))
+                            .padding(.bottom, 40)
+                    }
+                }
             }
-            .padding(.horizontal, 18).padding(.vertical, 9)
-            .modifier(ClearGlass(on: !flatBackground, shape: Capsule()))
-            .padding(.top, 28)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .shadow(color: .black.opacity(0.25), radius: 10, x: 0, y: 1)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .environment(\.colorScheme, .dark)
         .environment(\.locale, Theme.appLocale)
-        .accessibilityElement(children: .combine)
     }
 }
 
-/// Short-break controls: same glass row as the long break (postpone, then hold-Space-to-skip).
-struct ShortBreakControls: View {
-    var hold: HoldToSkip?
-    var canPostpone = true
+/// Big break clock, shared by long and short. macOS 26: `.clear` Liquid Glass letters over a soft dark
+/// backing of the same digits. Pre-26 / renders / Reduce Transparency: white text with shadows.
+struct GlassClock: View {
+    let text: String
+    let size: CGFloat
     var flat = false
-    let onSnooze: (Int) -> Void
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var body: some View {
-        HStack(spacing: 10) {
-            if canPostpone { Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) } }
-            if let hold { HoldCapsule(hold: hold, glass: !flat) }
+        let digits = Text(text)
+            .font(.system(size: size, weight: LongBreakView.countdownWeight).monospacedDigit())
+        if !flat, !reduceTransparency, #available(macOS 26, *) {
+            ZStack {
+                digits.foregroundColor(.black.opacity(0.28)).blur(radius: size * 0.06)
+                digits.foregroundColor(.white.opacity(0.18))
+                    .overlay(Color.clear.glassEffect(.clear, in: Rectangle()).mask(digits))
+            }
+        } else {
+            digits.foregroundColor(.white)
+                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
+                .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
         }
-        .buttonStyle(QuietButtonStyle(glass: !flat))
-        .focusable(false)
-        .modifier(GlassGroup(on: !flat))
-        .padding(12)   // room for the glass edge
-        .environment(\.colorScheme, .dark)
-        .environment(\.locale, Theme.appLocale)
+    }
+}
+
+/// Line under the clock (long: rest quote; short: the prompt). Text on the art, no card.
+struct BreakSubtitle: View {
+    let text: String
+    var body: some View {
+        Text(text)
+            .font(.system(size: 20, weight: .medium))
+            .foregroundColor(.white.opacity(0.95))
+            .multilineTextAlignment(.center)
+            .lineLimit(3)
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: 560)
+            .padding(.top, 14)
+            .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
+            .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
     }
 }
 
@@ -206,50 +218,18 @@ struct LongBreakView: View {
     }
 
     var body: some View {
-        GeometryReader { g in content(clockSize: max(76, g.size.height * 0.12)) }
+        GeometryReader { g in content(clockSize: Self.clockSize(g.size.height)) }
             .environment(\.colorScheme, .dark)
             .environment(\.locale, Theme.appLocale)
-    }
-
-    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
-
-    /// Long-break clock. macOS 26: `.clear` Liquid Glass letters over a soft dark backing of the
-    /// same digits (legibility on bright scenery). Earlier systems / renders / Reduce Transparency: white text.
-    @ViewBuilder private func clock(size: CGFloat) -> some View {
-        let digits = Text(timeText)
-            .font(.system(size: size, weight: LongBreakView.countdownWeight).monospacedDigit())
-        if !flatControls, !reduceTransparency, #available(macOS 26, *) {
-            ZStack {
-                digits.foregroundColor(.black.opacity(0.28)).blur(radius: size * 0.06)
-                digits.foregroundColor(.white.opacity(0.18))
-                    .overlay(Color.clear.glassEffect(.clear, in: Rectangle()).mask(digits))
-            }
-        } else {
-            digits.foregroundColor(.white)
-                .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
-                .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
-        }
     }
 
     private func content(clockSize: CGFloat) -> some View {
         ZStack {
             SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night)
             VStack(spacing: 0) {
-                clock(size: clockSize)
+                GlassClock(text: timeText, size: clockSize, flat: flatControls)
                     .accessibilityLabel(timeText)
-                if let quote {
-                    Text(quote)
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.white.opacity(0.95))
-                        .multilineTextAlignment(.center)
-                        .lineLimit(3)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 560)
-                        .padding(.top, 14)
-                        // Text on the art, no card: soft wide shadow + tight contact shadow.
-                        .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
-                        .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
-                }
+                if let quote { BreakSubtitle(text: quote) }
             }
             .background(halo)
             .padding(40)
@@ -282,6 +262,7 @@ extension LongBreakView {
     /// SF Pro Semibold digits; debug renders compare weights.
     static var countdownWeight: Font.Weight = .semibold
     static let idleHold = HoldToSkip()
+    static func clockSize(_ height: CGFloat) -> CGFloat { max(76, height * 0.12) }
 
     /// Per-theme faint local halo, only where the digits measured < 3:1 without it. 0 = none.
     static let haloPeak: [ThemeID: Double] = [:]

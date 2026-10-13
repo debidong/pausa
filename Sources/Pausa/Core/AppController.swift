@@ -144,8 +144,7 @@ final class AppController {
                 today.record(done: false)
                 overlay.showShort(duration: len,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
-                                  onFinish: { [weak self] in self?.today.record(done: true); self?.finish(.completed) },
-                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) })
+                                  onFinish: { [weak self] in self?.today.record(done: true); self?.finish(.completed) })
             case .startBreak(.long, let len):
                 overlay.showLong(duration: len,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },
@@ -157,8 +156,7 @@ final class AppController {
             case .resumeBreak(.short, let left):
                 overlay.showShort(duration: left,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
-                                  onFinish: { [weak self] in self?.today.record(done: true); self?.finish(.completed) },
-                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) })
+                                  onFinish: { [weak self] in self?.today.record(done: true); self?.finish(.completed) })
             case .resumeBreak(.long, let left):
                 overlay.showLong(duration: left,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },

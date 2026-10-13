@@ -57,8 +57,6 @@ public final class BreakOverlayController {
     private var shortQuote: String?
     /// One-action line on the short card, rotated per break (see ShortHints).
     private var shortHint: Int = 0
-    /// Short-break postpone (glass proto); nil = no button.
-    private var onShortSnooze: ((Int) -> Void)?
     private var longQuote: String?
     /// Round 7c: while a break is up, Space reaching Pausa by ANY path (also with no key window, which
     /// is what made AppKit beep) goes through SpaceHold. Local monitor: no Accessibility permission.
@@ -84,14 +82,12 @@ public final class BreakOverlayController {
     // MARK: Short break
 
     /// Capsule near the cursor + slight dim. `onFinish` fires when time is up.
-    public func showShort(duration: TimeInterval, onSkip: (() -> Void)? = nil, onFinish: (() -> Void)? = nil,
-                          onSnooze: ((Int) -> Void)? = nil) {
+    public func showShort(duration: TimeInterval, onSkip: (() -> Void)? = nil, onFinish: (() -> Void)? = nil) {
         RandomScene.roll()
         dismiss(animated: false)
         mode = .short
         self.onFinish = onFinish
         self.onShortSkip = onSkip
-        self.onShortSnooze = onSnooze
         let cd = Countdown(total: duration) { [weak self] in self?.finish() }
         countdown = cd
 
@@ -105,7 +101,7 @@ public final class BreakOverlayController {
         // Card only on the screen under the mouse; other screens just dim.
         let mouse = NSEvent.mouseLocation
         let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
-        capsules = screen.map { [makeCapsule(countdown: cd, on: $0), makeShortControls(on: $0)] } ?? []
+        capsules = screen.map { [makeCapsule(countdown: cd, on: $0)] } ?? []
         let front = NSWorkspace.shared.frontmostApplication
         if front?.processIdentifier != ProcessInfo.processInfo.processIdentifier { previousApp = front }
         fadeIn(dimWindows, short: true)
@@ -159,7 +155,6 @@ public final class BreakOverlayController {
         mode = nil
         onFinish = nil
         onShortSkip = nil
-        onShortSnooze = nil
         let windows = dimWindows + longWindows + capsules
         dimWindows = []; longWindows = []; capsules = []
         fadeOut(windows, animated: animated)
@@ -213,7 +208,7 @@ public final class BreakOverlayController {
             let mouse = NSEvent.mouseLocation
             let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
             if let cd = countdown, let screen {
-                capsules = [makeCapsule(countdown: cd, on: screen), makeShortControls(on: screen)]
+                capsules = [makeCapsule(countdown: cd, on: screen)]
                 capsules.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
             } else { capsules = [] }
         case .long:
@@ -297,7 +292,7 @@ public final class BreakOverlayController {
     /// whole visible frame. Click-through; key (without activating Pausa) only to hear Space.
     private func makeCapsule(countdown: Countdown, on screen: NSScreen) -> NSPanel {
         let host = NSHostingView(rootView: ShortBreakCapsule(countdown: countdown, hold: holdToSkip, hintIndex: shortHint))
-        let vf = screen.visibleFrame                                      // clear of menu bar/Dock/notch
+        let vf = screen.frame   // full screen, same geometry as the long break (clock size/position match)
         let p = ShortBreakPanel(contentRect: vf, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         p.hold = holdToSkip
         p.level = .statusBar + 1
@@ -313,36 +308,6 @@ public final class BreakOverlayController {
         p.contentView = host
         p.alphaValue = 0
         return p
-    }
-
-    /// Short-break controls: a small clickable non-activating panel at the bottom center, so the
-    /// big content panel can stay click-through. Never key (the content panel hears Space).
-    private func makeShortControls(on screen: NSScreen) -> NSPanel {
-        let view = ShortBreakControls(hold: holdToSkip, canPostpone: onShortSnooze != nil,
-                                      onSnooze: { [weak self] in self?.snoozeShort($0) })
-        let host = NSHostingView(rootView: view)
-        let size = host.fittingSize
-        let vf = screen.visibleFrame
-        let rect = NSRect(x: vf.midX - size.width / 2, y: vf.minY + 28, width: size.width, height: size.height)
-        let p = NSPanel(contentRect: rect, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
-        p.level = .statusBar + 2
-        p.sharingType = .none
-        p.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
-        p.becomesKeyOnlyIfNeeded = true
-        p.isOpaque = false
-        p.backgroundColor = .clear
-        p.hasShadow = false
-        p.isReleasedWhenClosed = false
-        p.animationBehavior = .none
-        host.frame = NSRect(origin: .zero, size: size)
-        p.contentView = host
-        p.alphaValue = 0
-        return p
-    }
-
-    private func snoozeShort(_ minutes: Int) {
-        guard case .short = mode, let cb = onShortSnooze else { return }
-        dismiss(); cb(minutes)
     }
 
     /// Gentle appear: fade + scale 0.96→1 from the card's center; fade only under Reduce Motion.
@@ -543,8 +508,6 @@ enum ShortHints {
     static let count = 6
     static let defaultsKey = "shortHintIndex"
     static func text(_ i: Int) -> String { L("break.hint.\(i % count)") }
-    /// One-line why under the prompt (glass proto).
-    static func desc(_ i: Int) -> String { L("break.short.desc.\(i % count)") }
     /// Advance and persist; the first break ever shows line 0. Returns the index.
     static func next(_ d: UserDefaults = .standard) -> Int {
         let last = d.object(forKey: defaultsKey) as? Int ?? -1
