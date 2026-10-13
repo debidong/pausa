@@ -283,6 +283,9 @@ struct LongBreakView: View {
     var locked = false
     /// Hero mock (DEV): only the hold-to-skip capsule, no postpone buttons.
     var skipOnly = false
+    /// Hero mock (DEV): draw this image instead of the scenery; `bare` hides all UI over it.
+    var backdrop: NSImage? = nil
+    var bare = false
 
     private var timeText: String {
         let s = Int((fixedRemaining ?? countdown.remaining).rounded(.up))
@@ -297,7 +300,9 @@ struct LongBreakView: View {
 
     private func content(clockSize: CGFloat) -> some View {
         ZStack {
-            SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night)
+            if let backdrop { Image(nsImage: backdrop).resizable() }
+            else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night) }
+            if !bare {
             VStack(spacing: 0) {
                 GlassClock(text: timeText, size: clockSize, flat: flatControls)
                     .accessibilityLabel(timeText)
@@ -334,6 +339,7 @@ struct LongBreakView: View {
                     .modifier(GlassGroup(on: !flatControls))
                     .padding(.bottom, 40)
                 }
+            }
             }
         }
     }

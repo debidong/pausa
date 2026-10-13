@@ -1,19 +1,19 @@
 #!/usr/bin/env python3
-"""Composite docs/images/hero.png (1024x640) from the hero-mock captures.
+"""Build the hero backdrop (2048x1280, the 1024x640 pt mock window at 2x). No UI here.
 
-Five scenes as vertical strips, left to right: gray-white (App/backgrounds/system-base, no UI),
-forest, ocean, sunset, night. Each strip is cut from that theme's real `--hero-mock` window capture
-(see scripts/make-hero.sh), so the glass clock, sentence and skip capsule are the app's own
-rendering over that scene. Neighbouring strips cross-fade over FEATHER px. Needs Pillow.
+Five scenes as vertical strips, left to right: gray-white (App/backgrounds/system-base), forest,
+ocean, sunset, night; neighbours cross-fade over FEATHER px. The scenes are `--hero-mock <t> --bare`
+window captures (the app's own scenery). scripts/make-hero.sh then opens the mock over this backdrop
+and the window capture is the final hero, so the glass is one continuous render. Needs Pillow.
 
-usage: make-hero.py <capture-dir> [out.png]
-  capture-dir holds mock-forest.png mock-ocean.png mock-sunset.png mock-night.png system-base.png
+usage: make-hero.py <capture-dir> <out.png>
+  capture-dir holds bare-forest.png bare-ocean.png bare-sunset.png bare-night.png system-base.png
 """
 import sys
 from PIL import Image
 
-W, H, FEATHER = 1024, 640, 14
-ORDER = ["system-base", "mock-forest", "mock-ocean", "mock-sunset", "mock-night"]
+W, H, FEATHER = 2048, 1280, 28
+ORDER = ["system-base", "bare-forest", "bare-ocean", "bare-sunset", "bare-night"]
 
 def cover(im):
     """Scale to cover WxH, center-crop."""
@@ -25,7 +25,7 @@ def cover(im):
 
 def main():
     src = sys.argv[1]
-    out = sys.argv[2] if len(sys.argv) > 2 else "docs/images/hero.png"
+    out = sys.argv[2]
     layers = [cover(Image.open(f"{src}/{n}.png")) for n in ORDER]
     hero = layers[0].copy()
     edges = [round(W * i / len(ORDER)) for i in range(len(ORDER) + 1)]
