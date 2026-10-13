@@ -14,36 +14,32 @@ struct VisualEffectBackground: NSViewRepresentable {
 }
 
 /// Short break (glass proto): the long break's design at smaller scope. Same blurred backdrop and
-/// dark layer (the dim windows use the same makeBlurView/tint), the same glass clock, one prompt in
-/// the long-break subtitle style, and the same glass container holding only hold-Space-to-skip.
-/// Click-through: Space is heard by the key panel, nothing here needs a click.
+/// dark layer (the dim windows use the same makeBlurView/tint). Center: one fixed prompt in the
+/// long-break clock's glass text, nothing animating (no countdown; the break ends with the fade-out).
+/// Bottom: the same glass container, holding only hold-Space-to-skip. Click-through: Space is heard
+/// by the key panel; nothing here needs a click.
 struct ShortBreakCapsule: View {
     @ObservedObject var countdown: Countdown
     /// ImageRenderer cannot draw glass; debug renders use the flat fallback.
     var flatBackground = false
     var theme: ThemeID = .current
     var hold: HoldToSkip? = nil
-    /// Prompt `break.hint.N` (ShortHints).
-    var hintIndex: Int = 0
-    /// Debug renders only: pretend this many seconds are left.
     var fixedRemaining: Double? = nil
 
     static let clearFor: Double = 3
     static let fade: Double = 0.5
-
-    private var timeText: String {
-        AppController.colonPair(Int((fixedRemaining ?? countdown.remaining).rounded(.up)))
-    }
+    /// Prompt size vs. the long-break clock: the longest locale (ru 「Посмотрите вдаль」, 16 chars)
+    /// stays on one line on a 13-inch screen; minimumScaleFactor is only a guard for narrow displays.
+    static let promptScale: CGFloat = 0.7
 
     var body: some View {
         GeometryReader { g in
             ZStack {
-                VStack(spacing: 0) {
-                    GlassClock(text: timeText, size: LongBreakView.clockSize(g.size.height), flat: flatBackground)
-                        .accessibilityLabel(timeText)
-                    BreakSubtitle(text: ShortHints.text(hintIndex))
-                }
-                .padding(40)
+                GlassClock(text: BreakOverlayController.Copy.shortTitle,
+                           size: LongBreakView.clockSize(g.size.height) * Self.promptScale,
+                           flat: flatBackground, monospaced: false)
+                    .frame(maxWidth: g.size.width - 80)
+                    .accessibilityLabel(BreakOverlayController.Copy.shortTitle)
                 if let hold {
                     VStack {
                         Spacer()
@@ -66,10 +62,14 @@ struct GlassClock: View {
     let text: String
     let size: CGFloat
     var flat = false
+    /// false for words (short-break prompt): proportional figures, one line, scales down if needed.
+    var monospaced = true
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var body: some View {
+        let base = Font.system(size: size, weight: LongBreakView.countdownWeight)
         let digits = Text(text)
-            .font(.system(size: size, weight: LongBreakView.countdownWeight).monospacedDigit())
+            .font(monospaced ? base.monospacedDigit() : base)
+            .lineLimit(1).minimumScaleFactor(0.3)
         if !flat, !reduceTransparency, #available(macOS 26, *) {
             ZStack {
                 digits.foregroundColor(.black.opacity(0.28)).blur(radius: size * 0.06)
@@ -397,7 +397,7 @@ enum BreakViewSnapshots {
     }
 
     /// Writes just the short break (blur over a sample image) to `url`.
-    static func writeShortBlur(to url: URL, sample: NSImage?, hint: Int = 0, opacity: Double = 1) {
+    static func writeShortBlur(to url: URL, sample: NSImage?, opacity: Double = 1) {
         let r = ImageRenderer(content: ZStack {
             Group {
                 if let sample { Image(nsImage: sample).resizable().scaledToFill() } else { SnapshotDesktop() }
@@ -405,7 +405,7 @@ enum BreakViewSnapshots {
             .frame(width: 1440, height: 900).blur(radius: 30, opaque: true).clipped()
             Color.black.opacity(BreakOverlayController.shortDim)
             ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}), flatBackground: true,
-                              hintIndex: hint, fixedRemaining: 19).opacity(opacity)
+                              fixedRemaining: 19).opacity(opacity)
         }.frame(width: 1440, height: 900))
         save(r.nsImage, url)
     }

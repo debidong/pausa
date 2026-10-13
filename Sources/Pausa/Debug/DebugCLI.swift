@@ -11,7 +11,7 @@ import AppKit
 ///   --debug-selftest-spacehold      Space/repeat handling with synthesized events (no window)
 ///   --debug-selftest-break-key      SHOWS short + long breaks (2 s each) and asserts the break window is key; dev Macs only
 ///   --debug-render-glass <dir>     PROTOTYPE: Liquid Glass vs fallback break screens (no window)
-///   --debug-render-short <out.png> [sample.png]  offscreen render of the short-break blur [--hint 0-5] [--opacity 0-1]
+///   --debug-render-short <out.png> [sample.png]  offscreen render of the short-break blur [--opacity 0-1]
 enum DebugCLI {
     static func handles(_ args: [String]) -> Bool {
         args.contains { $0.hasPrefix("--debug-") }
@@ -305,7 +305,7 @@ enum DebugCLI {
             let sample = (i + 2 < args.count && !args[i + 2].hasPrefix("--")) ? NSImage(contentsOfFile: args[i + 2]) : nil
             Task { @MainActor in
                 #if DEBUG
-                BreakViewSnapshots.writeShortBlur(to: out, sample: sample, hint: Int(num(after: "--hint", 0)), opacity: num(after: "--opacity", 1))
+                BreakViewSnapshots.writeShortBlur(to: out, sample: sample, opacity: num(after: "--opacity", 1))
                 #endif
                 exit(0)
             }

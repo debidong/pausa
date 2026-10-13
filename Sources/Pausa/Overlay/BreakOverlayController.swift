@@ -10,7 +10,7 @@ import SwiftUI
 public final class BreakOverlayController {
     /// User-facing copy. Keys are stable; the Chinese text is the development-language default.
     public enum Copy {
-        public static var shortTitle: String { L("break.hint.0") }
+        public static var shortTitle: String { L("break.short.hint") }
         /// 「休息延后 5 分钟」: postpone buttons in the popover and on the long-break screen.
         public static var ending: String { L("break.short.ending") }
         public static func snooze(_ minutes: Int) -> String { L("休息延后 %d 分钟", minutes) }
@@ -55,8 +55,6 @@ public final class BreakOverlayController {
     private var sceneSeed: UInt64 = 1
     /// Picked once per break (kept across screen changes); see RestQuotes.
     private var shortQuote: String?
-    /// One-action line on the short card, rotated per break (see ShortHints).
-    private var shortHint: Int = 0
     private var longQuote: String?
     /// Round 7c: while a break is up, Space reaching Pausa by ANY path (also with no key window, which
     /// is what made AppKit beep) goes through SpaceHold. Local monitor: no Accessibility permission.
@@ -93,7 +91,6 @@ public final class BreakOverlayController {
 
         sceneSeed = UInt64.random(in: 1...UInt64.max)
         shortQuote = RestQuotes.next(.short)
-        shortHint = ShortHints.next()
         holdToSkip.cancel(animated: false)
         holdToSkip.onComplete = { [weak self] in self?.skipShort() }
         dimWindows = NSScreen.screens.map(makeDimWindow)
@@ -291,7 +288,7 @@ public final class BreakOverlayController {
     /// Card in the middle of the visible frame, hint at the bottom: one transparent panel over the
     /// whole visible frame. Click-through; key (without activating Pausa) only to hear Space.
     private func makeCapsule(countdown: Countdown, on screen: NSScreen) -> NSPanel {
-        let host = NSHostingView(rootView: ShortBreakCapsule(countdown: countdown, hold: holdToSkip, hintIndex: shortHint))
+        let host = NSHostingView(rootView: ShortBreakCapsule(countdown: countdown, hold: holdToSkip))
         let vf = screen.frame   // full screen, same geometry as the long break (clock size/position match)
         let p = ShortBreakPanel(contentRect: vf, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         p.hold = holdToSkip
@@ -502,17 +499,3 @@ final class Countdown: ObservableObject {
     }
 }
 
-/// Short-card hints (round 3b §2): six one-action lines shown in order, so the same line never
-/// appears twice in a row. The last index is kept in UserDefaults across launches.
-enum ShortHints {
-    static let count = 6
-    static let defaultsKey = "shortHintIndex"
-    static func text(_ i: Int) -> String { L("break.hint.\(i % count)") }
-    /// Advance and persist; the first break ever shows line 0. Returns the index.
-    static func next(_ d: UserDefaults = .standard) -> Int {
-        let last = d.object(forKey: defaultsKey) as? Int ?? -1
-        let i = (last + 1) % count
-        d.set(i, forKey: defaultsKey)
-        return i
-    }
-}
