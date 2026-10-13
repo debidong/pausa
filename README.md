@@ -19,7 +19,7 @@
   <img src="docs/images/hero.png" width="100%" alt="A Pausa long break">
 </p>
 
-Pausa reminds you to look away from the screen and get up and move, every once in a while. It stays quiet while you're in a meeting, watching a video, or sharing your screen. And it's free.
+Did you know you have the right to look away from your screen? The Constitution doesn't say so, but your eyes do. Pausa reminds you to rest, every once in a while. In a meeting? Watching a video? Sharing your screen? Pausa stays quiet. It's on your side. And it's free.
 
 ## Install
 
