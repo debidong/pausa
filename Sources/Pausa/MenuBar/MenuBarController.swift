@@ -691,44 +691,74 @@ struct AboutPage: View {
     @ObservedObject var settings: Settings
     private var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0" }
     var body: some View {
-        Form {
-            Section {
-                VStack(spacing: 10) {
-                    Group {
-                        if let img = settings.icon.image ?? NSApp.applicationIconImage {
-                            Image(nsImage: img).resizable().interpolation(.high).frame(width: 96, height: 96)
-                        } else {
-                            RoundedRectangle(cornerRadius: 20).fill(.quaternary).frame(width: 80, height: 80).padding(8)
-                        }
-                    }
-                    Text("Pausa").font(.title2.weight(.semibold))
-                    VStack(spacing: 4) {
-                        Text(L("名字来自西班牙语中的“暂停”。"))
-                        Text(L("图标的灵感来自泰国寺庙里的莲花。"))
-                    }
-                    .font(.callout).foregroundStyle(.secondary)
-                    .padding(.top, 6)
-                    Link(destination: URL(string: "https://github.com/debidong")!) {
-                        Text(L("由 Bowen（debidong）开发"))
-                    }
-                    .font(.callout)
-                    Text(L(HealthNote.key))
-                        .font(.footnote).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 6)
+        // Card and note sit above the Form: a grouped Form draws its container behind headers too.
+        // 10 pt sides + the page margin = the grouped section inset (20 pt): card is the section width.
+        VStack(spacing: 0) {
+            VStack(spacing: 12) {
+                AboutCard()
+                Text(L(HealthNote.key))
+                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(.horizontal, 10).padding(.top, 20)
+            Form {
+                Section {
+                    UpdateRow(model: .shared, version: version)
                 }
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
             }
-            Section {
-                UpdateRow(model: .shared, version: version)
-            }
+            .formStyle(.grouped)
         }
-        .formStyle(.grouped)
     }
 }
 
+/// About top card: our watercolor lotus pond (App/about, made by scripts/make-about-pond.py from the
+/// app icon) filling the card, lotus on the left; name and credits on the calm water at 52% width.
+/// Light: deep ink on cream water. Dark: the darkened pond, cream text.
+struct AboutCard: View {
+    @Environment(\.colorScheme) private var scheme
+    static let height: CGFloat = 220
+    static let textStart: CGFloat = 0.52
+    static let ink = Color(red: 0x2B / 255, green: 0x2A / 255, blue: 0x33 / 255)
+    static let cream = Color(red: 0xF5 / 255, green: 0xEC / 255, blue: 0xD7 / 255)
+    private static func image(dark: Bool) -> NSImage? {
+        Bundle.main.url(forResource: dark ? "about-pond-dark" : "about-pond-light", withExtension: "jpg")
+            .flatMap(NSImage.init(contentsOf:))
+    }
+    var body: some View {
+        let dark = scheme == .dark
+        GeometryReader { g in
+            ZStack(alignment: .leading) {
+                if let img = Self.image(dark: dark) {
+                    Image(nsImage: img).resizable().interpolation(.high).aspectRatio(contentMode: .fill)
+                        .frame(width: g.size.width, height: g.size.height).clipped()
+                } else {
+                    (dark ? Color(white: 0.15) : Color(red: 0.98, green: 0.96, blue: 0.9))
+                }
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Pausa").font(.system(size: 28, weight: .semibold))
+                    Text(L("名字来自西班牙语中的“暂停”。"))
+                    Text(L("图标的灵感来自泰国寺庙里的莲花。"))
+                    Link(destination: URL(string: "https://github.com/debidong")!) {
+                        Text(L("由 Bowen（debidong）开发")).foregroundStyle(Color(nsColor: .linkColor))
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                }
+                .font(.system(size: 13))
+                .foregroundStyle(dark ? Self.cream : Self.ink)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.leading)
+                .frame(width: g.size.width * (1 - Self.textStart) - 14, alignment: .leading)
+                .offset(x: g.size.width * Self.textStart)
+            }
+        }
+        .frame(height: Self.height)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
 
 /// System Settings "Appearance"-style chooser: label, then one tile per icon with its name below
 /// (round 3b chooser, restored in round 7c). One click switches; the Dock tile follows at once.
