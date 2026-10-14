@@ -44,6 +44,12 @@ if [ "${DEV:-}" = 1 ]; then
   /usr/libexec/PlistBuddy -c "Delete :SUFeedURL" "$PL" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Delete :SUEnableAutomaticChecks" "$PL" 2>/dev/null || true
   /usr/libexec/PlistBuddy -c "Add :SUEnableAutomaticChecks bool false" "$PL"
+  # pausa-dev://break?kind=short|long lets us trigger a break for testing. Dev builds only.
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes array" "$PL"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0 dict" "$PL"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLName string app.getpausa.Pausa.dev" "$PL"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" "$PL"
+  /usr/libexec/PlistBuddy -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string pausa-dev" "$PL"
 fi
 # Sparkle.framework: SwiftPM drops the binary framework next to the executable; embed it in
 # Contents/Frameworks and make the binary look there.

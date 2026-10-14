@@ -87,6 +87,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updater.start()   // scheduled checks (SUScheduledCheckInterval); silent
         Settings.shared.enableLaunchAtLoginOnFirstRun()
         controller.start()
+        pendingDevURLs.forEach(handleDevURL); pendingDevURLs = []
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         Logger(subsystem: "app.pausa", category: "update").info("launched version \(v, privacy: .public) pid \(ProcessInfo.processInfo.processIdentifier) path \(Bundle.main.bundlePath, privacy: .public)")
 #if DEBUG
@@ -98,6 +99,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 #endif
         // Let the system "Login Item Added" notice pass first.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in self?.menuBar.showWelcomeOnce() }
+    }
+    /// pausa-dev://break?kind=short|long. The scheme is registered only in DEV=1 builds
+    /// (App/build-app.sh); the bundle-ID check keeps release builds inert even if one is opened.
+    /// URLs that arrive before launch finishes are queued and run once the controller exists.
+    private var pendingDevURLs: [URL] = []
+    private let devLog = Logger(subsystem: "app.pausa", category: "dev")
+    func application(_ application: NSApplication, open urls: [URL]) {
+        devLog.info("open urls \(urls.map(\.absoluteString).joined(separator: " "), privacy: .public) controller \(self.controller == nil ? "nil" : "ready", privacy: .public)")
+        guard Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true else { return }
+        guard controller != nil else { pendingDevURLs += urls; return }
+        urls.forEach(handleDevURL)
+    }
+    private func handleDevURL(_ url: URL) {
+        guard url.scheme == "pausa-dev", url.host == "break" else { return }
+        guard !controller.isOnBreak else { devLog.info("dev url ignored: already on break"); return }
+        let kind = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first { $0.name == "kind" }?.value
+        switch kind {
+        case "short": controller.breakNow(.short)
+        case "long": controller.breakNow(.long)
+        default: controller.breakNow(controller.scheduler.next.kind)
+        }
+        devLog.info("dev url break kind \(kind ?? "next", privacy: .public)")
     }
     func applicationWillTerminate(_ n: Notification) {
         controller?.saveState()
