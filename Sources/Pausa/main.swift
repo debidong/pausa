@@ -102,7 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Let the system "Login Item Added" notice pass first.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in self?.menuBar.showWelcomeOnce() }
     }
-    /// pausa-dev://break?kind=short|long. The scheme is registered only in DEV=1 builds
+    /// pausa-dev://break?kind=short|long[&daypart=day|night|midnight]. The scheme is registered only in DEV=1 builds
     /// (App/build-app.sh) and the handler compiles only with PAUSA_DEV, so release builds contain none of it.
     /// URLs that arrive before launch finishes are queued and run once the controller exists.
     #if PAUSA_DEV   // dev-only test link: not compiled into release builds at all
@@ -117,8 +117,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleDevURL(_ url: URL) {
         guard url.scheme == "pausa-dev", url.host == "break" else { return }
         guard !controller.isOnBreak else { devLog.info("dev url ignored: already on break"); return }
-        let kind = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-            .queryItems?.first { $0.name == "kind" }?.value
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        let kind = items.first { $0.name == "kind" }?.value
+        controller.overlay.devDaypartOverride = items.first { $0.name == "daypart" }?.value
+            .flatMap(BreakDaypart.init(rawValue:))
         switch kind {
         case "short": controller.breakNow(.short)
         case "long": controller.breakNow(.long)

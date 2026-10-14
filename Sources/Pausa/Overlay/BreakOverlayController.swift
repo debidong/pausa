@@ -58,6 +58,10 @@ public final class BreakOverlayController {
     private var longQuote: String?
     /// Daypart of the current long break, fixed when it starts (the screen style reads this).
     public private(set) var daypart: BreakDaypart = .current()
+    #if PAUSA_DEV
+    /// Dev link `&daypart=`: overrides the daypart of the next break only.
+    public var devDaypartOverride: BreakDaypart?
+    #endif
     /// Round 7c: while a break is up, Space reaching Pausa by ANY path (also with no key window, which
     /// is what made AppKit beep) goes through SpaceHold. Local monitor: no Accessibility permission.
     private var keyMonitor: Any?
@@ -133,6 +137,9 @@ public final class BreakOverlayController {
 
         sceneSeed = UInt64.random(in: 1...UInt64.max)
         daypart = .current()
+        #if PAUSA_DEV
+        if let d = devDaypartOverride { daypart = d; devDaypartOverride = nil }
+        #endif
         longQuote = RestQuotes.next(daypart)
         holdToSkip.cancel(animated: false)
         holdToSkip.onComplete = { [weak self] in self?.skip() }
