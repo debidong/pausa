@@ -55,8 +55,13 @@ public final class BreakOverlayController {
     /// New per break so cloud/star positions and bird/meteor timing vary; shared across displays.
     private var sceneSeed: UInt64 = 1
     /// Picked once per break (kept across screen changes); see RestQuotes.
-    private var shortQuote: String?
     private var longQuote: String?
+    /// Daypart of the current long break, fixed when it starts (the screen style reads this).
+    public private(set) var daypart: BreakDaypart = .current()
+    #if PAUSA_DEV
+    /// Dev link `&daypart=`: overrides the daypart of the next break only.
+    public var devDaypartOverride: BreakDaypart?
+    #endif
     /// Round 7c: while a break is up, Space reaching Pausa by ANY path (also with no key window, which
     /// is what made AppKit beep) goes through SpaceHold. Local monitor: no Accessibility permission.
     private var keyMonitor: Any?
@@ -91,7 +96,6 @@ public final class BreakOverlayController {
         countdown = cd
 
         sceneSeed = UInt64.random(in: 1...UInt64.max)
-        shortQuote = RestQuotes.next(.short)
         holdToSkip.cancel(animated: false)
         holdToSkip.onComplete = { [weak self] in self?.skipShort() }
         dimWindows = NSScreen.screens.map(makeDimWindow)
@@ -132,7 +136,11 @@ public final class BreakOverlayController {
         if front?.processIdentifier != ProcessInfo.processInfo.processIdentifier { previousApp = front }
 
         sceneSeed = UInt64.random(in: 1...UInt64.max)
-        longQuote = RestQuotes.next(.long)
+        daypart = .current()
+        #if PAUSA_DEV
+        if let d = devDaypartOverride { daypart = d; devDaypartOverride = nil }
+        #endif
+        longQuote = RestQuotes.next(daypart)
         holdToSkip.cancel(animated: false)
         holdToSkip.onComplete = { [weak self] in self?.skip() }
         buildLongWindows()
@@ -234,7 +242,7 @@ public final class BreakOverlayController {
             w.hold = Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip)
             let view = LongBreakView(countdown: cd, showControls: screen == primary,
                                      onSnooze: { [weak self] in self?.snooze($0) },
-                                     seed: sceneSeed, hold: Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip), quote: longQuote,
+                                     seed: sceneSeed, daypart: daypart, hold: Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip), quote: longQuote,
                                      show15: show15, can15: can15, locked: mustNotDefer)
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
             let frame = NSRect(origin: .zero, size: screen.frame.size)

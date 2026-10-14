@@ -14,82 +14,82 @@ struct VisualEffectBackground: NSViewRepresentable {
 }
 
 /// Short break (glass proto): the long break's design at smaller scope. Same blurred backdrop and
-/// dark layer (the dim windows use the same makeBlurView/tint). Center: one fixed prompt in the
-/// long-break clock's glass text, nothing animating (no countdown; the break ends with the fade-out).
-/// Bottom: the same glass container, holding only hold-Space-to-skip. Click-through: Space is heard
-/// by the key panel; nothing here needs a click.
+/// dark layer (the dim windows use the same makeBlurView/tint). Center: one prompt in the long-break
+/// clock's glass text that is itself the countdown: a soft edge wipes it away left to right over the
+/// break, gone when the break ends (Reduce Motion: a uniform fade instead). Bottom: the same glass
+/// container, holding only hold-Space-to-skip. Click-through: nothing here needs a click.
 struct ShortBreakCapsule: View {
-    /// Not observed: the center never re-renders during the break; only BreakRing animates.
+    /// Not observed: the wipe samples the countdown's clock per display frame.
     let countdown: Countdown
     /// ImageRenderer cannot draw glass; debug renders use the flat fallback.
     var flatBackground = false
     var theme: ThemeID = .current
     var hold: HoldToSkip? = nil
     var fixedRemaining: Double? = nil
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let clearFor: Double = 3
     static let fade: Double = 0.5
     /// Prompt size vs. the long-break clock: the longest locale (ru 「Посмотрите вдаль」, 16 chars)
     /// stays on one line on a 13-inch screen; minimumScaleFactor is only a guard for narrow displays.
     static let promptScale: CGFloat = 0.7
+    /// Width of the soft edge, as a fraction of the text width.
+    static let edge: CGFloat = 0.25
+
+    /// Elapsed fraction 0...1.
+    private func elapsed(_ now: TimeInterval) -> CGFloat {
+        if let fixedRemaining { return CGFloat(1 - fixedRemaining / countdown.total) }
+        guard countdown.startedAt > 0 else { return 0 }
+        return CGFloat(max(0, min(1, (now - countdown.startedAt) / countdown.total)))
+    }
 
     var body: some View {
         GeometryReader { g in
             ZStack {
-                GlassClock(text: BreakOverlayController.Copy.shortTitle,
-                           size: LongBreakView.clockSize(g.size.height) * Self.promptScale,
-                           flat: flatBackground, monospaced: false)
-                    .frame(maxWidth: g.size.width - 80)
-                    .accessibilityLabel(BreakOverlayController.Copy.shortTitle)
+                TimelineView(.animation) { _ in
+                    let t = elapsed(ProcessInfo.processInfo.systemUptime)
+                    GlassClock(text: BreakOverlayController.Copy.shortTitle,
+                               size: LongBreakView.clockSize(g.size.height) * Self.promptScale,
+                               flat: flatBackground, monospaced: false)
+                        .mask(mask(t))
+                }
+                .frame(maxWidth: g.size.width - 80)
+                .accessibilityLabel(BreakOverlayController.Copy.shortTitle)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .environment(\.colorScheme, .dark)
         .environment(\.locale, Theme.appLocale)
     }
+
+    /// Left of the edge clear, right of it opaque; the edge runs from just left of the text (t = 0,
+    /// all visible) to just past its right end (t = 1, all gone).
+    @ViewBuilder private func mask(_ t: CGFloat) -> some View {
+        if reduceMotion {
+            Color.white.opacity(Double(1 - t))
+        } else {
+            let e = Self.edge, x = -e + t * (1 + e)   // edge start
+            LinearGradient(stops: [.init(color: .clear, location: x),
+                                   .init(color: .white, location: x + e)],
+                           startPoint: .leading, endPoint: .trailing)
+        }
+    }
 }
 
-/// Short-break bottom: ring 12 pt above the hold-to-skip capsule (in its glass container). Lives in a
-/// small clickable panel so the capsule takes a long-press; the rest of the screen stays click-through.
+/// Short-break bottom: the hold-to-skip capsule (in its glass container). Lives in a small
+/// clickable panel so the capsule takes a long-press; the rest of the screen stays click-through.
 struct ShortBreakControls: View {
     let countdown: Countdown
     let hold: HoldToSkip
     var flat = false
     var fixedRemaining: Double? = nil
     var body: some View {
-        VStack(spacing: 12) {
-            BreakRing(countdown: countdown, fixedRemaining: fixedRemaining)
-            HoldCapsule(hold: hold, glass: !flat)
-                .modifier(GlassGroup(on: !flat))
-        }
-        .padding(12)   // room for the glass edge
-        .environment(\.colorScheme, .dark)
-        .environment(\.locale, Theme.appLocale)
+        HoldCapsule(hold: hold, glass: !flat)
+            .modifier(GlassGroup(on: !flat))
+            .padding(12)   // room for the glass edge
+            .environment(\.colorScheme, .dark)
+            .environment(\.locale, Theme.appLocale)
     }
-}
-
-/// Short-break time left: the menu-bar ring (MenuBarController.icon, same drawing), white, 16 pt.
-/// Drains full -> empty continuously, sampled per display frame from the countdown's own clock.
-struct BreakRing: View {
-    let countdown: Countdown
-    var fixedRemaining: Double? = nil
-    private func fraction(_ now: TimeInterval) -> Double {
-        if let fixedRemaining { return fixedRemaining / countdown.total }
-        guard countdown.startedAt > 0 else { return 1 }
-        return max(0, min(1, 1 - (now - countdown.startedAt) / countdown.total))
-    }
-    var body: some View {
-        TimelineView(.animation) { _ in
-            Image(nsImage: MenuBarController.icon(fraction: fraction(ProcessInfo.processInfo.systemUptime),
-                                                  paused: false, warning: false))
-                .renderingMode(.template)
-                .resizable()
-                .foregroundColor(.white.opacity(0.9))
-                .frame(width: BreakRing.size, height: BreakRing.size)
-        }
-        .accessibilityHidden(true)
-    }
-    static let size: CGFloat = 20
 }
 
 /// Big break clock, shared by long and short. macOS 26: `.clear` Liquid Glass letters over a soft dark
@@ -102,6 +102,16 @@ struct GlassClock: View {
     var monospaced = true
     /// Max lines (wraps centered); scales down only if it still doesn't fit.
     var lines = 1
+    /// Glass letter tone: white fill under the `.clear` glass, and the soft dark backing behind it.
+    var tone: Tone = .standard
+    struct Tone {
+        let fill: Double, backing: Double, flat: Double
+        /// Short-break prompt; also the midnight long break (kept dim on purpose).
+        static let standard = Tone(fill: 0.18, backing: 0.28, flat: 1)
+        /// Long break by day and evening: reads as clearly as the skip capsule's white 0.9 text.
+        static let bright = Tone(fill: 0.62, backing: 0.36, flat: 1)
+        static let dim = Tone(fill: 0.18, backing: 0.28, flat: 0.55)
+    }
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var body: some View {
         let base = Font.system(size: size, weight: LongBreakView.countdownWeight)
@@ -112,12 +122,12 @@ struct GlassClock: View {
             .fixedSize(horizontal: false, vertical: true)
         if !flat, !reduceTransparency, #available(macOS 26, *) {
             ZStack {
-                digits.foregroundColor(.black.opacity(0.28)).blur(radius: size * 0.06)
-                digits.foregroundColor(.white.opacity(0.18))
+                digits.foregroundColor(.black.opacity(tone.backing)).blur(radius: size * 0.06)
+                digits.foregroundColor(.white.opacity(tone.fill))
                     .overlay(Color.clear.glassEffect(.clear, in: Rectangle()).mask(digits))
             }
         } else {
-            digits.foregroundColor(.white)
+            digits.foregroundColor(.white.opacity(tone.flat))
                 .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
                 .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
         }
@@ -266,6 +276,8 @@ struct LongBreakView: View {
     var stillTime: Double = 0
     /// Darker scenery after dark; decided once when the break opens (no mid-break jumps).
     var night: Bool = Scenery.isNight()
+    /// Long-break daypart (BreakOverlayController.daypart). Midnight: darker, calmer screen, dim text.
+    var daypart: BreakDaypart = .current()
     /// Debug renders only: show this many seconds instead of the live countdown.
     var fixedRemaining: Double? = nil
     /// Debug renders only: ImageRenderer can't draw glass/visual-effect, so use the flat fallback.
@@ -301,15 +313,16 @@ struct LongBreakView: View {
     private func content(clockSize: CGFloat) -> some View {
         ZStack {
             if let backdrop { Image(nsImage: backdrop).resizable() }
-            else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night) }
+            else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night || daypart != .day) }
+            if daypart == .midnight { Color.black.opacity(Self.midnightDim).allowsHitTesting(false) }
             if !bare {
             VStack(spacing: 0) {
-                GlassClock(text: timeText, size: clockSize, flat: flatControls)
+                GlassClock(text: timeText, size: clockSize, flat: flatControls, tone: textTone)
                     .accessibilityLabel(timeText)
                 // Glass prompt, same style as the clock at 1/3 size, one line.
                 // Rest quote (RestQuotes, unchanged) as glass text: 1/3 clock size, centered, max 2 lines.
                 if let quote {
-                    GlassClock(text: quote, size: clockSize / 3, flat: flatControls, monospaced: false, lines: 2)
+                    GlassClock(text: quote, size: clockSize / 3, flat: flatControls, monospaced: false, lines: 2, tone: textTone)
                         .frame(maxWidth: clockSize * 9)
                         .padding(.top, 16)
                         .accessibilityLabel(quote)
@@ -349,6 +362,10 @@ extension LongBreakView {
     /// SF Pro Semibold digits; debug renders compare weights.
     static var countdownWeight: Font.Weight = .semibold
     static let idleHold = HoldToSkip()
+    /// Extra dark layer over the (night) scenery at midnight: dark and calm, urges sleep.
+    static let midnightDim = 0.5
+    /// Clock + quote: bright by day/evening, dim at midnight so the screen doesn't wake you up.
+    var textTone: GlassClock.Tone { daypart == .midnight ? .dim : .bright }
     /// The skip capsule is drawn only when skipping is possible (never past the 90-minute line).
     var showsSkipCapsule: Bool { !locked && (hold != nil || debugHoldProgress != nil) }
     static func clockSize(_ height: CGFloat) -> CGFloat { max(76, height * 0.12) }

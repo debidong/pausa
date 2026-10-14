@@ -96,22 +96,51 @@ final class MenuBarController: NSObject {
         }
     }
 
-    /// First launch only: a quiet bubble under the icon so the user knows it is running.
+    /// First launch only: tells the user Pausa is running and when the next break is.
+    /// Icon visible: a popover under it, arrow pointing at it. Icon hidden (notch, menu bar manager):
+    /// the same text in a panel at the top right, just under the menu bar, no arrow. 8 s, click closes.
     func showWelcomeOnce() {
         let d = UserDefaults.standard
-        guard !d.bool(forKey: "didShowWelcome"), let button = item.button else { return }
+        guard !d.bool(forKey: "didShowWelcome") else { return }
         d.set(true, forKey: "didShowWelcome")
-        let pop = NSPopover()
-        pop.behavior = .transient
-        pop.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
-        pop.contentViewController = NSHostingController(rootView:
-            Text(L("Pausa 已开始，%d 分钟后提醒你看看远处", app.settings.shortEveryMin))
-                .environment(\.locale, AppLanguage.current.locale)
-                .font(.callout)
-                .padding(.horizontal, 14).padding(.vertical, 10)
-                .fixedSize())
-        pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 5) { pop.performClose(nil) }
+        let text = L("Pausa 已在运行，下次休息在 %@ 后。", Self.welcomeDuration(app.scheduler.next.remaining))
+        let label = Text(text)
+            .environment(\.locale, AppLanguage.current.locale)
+            .font(.callout)
+            .padding(.horizontal, 14).padding(.vertical, 10)
+            .fixedSize()
+        if let button = item.button, let w = button.window, w.occlusionState.contains(.visible),
+           NSScreen.screens.contains(where: { $0.frame.contains(NSPoint(x: w.frame.midX, y: w.frame.midY)) }) {
+            let pop = NSPopover()
+            pop.behavior = .transient   // any click closes it
+            pop.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
+            pop.contentViewController = NSHostingController(rootView: label)
+            pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 8) { pop.performClose(nil) }
+            return
+        }
+        guard let screen = NSScreen.main else { return }
+        let host = NSHostingView(rootView: label
+            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous)))
+        let size = host.fittingSize
+        let vf = screen.visibleFrame   // top edge = bottom of the menu bar
+        let panel = WelcomePanel(contentRect: NSRect(x: vf.maxX - size.width - 12, y: vf.maxY - size.height - 8,
+                                                     width: size.width, height: size.height),
+                                 styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
+        panel.isOpaque = false; panel.backgroundColor = .clear; panel.hasShadow = true
+        panel.level = .statusBar; panel.isReleasedWhenClosed = false
+        panel.collectionBehavior = [.canJoinAllSpaces, .transient]
+        panel.contentView = host
+        panel.orderFrontRegardless()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 8) { panel.close() }
+    }
+
+    /// "20 minutes" / "20 分钟" in the app language (system formatter, never hand-built units).
+    static func welcomeDuration(_ seconds: TimeInterval) -> String {
+        let f = DateComponentsFormatter()
+        f.unitsStyle = .full; f.allowedUnits = seconds >= 3600 ? [.hour, .minute] : [.minute]
+        var cal = Calendar.current; cal.locale = AppLanguage.current.locale; f.calendar = cal
+        return f.string(from: max(60, (seconds / 60).rounded() * 60)) ?? ""
     }
 
     /// The popover's values from the live app state.
@@ -980,3 +1009,8 @@ enum IntervalMenuSnapshot {
     }
 }
 #endif
+
+/// Hidden-icon welcome bubble: closes on click.
+private final class WelcomePanel: NSPanel {
+    override func mouseDown(with event: NSEvent) { close() }
+}

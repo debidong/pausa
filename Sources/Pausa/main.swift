@@ -87,6 +87,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         updater.start()   // scheduled checks (SUScheduledCheckInterval); silent
         Settings.shared.enableLaunchAtLoginOnFirstRun()
         controller.start()
+#if PAUSA_DEV
+        pendingDevURLs.forEach(handleDevURL); pendingDevURLs = []
+#endif
         let v = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
         Logger(subsystem: "app.pausa", category: "update").info("launched version \(v, privacy: .public) pid \(ProcessInfo.processInfo.processIdentifier) path \(Bundle.main.bundlePath, privacy: .public)")
 #if DEBUG
@@ -99,6 +102,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Let the system "Login Item Added" notice pass first.
         DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in self?.menuBar.showWelcomeOnce() }
     }
+    /// pausa-dev://break?kind=short|long[&daypart=day|night|midnight]. The scheme is registered only in DEV=1 builds
+    /// (App/build-app.sh) and the handler compiles only with PAUSA_DEV, so release builds contain none of it.
+    /// URLs that arrive before launch finishes are queued and run once the controller exists.
+    #if PAUSA_DEV   // dev-only test link: not compiled into release builds at all
+    private var pendingDevURLs: [URL] = []
+    private let devLog = Logger(subsystem: "app.pausa", category: "dev")
+    func application(_ application: NSApplication, open urls: [URL]) {
+        devLog.info("open urls \(urls.map(\.absoluteString).joined(separator: " "), privacy: .public) controller \(self.controller == nil ? "nil" : "ready", privacy: .public)")
+        guard Bundle.main.bundleIdentifier?.hasSuffix(".dev") == true else { return }
+        guard controller != nil else { pendingDevURLs += urls; return }
+        urls.forEach(handleDevURL)
+    }
+    private func handleDevURL(_ url: URL) {
+        guard url.scheme == "pausa-dev", url.host == "break" else { return }
+        guard !controller.isOnBreak else { devLog.info("dev url ignored: already on break"); return }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        let kind = items.first { $0.name == "kind" }?.value
+        controller.overlay.devDaypartOverride = items.first { $0.name == "daypart" }?.value
+            .flatMap(BreakDaypart.init(rawValue:))
+        switch kind {
+        case "short": controller.breakNow(.short)
+        case "long": controller.breakNow(.long)
+        default: controller.breakNow(controller.scheduler.next.kind)
+        }
+        devLog.info("dev url break kind \(kind ?? "next", privacy: .public)")
+    }
+    #endif
     func applicationWillTerminate(_ n: Notification) {
         controller?.saveState()
     }

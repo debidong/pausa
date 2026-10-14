@@ -7,6 +7,8 @@ import SwiftUI
 /// English, 4:47, one fixed sentence, only the hold-to-skip capsule. No AppController is made, so the
 /// scheduler, timers and break history are never touched; nothing covers the screen. Prints the
 /// window number (for `screencapture -l`) and quits after `seconds` (default 8). See scripts/make-hero.sh.
+/// Options: `--mock-daypart day|night|midnight` (default: day, or night for the night theme),
+/// `--mock-lang <code>`, `--mock-quote <quote id>` (stderr reports the lines that quote needs).
 enum HeroMock {
     static let sentence = "Look far. Then a little farther."
     static func handles(_ args: [String]) -> Bool { args.contains("--hero-mock") }
@@ -15,8 +17,20 @@ enum HeroMock {
         AppLanguage.override = .en
         let i = args.firstIndex(of: "--hero-mock")!
         let what = i + 1 < args.count ? args[i + 1] : "ocean"
+        func opt(_ k: String) -> String? { args.firstIndex(of: k).flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } }
+        if let l = opt("--mock-lang").flatMap(AppLanguage.init(rawValue:)) { AppLanguage.override = l }
+        let quote = opt("--mock-quote").flatMap { RestQuotes.text(id: $0) } ?? sentence
+        do { // Lines the quote needs at full size (scale-invariant: font = clock/3, width = clock*9).
+            let cs = LongBreakView.clockSize(640), font = NSFont.systemFont(ofSize: cs / 3, weight: .semibold)
+            let ts = NSTextStorage(string: quote, attributes: [.font: font]); let lm = NSLayoutManager()
+            let tc = NSTextContainer(size: NSSize(width: cs * 9, height: 1e6)); tc.lineFragmentPadding = 0
+            lm.addTextContainer(tc); ts.addLayoutManager(lm); lm.glyphRange(for: tc)
+            var n = 0; lm.enumerateLineFragments(forGlyphRange: NSRange(location: 0, length: lm.numberOfGlyphs)) { _, _, _, _, _ in n += 1 }
+            FileHandle.standardError.write("mock-quote lines=\(n)\n".data(using: .utf8)!)
+        }
         let backdrop = what.hasSuffix(".png") ? NSImage(contentsOfFile: what) : nil
         let theme = ThemeChoice(rawValue: what) ?? .ocean
+        let daypart = opt("--mock-daypart").flatMap(BreakDaypart.init(rawValue:)) ?? (theme == .night ? .night : .day)
         let secs = (i + 2 < args.count ? Double(args[i + 2]) : nil) ?? 8
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
@@ -31,10 +45,22 @@ enum HeroMock {
         w.isReleasedWhenClosed = false
         let cd = Countdown(total: 300) {}   // never started
         let view = LongBreakView(countdown: cd, showControls: true, onSnooze: { _ in },
-                                 theme: theme, seed: 1, animate: false, night: theme == .night,
-                                 fixedRemaining: 4 * 60 + 47, hold: HoldToSkip(), quote: sentence,
+                                 theme: theme, seed: 1, animate: false, night: daypart != .day, daypart: daypart,
+                                 fixedRemaining: 4 * 60 + 47, hold: HoldToSkip(), quote: quote,
                                  skipOnly: true, backdrop: backdrop, bare: args.contains("--bare"))
-        let host = NSHostingView(rootView: view)
+        // `--short`: the short break instead (scene behind, dim, live wipe over `seconds`).
+        let short = args.contains("--short")
+        let scd = Countdown(total: max(1, secs - 1)) {}
+        let shortView = ZStack {
+            LongBreakView(countdown: cd, showControls: false, onSnooze: { _ in }, theme: theme, seed: 1, animate: false,
+                          night: daypart != .day, daypart: daypart, fixedRemaining: 0, hold: HoldToSkip(), quote: "",
+                          skipOnly: true, backdrop: backdrop, bare: true)
+            Color.black.opacity(BreakOverlayController.shortDim)
+            ShortBreakCapsule(countdown: scd)
+            VStack { Spacer(); ShortBreakControls(countdown: scd, hold: HoldToSkip()).padding(.bottom, 28) }
+        }
+        let host: NSView = short ? NSHostingView(rootView: shortView) : NSHostingView(rootView: view)
+        if short { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { scd.start() } }
         host.frame = NSRect(origin: .zero, size: size)
         w.contentView = host
         // Active + key like the real break window: inactive windows draw Liquid Glass flat.
