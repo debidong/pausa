@@ -730,6 +730,55 @@ struct AboutCard: View {
     static let cream = Color(red: 0xF5 / 255, green: 0xEC / 255, blue: 0xD7 / 255)
     /// Variant D prototype (Dev mock only): glass lettering like the long-break clock.
     nonisolated(unsafe) static var glass = false
+    /// Layout prototypes (Dev mock only): nil = current; "A" lower right, "B" serif title, "C" centered.
+    nonisolated(unsafe) static var variant: String? = nil
+    private var isChinese: Bool { Theme.appLocale.identifier.hasPrefix("zh") }
+
+    @ViewBuilder private func text(dark: Bool, width: CGFloat) -> some View {
+        let v = Self.variant
+        let fg = dark ? Self.cream : Self.ink
+        let title: Font = v == "B" || v == "C" ? .system(size: 28, weight: .semibold, design: .serif)
+                                                : .system(size: 28, weight: .semibold)
+        let body: Font = v == "C" && isChinese ? .custom("Songti SC", size: 13)
+                       : v == "B" ? .system(size: 13, weight: .light) : .system(size: 13)
+        let align: HorizontalAlignment = v == "C" ? .center : .leading
+        let talign: TextAlignment = v == "C" ? .center : .leading
+        let col = width * (1 - Self.textStart) - (v == "A" ? 28 : 14)
+        let block = VStack(alignment: align, spacing: v == "B" || v == "C" ? 8 : 6) {
+            if Self.glass {
+                GlassClock(text: "Pausa", size: 28, monospaced: false, lines: 1, tone: .bright)
+                GlassClock(text: L("名字来自西班牙语中的“暂停”。"), size: 13, monospaced: false, lines: 2, tone: .bright)
+                GlassClock(text: L("图标的灵感来自泰国寺庙里的莲花。"), size: 13, monospaced: false, lines: 2, tone: .bright)
+            } else {
+                Text("Pausa").font(title)
+                    .padding(.bottom, v == "B" || v == "C" ? 4 : 0)
+                Text(L("名字来自西班牙语中的“暂停”。")).font(body).lineSpacing(v == "B" ? 2 : 0)
+                Text(L("图标的灵感来自泰国寺庙里的莲花。")).font(body).lineSpacing(v == "B" ? 2 : 0)
+            }
+            Link(destination: URL(string: "https://github.com/debidong")!) {
+                Text(L("由 Bowen（debidong）开发"))
+                    .foregroundStyle(dark ? Self.cream : Color(nsColor: .linkColor))
+                    .underline(dark)
+                    .multilineTextAlignment(talign)
+                    .frame(maxWidth: .infinity, alignment: Alignment(horizontal: align, vertical: .center))
+            }
+            .padding(.top, v == "B" || v == "C" ? 4 : 0)
+        }
+        .font(.system(size: 13))
+        .foregroundStyle(fg)
+        .lineLimit(2)
+        .fixedSize(horizontal: false, vertical: true)
+        .multilineTextAlignment(talign)
+        .frame(width: col, alignment: Alignment(horizontal: align, vertical: .center))
+        if v == "A" {   // lower right over the water, 24 pt from the bottom
+            VStack(spacing: 0) { Spacer(minLength: 0); block }
+                .padding(.bottom, 24)
+                .frame(height: Self.height)
+                .offset(x: width * 0.56)
+        } else {
+            block.offset(x: width * Self.textStart)
+        }
+    }
     private static func image(dark: Bool) -> NSImage? {
         Bundle.main.url(forResource: dark ? "about-pond-dark" : "about-pond-light", withExtension: "jpg")
             .flatMap(NSImage.init(contentsOf:))
@@ -744,31 +793,7 @@ struct AboutCard: View {
                 } else {
                     (dark ? Color(white: 0.15) : Color(red: 0.98, green: 0.96, blue: 0.9))
                 }
-                VStack(alignment: .leading, spacing: 6) {
-                    if Self.glass {
-                        GlassClock(text: "Pausa", size: 28, monospaced: false, lines: 1, tone: .bright)
-                        GlassClock(text: L("名字来自西班牙语中的“暂停”。"), size: 13, monospaced: false, lines: 2, tone: .bright)
-                        GlassClock(text: L("图标的灵感来自泰国寺庙里的莲花。"), size: 13, monospaced: false, lines: 2, tone: .bright)
-                    } else {
-                        Text("Pausa").font(.system(size: 28, weight: .semibold))
-                        Text(L("名字来自西班牙语中的“暂停”。"))
-                        Text(L("图标的灵感来自泰国寺庙里的莲花。"))
-                    }
-                    Link(destination: URL(string: "https://github.com/debidong")!) {
-                        Text(L("由 Bowen（debidong）开发"))
-                            .foregroundStyle(dark ? Self.cream : Color(nsColor: .linkColor))
-                            .underline(dark)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .font(.system(size: 13))
-                .foregroundStyle(dark ? Self.cream : Self.ink)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-                .multilineTextAlignment(.leading)
-                .frame(width: g.size.width * (1 - Self.textStart) - 14, alignment: .leading)
-                .offset(x: g.size.width * Self.textStart)
+                text(dark: dark, width: g.size.width)
             }
         }
         .frame(height: Self.height)
