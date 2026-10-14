@@ -23,15 +23,6 @@
   <img src="docs/images/hero.png" width="100%" alt="Pausa's long-break screen over five backgrounds, with a glass clock and message in the center and a &quot;Hold Space to skip&quot; button at the bottom.">
 </p>
 
-<p align="center">
-  <img src="docs/images/midnight.png" width="49%" alt="Pausa's long-break screen late at night: a dark lake under the moon, with a dimmed clock and the message &quot;Time to sleep. Tomorrow's problems can wait until tomorrow.&quot;">
-  <img src="docs/images/short-fade.png" width="49%" alt="Pausa's short-break screen halfway through: the words &quot;Look into the distance&quot; fade out from left to right.">
-</p>
-
-<p align="center">
-  Long breaks change their message with the time of day. After 11 PM the screen turns dark and tells you to go to sleep. Short breaks just ask you to look into the distance, and the words fade out as the break ends.
-</p>
-
 ## Install
 
 1. Download `Pausa-x.y.z.dmg` from [Releases](https://github.com/debidong/pausa/releases/latest) and drag Pausa to **Applications**.
