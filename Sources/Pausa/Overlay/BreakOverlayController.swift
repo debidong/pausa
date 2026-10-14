@@ -235,7 +235,7 @@ public final class BreakOverlayController {
             w.hold = Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip)
             let view = LongBreakView(countdown: cd, showControls: screen == primary,
                                      onSnooze: { [weak self] in self?.snooze($0) },
-                                     seed: sceneSeed, hold: Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip), quote: longQuote,
+                                     seed: sceneSeed, daypart: daypart, hold: Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip), quote: longQuote,
                                      show15: show15, can15: can15, locked: mustNotDefer)
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
             let frame = NSRect(origin: .zero, size: screen.frame.size)

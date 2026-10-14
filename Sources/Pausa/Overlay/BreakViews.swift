@@ -102,6 +102,16 @@ struct GlassClock: View {
     var monospaced = true
     /// Max lines (wraps centered); scales down only if it still doesn't fit.
     var lines = 1
+    /// Glass letter tone: white fill under the `.clear` glass, and the soft dark backing behind it.
+    var tone: Tone = .standard
+    struct Tone {
+        let fill: Double, backing: Double, flat: Double
+        /// Short-break prompt; also the midnight long break (kept dim on purpose).
+        static let standard = Tone(fill: 0.18, backing: 0.28, flat: 1)
+        /// Long break by day and evening: reads as clearly as the skip capsule's white 0.9 text.
+        static let bright = Tone(fill: 0.62, backing: 0.36, flat: 1)
+        static let dim = Tone(fill: 0.18, backing: 0.28, flat: 0.55)
+    }
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     var body: some View {
         let base = Font.system(size: size, weight: LongBreakView.countdownWeight)
@@ -112,12 +122,12 @@ struct GlassClock: View {
             .fixedSize(horizontal: false, vertical: true)
         if !flat, !reduceTransparency, #available(macOS 26, *) {
             ZStack {
-                digits.foregroundColor(.black.opacity(0.28)).blur(radius: size * 0.06)
-                digits.foregroundColor(.white.opacity(0.18))
+                digits.foregroundColor(.black.opacity(tone.backing)).blur(radius: size * 0.06)
+                digits.foregroundColor(.white.opacity(tone.fill))
                     .overlay(Color.clear.glassEffect(.clear, in: Rectangle()).mask(digits))
             }
         } else {
-            digits.foregroundColor(.white)
+            digits.foregroundColor(.white.opacity(tone.flat))
                 .shadow(color: .black.opacity(0.35), radius: 12, x: 0, y: 2)
                 .shadow(color: .black.opacity(0.30), radius: 1.5, x: 0, y: 1)
         }
@@ -266,6 +276,8 @@ struct LongBreakView: View {
     var stillTime: Double = 0
     /// Darker scenery after dark; decided once when the break opens (no mid-break jumps).
     var night: Bool = Scenery.isNight()
+    /// Long-break daypart (BreakOverlayController.daypart). Midnight: darker, calmer screen, dim text.
+    var daypart: BreakDaypart = .current()
     /// Debug renders only: show this many seconds instead of the live countdown.
     var fixedRemaining: Double? = nil
     /// Debug renders only: ImageRenderer can't draw glass/visual-effect, so use the flat fallback.
@@ -301,15 +313,16 @@ struct LongBreakView: View {
     private func content(clockSize: CGFloat) -> some View {
         ZStack {
             if let backdrop { Image(nsImage: backdrop).resizable() }
-            else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night) }
+            else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night || daypart == .midnight) }
+            if daypart == .midnight { Color.black.opacity(Self.midnightDim).allowsHitTesting(false) }
             if !bare {
             VStack(spacing: 0) {
-                GlassClock(text: timeText, size: clockSize, flat: flatControls)
+                GlassClock(text: timeText, size: clockSize, flat: flatControls, tone: textTone)
                     .accessibilityLabel(timeText)
                 // Glass prompt, same style as the clock at 1/3 size, one line.
                 // Rest quote (RestQuotes, unchanged) as glass text: 1/3 clock size, centered, max 2 lines.
                 if let quote {
-                    GlassClock(text: quote, size: clockSize / 3, flat: flatControls, monospaced: false, lines: 2)
+                    GlassClock(text: quote, size: clockSize / 3, flat: flatControls, monospaced: false, lines: 2, tone: textTone)
                         .frame(maxWidth: clockSize * 9)
                         .padding(.top, 16)
                         .accessibilityLabel(quote)
@@ -349,6 +362,10 @@ extension LongBreakView {
     /// SF Pro Semibold digits; debug renders compare weights.
     static var countdownWeight: Font.Weight = .semibold
     static let idleHold = HoldToSkip()
+    /// Extra dark layer over the (night) scenery at midnight: dark and calm, urges sleep.
+    static let midnightDim = 0.5
+    /// Clock + quote: bright by day/evening, dim at midnight so the screen doesn't wake you up.
+    var textTone: GlassClock.Tone { daypart == .midnight ? .dim : .bright }
     /// The skip capsule is drawn only when skipping is possible (never past the 90-minute line).
     var showsSkipCapsule: Bool { !locked && (hold != nil || debugHoldProgress != nil) }
     static func clockSize(_ height: CGFloat) -> CGFloat { max(76, height * 0.12) }
