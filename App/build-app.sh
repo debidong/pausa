@@ -85,6 +85,8 @@ done
 iconutil -c icns "$SET" -o "$RES/AppIcon.icns"
 cp "$RES/AppIcon.icns" App/AppIcon.icns     # keep the generated icon in the repo
 rm -rf "$ICONTMP"
+# About card art (scripts/make-about-pond.py).
+cp App/about/about-pond-light.jpg App/about/about-pond-dark.jpg "$RES/"
 # Break quotes (App/rest-quotes.json -> Resources/rest-quotes.json).
 cp App/rest-quotes.json "$RES/rest-quotes.json" && echo "quotes: $(grep -c '"id"' App/rest-quotes.json)"
 # Long-break backgrounds: release builds ship HEIC only, from App/backgrounds.

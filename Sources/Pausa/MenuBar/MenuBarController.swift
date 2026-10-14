@@ -690,36 +690,26 @@ struct AppearanceSection: View {
 struct AboutPage: View {
     @ObservedObject var settings: Settings
     private var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0" }
+    @Environment(\.colorScheme) private var scheme
     var body: some View {
+        // The card is its section's row background, so it takes exactly the grouped section's frame
+        // (same width as the version box); the note is the section footer, outside the box.
         Form {
             Section {
-                VStack(spacing: 10) {
-                    Group {
-                        if let img = settings.icon.image ?? NSApp.applicationIconImage {
-                            Image(nsImage: img).resizable().interpolation(.high).frame(width: 96, height: 96)
-                        } else {
-                            RoundedRectangle(cornerRadius: 20).fill(.quaternary).frame(width: 80, height: 80).padding(8)
-                        }
-                    }
-                    Text("Pausa").font(.title2.weight(.semibold))
-                    VStack(spacing: 4) {
-                        Text(L("名字来自西班牙语中的“暂停”。"))
-                        Text(L("图标的灵感来自泰国寺庙里的莲花。"))
-                    }
-                    .font(.callout).foregroundStyle(.secondary)
-                    .padding(.top, 6)
-                    Link(destination: URL(string: "https://github.com/debidong")!) {
-                        Text(L("由 Bowen（debidong）开发"))
-                    }
-                    .font(.callout)
-                    Text(L(HealthNote.key))
-                        .font(.footnote).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.top, 6)
-                }
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                // The grouped row keeps a 10 pt content inset even with zero listRowInsets; bleed
+                // the card over it so it fills the section box exactly (= the version box width).
+                AboutCard()
+                    .padding(-10)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            } footer: {
+                Text(L(HealthNote.key))
+                    .font(.system(size: 11))
+                    // Not .secondary: measured below 4.5:1 on the window background.
+                    .foregroundStyle(scheme == .dark ? Color(white: 0.68) : Color(white: 0.36))
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity)
             }
             Section {
                 UpdateRow(model: .shared, version: version)
@@ -729,6 +719,64 @@ struct AboutPage: View {
     }
 }
 
+/// About top card: watercolor lotus pond (App/about, 1440x600 crops of the day/night art) filling the
+/// card, lotus on the left; name and credits on the calm water from 52% width.
+/// Light: deep ink on cream water, dark blue link. Dark: night pond, cream text, cream underlined link.
+struct AboutCard: View {
+    @Environment(\.colorScheme) private var scheme
+    static let height: CGFloat = 220
+    static let textStart: CGFloat = 0.52
+    static let ink = Color(red: 0x2B / 255, green: 0x2A / 255, blue: 0x33 / 255)
+    static let cream = Color(red: 0xF5 / 255, green: 0xEC / 255, blue: 0xD7 / 255)
+    private static func image(dark: Bool) -> NSImage? {
+        Bundle.main.url(forResource: dark ? "about-pond-dark" : "about-pond-light", withExtension: "jpg")
+            .flatMap(NSImage.init(contentsOf:))
+    }
+    /// Light-mode link: fixed #1550B8 (system blue ~4.6:1 and #1A5CD1 ~4.45:1 on the cream water; this ~5.4:1).
+    static let linkLight = Color(red: 0x15 / 255, green: 0x50 / 255, blue: 0xB8 / 255)
+
+    /// New York title, light body, 8 pt rhythm; text column from 52% of the card.
+    private func text(dark: Bool, width: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Pausa").font(.system(size: 28, weight: .semibold, design: .serif))
+                .padding(.bottom, 4)
+            Text(L("名字来自西班牙语中的“暂停”。")).lineSpacing(2)
+            Text(L("图标的灵感来自泰国寺庙里的莲花。")).lineSpacing(2)
+            Link(destination: URL(string: "https://github.com/debidong")!) {
+                Text(L("由 Bowen（debidong）开发"))
+                    .foregroundStyle(dark ? Self.cream : Self.linkLight)
+                    .underline(dark)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.top, 4)
+        }
+        .font(.system(size: 13, weight: .light))
+        .foregroundStyle(dark ? Self.cream : Self.ink)
+        .lineLimit(2)
+        .fixedSize(horizontal: false, vertical: true)
+        .multilineTextAlignment(.leading)
+        .frame(width: width * (1 - Self.textStart) - 14, alignment: .leading)
+        .offset(x: width * Self.textStart)
+    }
+
+    var body: some View {
+        let dark = scheme == .dark
+        GeometryReader { g in
+            ZStack(alignment: .leading) {
+                if let img = Self.image(dark: dark) {
+                    Image(nsImage: img).resizable().interpolation(.high).aspectRatio(contentMode: .fill)
+                        .frame(width: g.size.width, height: g.size.height).clipped()
+                } else {
+                    (dark ? Color(white: 0.15) : Color(red: 0.98, green: 0.96, blue: 0.9))
+                }
+                text(dark: dark, width: g.size.width)
+            }
+        }
+        .frame(height: Self.height)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
 
 /// System Settings "Appearance"-style chooser: label, then one tile per icon with its name below
 /// (round 3b chooser, restored in round 7c). One click switches; the Dock tile follows at once.

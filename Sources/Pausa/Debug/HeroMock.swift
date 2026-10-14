@@ -15,6 +15,7 @@ enum HeroMock {
 
     @MainActor static func run(_ args: [String]) -> Never {
         AppLanguage.override = .en
+        if args.contains("--about-mock") { about(args) }
         let i = args.firstIndex(of: "--hero-mock")!
         let what = i + 1 < args.count ? args[i + 1] : "ocean"
         func opt(_ k: String) -> String? { args.firstIndex(of: k).flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } }
@@ -77,6 +78,23 @@ enum HeroMock {
         DispatchQueue.main.asyncAfter(deadline: .now() + secs) { exit(0) }
         app.run()
         exit(0)
+    }
+
+    /// `--hero-mock --about-mock [--mock-lang <code>] [--mock-dark] [--mock-secs N]`: the real Settings window
+    /// on the About tab; prints the window number, quits after N s.
+    @MainActor private static func about(_ args: [String]) -> Never {
+        func opt(_ k: String) -> String? { args.firstIndex(of: k).flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } }
+        if let l = opt("--mock-lang").flatMap(AppLanguage.init(rawValue:)) { AppLanguage.override = l }
+        let app = NSApplication.shared
+        app.setActivationPolicy(.accessory)
+        // The real Settings window (tabs, toolbar, size), on the About tab; its own frame key.
+        let (w, tabs) = SettingsTabsController.makeWindow(settings: .shared, onPreview: {}, autosave: "PausaAboutMock")
+        w.appearance = NSAppearance(named: args.contains("--mock-dark") ? .darkAqua : .aqua)
+        tabs.select(.about)
+        NSApp.activate(ignoringOtherApps: true); w.makeKeyAndOrderFront(nil)
+        print(w.windowNumber); fflush(stdout)
+        DispatchQueue.main.asyncAfter(deadline: .now() + (opt("--mock-secs").flatMap(Double.init) ?? 6)) { exit(0) }
+        app.run(); exit(0)
     }
 
     private final class KeyWindow: NSWindow {
