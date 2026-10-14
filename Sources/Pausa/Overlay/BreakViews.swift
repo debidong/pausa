@@ -313,7 +313,7 @@ struct LongBreakView: View {
     private func content(clockSize: CGFloat) -> some View {
         ZStack {
             if let backdrop { Image(nsImage: backdrop).resizable() }
-            else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night || daypart == .midnight) }
+            else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night || daypart != .day) }
             if daypart == .midnight { Color.black.opacity(Self.midnightDim).allowsHitTesting(false) }
             if !bare {
             VStack(spacing: 0) {

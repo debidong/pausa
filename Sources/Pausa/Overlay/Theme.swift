@@ -70,8 +70,7 @@ enum Scenery {
     /// its state is only readable through private CoreBrightness, not a public API.
     static func isNight(now: Date = Date()) -> Bool {
         let dark = NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-        let hour = Calendar.current.component(.hour, from: now)
-        return dark || hour >= 20 || hour < 7
+        return dark   // evening and midnight come from BreakDaypart (LongBreakView: night || daypart != .day)
     }
     typealias RGB = (Double, Double, Double)
 
