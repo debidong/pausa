@@ -168,7 +168,7 @@ enum L10nTables {
         // menu popover
         "短休息": "短休息", "%d 秒": "%d 秒", "%d 分钟": "%d 分鐘",
         "现在休息": "現在休息", "已连续使用 90 分钟，长休息不能再推迟。": "已連續使用 90 分鐘，長休息不能再延後。",
-        "Pausa 已开始，%d 分钟后提醒你看看远处": "Pausa 已開始，%d 分鐘後提醒你看看遠方",
+        "Pausa 已在运行，下次休息在 %@ 后。": "Pausa 已在執行，下次休息在 %@ 後。",
         "分钟": "分鐘", "秒": "秒", 
         "主题": "主題", "预览": "預覽", "语言": "語言",
         HealthNote.key: "若眼部持續不適，請及時就醫。Pausa 不能取代專業的治療。",
@@ -252,7 +252,7 @@ enum L10nTables {
         // menu popover
         "短休息": "Short break", "%d 秒": "%d sec", "%d 分钟": "%d min",
         "现在休息": "Break now", "已连续使用 90 分钟，长休息不能再推迟。": "You've been at it for 90 minutes. This long break can't wait.",
-        "Pausa 已开始，%d 分钟后提醒你看看远处": "Pausa is running. In %d minutes it will remind you to look into the distance.",
+        "Pausa 已在运行，下次休息在 %@ 后。": "Pausa is running. Next break in %@.",
         "分钟": "min", "秒": "s", 
         "主题": "Theme", "预览": "Preview", "语言": "Language",
         HealthNote.key: "If eye discomfort persists, please see a doctor promptly. Pausa is not a substitute for professional treatment.",
@@ -336,7 +336,7 @@ enum L10nTables {
         // menu popover
         "短休息": "Pausa corta", "%d 秒": "%d s", "%d 分钟": "%d min",
         "现在休息": "Descansar ya", "已连续使用 90 分钟，长休息不能再推迟。": "Llevas 90 minutos trabajando. La pausa larga ya no se puede posponer.",
-        "Pausa 已开始，%d 分钟后提醒你看看远处": "Pausa está en marcha. Dentro de %d minutos te recordará mirar a lo lejos.",
+        "Pausa 已在运行，下次休息在 %@ 后。": "Pausa está en marcha. Próximo descanso en %@.",
         "分钟": "min", "秒": "s", 
         "主题": "Tema", "预览": "Vista previa", "语言": "Idioma",
         HealthNote.key: "Si las molestias en los ojos persisten, acude al médico sin demora. Pausa no sustituye un tratamiento profesional.",
@@ -420,7 +420,7 @@ enum L10nTables {
         // menu popover
         "短休息": "Короткий перерыв", "%d 秒": "%d с", "%d 分钟": "%d мин",
         "现在休息": "Отдохнуть сейчас", "已连续使用 90 分钟，长休息不能再推迟。": "Вы работаете уже 90 минут. Длинный перерыв больше нельзя отложить.",
-        "Pausa 已开始，%d 分钟后提醒你看看远处": "Pausa запущена. Через %d мин она напомнит посмотреть вдаль.",
+        "Pausa 已在运行，下次休息在 %@ 后。": "Pausa работает. Следующий перерыв через %@.",
         "分钟": "мин", "秒": "с", 
         "主题": "Тема", "预览": "Просмотр", "语言": "Язык",
         HealthNote.key: "Если дискомфорт в глазах не проходит, своевременно обратитесь к врачу. Pausa не заменяет профессиональное лечение.",
@@ -504,7 +504,7 @@ enum L10nTables {
         // menu popover
         "短休息": "Pause courte", "%d 秒": "%d s", "%d 分钟": "%d min",
         "现在休息": "Pause maintenant", "已连续使用 90 分钟，长休息不能再推迟。": "Vous travaillez depuis 90 minutes. La pause longue ne peut plus être reportée.",
-        "Pausa 已开始，%d 分钟后提醒你看看远处": "Pausa est lancé. Dans %d minutes, il vous rappellera de regarder au loin.",
+        "Pausa 已在运行，下次休息在 %@ 后。": "Pausa est lancé. Prochaine pause dans %@.",
         "分钟": "min", "秒": "s", 
         "主题": "Thème", "预览": "Aperçu", "语言": "Langue",
         HealthNote.key: "Si la gêne oculaire persiste, consultez rapidement un médecin. Pausa ne remplace pas un traitement professionnel.",
@@ -588,7 +588,7 @@ enum L10nTables {
         // menu popover
         "短休息": "Nghỉ ngắn", "%d 秒": "%d giây", "%d 分钟": "%d phút",
         "现在休息": "Nghỉ ngay", "已连续使用 90 分钟，长休息不能再推迟。": "Bạn đã làm việc 90 phút. Không thể hoãn lần nghỉ dài nữa.",
-        "Pausa 已开始，%d 分钟后提醒你看看远处": "Pausa đang chạy. Sau %d phút, Pausa sẽ nhắc bạn nhìn ra xa.",
+        "Pausa 已在运行，下次休息在 %@ 后。": "Pausa đang chạy. Lần nghỉ tiếp theo sau %@.",
         "分钟": "phút", "秒": "giây", 
         "主题": "Chủ đề", "预览": "Xem trước", "语言": "Ngôn ngữ",
         HealthNote.key: "Nếu mắt vẫn tiếp tục khó chịu, hãy đi khám bác sĩ kịp thời. Pausa không thể thay thế việc điều trị chuyên môn.",
@@ -690,7 +690,7 @@ enum L10nTables {
         "%d 分钟": "%d นาที",
         "现在休息": "พักเดี๋ยวนี้",
         "已连续使用 90 分钟，长休息不能再推迟。": "คุณใช้งานต่อเนื่องมา 90 นาทีแล้ว เลื่อนพักยาวออกไปอีกไม่ได้",
-        "Pausa 已开始，%d 分钟后提醒你看看远处": "Pausa เริ่มทำงานแล้ว อีก %d นาทีจะเตือนให้คุณมองไปไกลๆ",
+        "Pausa 已在运行，下次休息在 %@ 后。": "Pausa กำลังทำงาน พักครั้งถัดไปในอีก %@",
         "分钟": "นาที",
         "秒": "วินาที",
         "主题": "ธีม",

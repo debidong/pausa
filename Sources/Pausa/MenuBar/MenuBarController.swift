@@ -100,18 +100,31 @@ final class MenuBarController: NSObject {
     func showWelcomeOnce() {
         let d = UserDefaults.standard
         guard !d.bool(forKey: "didShowWelcome"), let button = item.button else { return }
+        // Only when anchored to a visible icon. A hidden icon (notch, menu bar manager, system) makes
+        // NSPopover float loose on screen; skip and try again next launch.
+        guard let w = button.window, w.occlusionState.contains(.visible),
+              NSScreen.screens.contains(where: { $0.frame.contains(NSPoint(x: w.frame.midX, y: w.frame.midY)) })
+        else { return }
         d.set(true, forKey: "didShowWelcome")
         let pop = NSPopover()
         pop.behavior = .transient
         pop.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
         pop.contentViewController = NSHostingController(rootView:
-            Text(L("Pausa 已开始，%d 分钟后提醒你看看远处", app.settings.shortEveryMin))
+            Text(L("Pausa 已在运行，下次休息在 %@ 后。", Self.welcomeDuration(app.scheduler.next.remaining)))
                 .environment(\.locale, AppLanguage.current.locale)
                 .font(.callout)
                 .padding(.horizontal, 14).padding(.vertical, 10)
                 .fixedSize())
         pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         DispatchQueue.main.asyncAfter(deadline: .now() + 5) { pop.performClose(nil) }
+    }
+
+    /// "20 minutes" / "20 分钟" in the app language (system formatter, never hand-built units).
+    static func welcomeDuration(_ seconds: TimeInterval) -> String {
+        let f = DateComponentsFormatter()
+        f.unitsStyle = .full; f.allowedUnits = seconds >= 3600 ? [.hour, .minute] : [.minute]
+        var cal = Calendar.current; cal.locale = AppLanguage.current.locale; f.calendar = cal
+        return f.string(from: max(60, (seconds / 60).rounded() * 60)) ?? ""
     }
 
     /// The popover's values from the live app state.
