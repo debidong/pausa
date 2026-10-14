@@ -48,7 +48,19 @@ enum HeroMock {
                                  theme: theme, seed: 1, animate: false, night: daypart != .day, daypart: daypart,
                                  fixedRemaining: 4 * 60 + 47, hold: HoldToSkip(), quote: quote,
                                  skipOnly: true, backdrop: backdrop, bare: args.contains("--bare"))
-        let host = NSHostingView(rootView: view)
+        // `--short`: the short break instead (scene behind, dim, live wipe over `seconds`).
+        let short = args.contains("--short")
+        let scd = Countdown(total: max(1, secs - 1)) {}
+        let shortView = ZStack {
+            LongBreakView(countdown: cd, showControls: false, onSnooze: { _ in }, theme: theme, seed: 1, animate: false,
+                          night: daypart != .day, daypart: daypart, fixedRemaining: 0, hold: HoldToSkip(), quote: "",
+                          skipOnly: true, backdrop: backdrop, bare: true)
+            Color.black.opacity(BreakOverlayController.shortDim)
+            ShortBreakCapsule(countdown: scd)
+            VStack { Spacer(); ShortBreakControls(countdown: scd, hold: HoldToSkip()).padding(.bottom, 28) }
+        }
+        let host: NSView = short ? NSHostingView(rootView: shortView) : NSHostingView(rootView: view)
+        if short { DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { scd.start() } }
         host.frame = NSRect(origin: .zero, size: size)
         w.contentView = host
         // Active + key like the real break window: inactive windows draw Liquid Glass flat.
