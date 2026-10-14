@@ -690,38 +690,46 @@ struct AppearanceSection: View {
 struct AboutPage: View {
     @ObservedObject var settings: Settings
     private var version: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.1.0" }
+    @Environment(\.colorScheme) private var scheme
     var body: some View {
-        // Card and note sit above the Form: a grouped Form draws its container behind headers too.
-        // 10 pt sides + the page margin = the grouped section inset (20 pt): card is the section width.
-        VStack(spacing: 0) {
-            VStack(spacing: 12) {
+        // The card is its section's row background, so it takes exactly the grouped section's frame
+        // (same width as the version box); the note is the section footer, outside the box.
+        Form {
+            Section {
+                // The grouped row keeps a 10 pt content inset even with zero listRowInsets; bleed
+                // the card over it so it fills the section box exactly (= the version box width).
                 AboutCard()
+                    .padding(-10)
+                    .listRowInsets(EdgeInsets())
+                    .listRowBackground(Color.clear)
+            } footer: {
                 Text(L(HealthNote.key))
-                    .font(.system(size: 11)).foregroundStyle(.secondary)
+                    .font(.system(size: 11))
+                    // Not .secondary: measured below 4.5:1 on the window background.
+                    .foregroundStyle(scheme == .dark ? Color(white: 0.68) : Color(white: 0.36))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
             }
-            .padding(.horizontal, 10).padding(.top, 20)
-            Form {
-                Section {
-                    UpdateRow(model: .shared, version: version)
-                }
+            Section {
+                UpdateRow(model: .shared, version: version)
             }
-            .formStyle(.grouped)
         }
+        .formStyle(.grouped)
     }
 }
 
-/// About top card: our watercolor lotus pond (App/about, made by scripts/make-about-pond.py from the
-/// app icon) filling the card, lotus on the left; name and credits on the calm water at 52% width.
-/// Light: deep ink on cream water. Dark: the darkened pond, cream text.
+/// About top card: watercolor lotus pond (App/about, 1440x600 crops of the day/night art) filling the
+/// card, lotus on the left; name and credits on the calm water from 52% width.
+/// Light: deep ink on cream water, system link colour. Dark: night pond, cream text, cream underlined link.
 struct AboutCard: View {
     @Environment(\.colorScheme) private var scheme
     static let height: CGFloat = 220
     static let textStart: CGFloat = 0.52
     static let ink = Color(red: 0x2B / 255, green: 0x2A / 255, blue: 0x33 / 255)
     static let cream = Color(red: 0xF5 / 255, green: 0xEC / 255, blue: 0xD7 / 255)
+    /// Variant D prototype (Dev mock only): glass lettering like the long-break clock.
+    nonisolated(unsafe) static var glass = false
     private static func image(dark: Bool) -> NSImage? {
         Bundle.main.url(forResource: dark ? "about-pond-dark" : "about-pond-light", withExtension: "jpg")
             .flatMap(NSImage.init(contentsOf:))
@@ -737,11 +745,19 @@ struct AboutCard: View {
                     (dark ? Color(white: 0.15) : Color(red: 0.98, green: 0.96, blue: 0.9))
                 }
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("Pausa").font(.system(size: 28, weight: .semibold))
-                    Text(L("名字来自西班牙语中的“暂停”。"))
-                    Text(L("图标的灵感来自泰国寺庙里的莲花。"))
+                    if Self.glass {
+                        GlassClock(text: "Pausa", size: 28, monospaced: false, lines: 1, tone: .bright)
+                        GlassClock(text: L("名字来自西班牙语中的“暂停”。"), size: 13, monospaced: false, lines: 2, tone: .bright)
+                        GlassClock(text: L("图标的灵感来自泰国寺庙里的莲花。"), size: 13, monospaced: false, lines: 2, tone: .bright)
+                    } else {
+                        Text("Pausa").font(.system(size: 28, weight: .semibold))
+                        Text(L("名字来自西班牙语中的“暂停”。"))
+                        Text(L("图标的灵感来自泰国寺庙里的莲花。"))
+                    }
                     Link(destination: URL(string: "https://github.com/debidong")!) {
-                        Text(L("由 Bowen（debidong）开发")).foregroundStyle(Color(nsColor: .linkColor))
+                        Text(L("由 Bowen（debidong）开发"))
+                            .foregroundStyle(dark ? Self.cream : Color(nsColor: .linkColor))
+                            .underline(dark)
                             .multilineTextAlignment(.leading)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }

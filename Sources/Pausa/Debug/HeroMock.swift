@@ -80,19 +80,18 @@ enum HeroMock {
         exit(0)
     }
 
-    /// `--hero-mock --about-mock [--mock-lang <code>] [--mock-dark] [--mock-secs N]`: the About page alone
-    /// in a 500 pt wide window (the Settings width); prints the window number, quits after N s.
+    /// `--hero-mock --about-mock [--mock-lang <code>] [--mock-dark] [--mock-secs N]`: the real Settings window
+    /// on the About tab; prints the window number, quits after N s.
     @MainActor private static func about(_ args: [String]) -> Never {
         func opt(_ k: String) -> String? { args.firstIndex(of: k).flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } }
         if let l = opt("--mock-lang").flatMap(AppLanguage.init(rawValue:)) { AppLanguage.override = l }
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
-        let size = NSSize(width: 500, height: 480)
-        let w = KeyWindow(contentRect: NSRect(origin: NSPoint(x: 200, y: 200), size: size),
-                          styleMask: [.titled], backing: .buffered, defer: false)
+        AboutCard.glass = args.contains("--mock-glass")
+        // The real Settings window (tabs, toolbar, size), on the About tab; its own frame key.
+        let (w, tabs) = SettingsTabsController.makeWindow(settings: .shared, onPreview: {}, autosave: "PausaAboutMock")
         w.appearance = NSAppearance(named: args.contains("--mock-dark") ? .darkAqua : .aqua)
-        w.title = "Pausa"
-        w.contentView = NSHostingView(rootView: AboutPage(settings: .shared))
+        tabs.select(.about)
         NSApp.activate(ignoringOtherApps: true); w.makeKeyAndOrderFront(nil)
         print(w.windowNumber); fflush(stdout)
         DispatchQueue.main.asyncAfter(deadline: .now() + (opt("--mock-secs").flatMap(Double.init) ?? 6)) { exit(0) }
