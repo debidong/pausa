@@ -721,68 +721,45 @@ struct AboutPage: View {
 
 /// About top card: watercolor lotus pond (App/about, 1440x600 crops of the day/night art) filling the
 /// card, lotus on the left; name and credits on the calm water from 52% width.
-/// Light: deep ink on cream water, system link colour. Dark: night pond, cream text, cream underlined link.
+/// Light: deep ink on cream water, dark blue link. Dark: night pond, cream text, cream underlined link.
 struct AboutCard: View {
     @Environment(\.colorScheme) private var scheme
     static let height: CGFloat = 220
     static let textStart: CGFloat = 0.52
     static let ink = Color(red: 0x2B / 255, green: 0x2A / 255, blue: 0x33 / 255)
     static let cream = Color(red: 0xF5 / 255, green: 0xEC / 255, blue: 0xD7 / 255)
-    /// Variant D prototype (Dev mock only): glass lettering like the long-break clock.
-    nonisolated(unsafe) static var glass = false
-    /// Layout prototypes (Dev mock only): nil = current; "A" lower right, "B" serif title, "C" centered.
-    nonisolated(unsafe) static var variant: String? = nil
-    private var isChinese: Bool { Theme.appLocale.identifier.hasPrefix("zh") }
-
-    @ViewBuilder private func text(dark: Bool, width: CGFloat) -> some View {
-        let v = Self.variant
-        let fg = dark ? Self.cream : Self.ink
-        let title: Font = v == "B" || v == "C" ? .system(size: 28, weight: .semibold, design: .serif)
-                                                : .system(size: 28, weight: .semibold)
-        let body: Font = v == "C" && isChinese ? .custom("Songti SC", size: 13)
-                       : v == "B" ? .system(size: 13, weight: .light) : .system(size: 13)
-        let align: HorizontalAlignment = v == "C" ? .center : .leading
-        let talign: TextAlignment = v == "C" ? .center : .leading
-        let col = width * (1 - Self.textStart) - (v == "A" ? 28 : 14)
-        let block = VStack(alignment: align, spacing: v == "B" || v == "C" ? 8 : 6) {
-            if Self.glass {
-                GlassClock(text: "Pausa", size: 28, monospaced: false, lines: 1, tone: .bright)
-                GlassClock(text: L("名字来自西班牙语中的“暂停”。"), size: 13, monospaced: false, lines: 2, tone: .bright)
-                GlassClock(text: L("图标的灵感来自泰国寺庙里的莲花。"), size: 13, monospaced: false, lines: 2, tone: .bright)
-            } else {
-                Text("Pausa").font(title)
-                    .padding(.bottom, v == "B" || v == "C" ? 4 : 0)
-                Text(L("名字来自西班牙语中的“暂停”。")).font(body).lineSpacing(v == "B" ? 2 : 0)
-                Text(L("图标的灵感来自泰国寺庙里的莲花。")).font(body).lineSpacing(v == "B" ? 2 : 0)
-            }
-            Link(destination: URL(string: "https://github.com/debidong")!) {
-                Text(L("由 Bowen（debidong）开发"))
-                    .foregroundStyle(dark ? Self.cream : Color(nsColor: .linkColor))
-                    .underline(dark)
-                    .multilineTextAlignment(talign)
-                    .frame(maxWidth: .infinity, alignment: Alignment(horizontal: align, vertical: .center))
-            }
-            .padding(.top, v == "B" || v == "C" ? 4 : 0)
-        }
-        .font(.system(size: 13))
-        .foregroundStyle(fg)
-        .lineLimit(2)
-        .fixedSize(horizontal: false, vertical: true)
-        .multilineTextAlignment(talign)
-        .frame(width: col, alignment: Alignment(horizontal: align, vertical: .center))
-        if v == "A" {   // lower right over the water, 24 pt from the bottom
-            VStack(spacing: 0) { Spacer(minLength: 0); block }
-                .padding(.bottom, 24)
-                .frame(height: Self.height)
-                .offset(x: width * 0.56)
-        } else {
-            block.offset(x: width * Self.textStart)
-        }
-    }
     private static func image(dark: Bool) -> NSImage? {
         Bundle.main.url(forResource: dark ? "about-pond-dark" : "about-pond-light", withExtension: "jpg")
             .flatMap(NSImage.init(contentsOf:))
     }
+    /// Light-mode link: fixed #1550B8 (system blue ~4.6:1 and #1A5CD1 ~4.45:1 on the cream water; this ~5.4:1).
+    static let linkLight = Color(red: 0x15 / 255, green: 0x50 / 255, blue: 0xB8 / 255)
+
+    /// New York title, light body, 8 pt rhythm; text column from 52% of the card.
+    private func text(dark: Bool, width: CGFloat) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Pausa").font(.system(size: 28, weight: .semibold, design: .serif))
+                .padding(.bottom, 4)
+            Text(L("名字来自西班牙语中的“暂停”。")).lineSpacing(2)
+            Text(L("图标的灵感来自泰国寺庙里的莲花。")).lineSpacing(2)
+            Link(destination: URL(string: "https://github.com/debidong")!) {
+                Text(L("由 Bowen（debidong）开发"))
+                    .foregroundStyle(dark ? Self.cream : Self.linkLight)
+                    .underline(dark)
+                    .multilineTextAlignment(.leading)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.top, 4)
+        }
+        .font(.system(size: 13, weight: .light))
+        .foregroundStyle(dark ? Self.cream : Self.ink)
+        .lineLimit(2)
+        .fixedSize(horizontal: false, vertical: true)
+        .multilineTextAlignment(.leading)
+        .frame(width: width * (1 - Self.textStart) - 14, alignment: .leading)
+        .offset(x: width * Self.textStart)
+    }
+
     var body: some View {
         let dark = scheme == .dark
         GeometryReader { g in

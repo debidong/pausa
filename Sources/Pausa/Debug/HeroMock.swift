@@ -87,8 +87,6 @@ enum HeroMock {
         if let l = opt("--mock-lang").flatMap(AppLanguage.init(rawValue:)) { AppLanguage.override = l }
         let app = NSApplication.shared
         app.setActivationPolicy(.accessory)
-        AboutCard.glass = args.contains("--mock-glass")
-        AboutCard.variant = opt("--mock-variant")
         // The real Settings window (tabs, toolbar, size), on the About tab; its own frame key.
         let (w, tabs) = SettingsTabsController.makeWindow(settings: .shared, onPreview: {}, autosave: "PausaAboutMock")
         w.appearance = NSAppearance(named: args.contains("--mock-dark") ? .darkAqua : .aqua)
