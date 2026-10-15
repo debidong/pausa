@@ -286,9 +286,10 @@ final class AppController {
             guard let next = nextWindowStart else { return L("时段外") }
             return L("下次开始 %@", Self.whenText(next, cal: cal))
         }
-        if case .paused(let top) = scheduler.phase, let src = pauseSource(for: top) { return src.statusText }
-        if let st = autoPauseStatus { return st.title }   // Linus: v2 reasons / deferrals
-        if case .paused(let top) = scheduler.phase, let text = reasons[top] { return text }
+        var reasonText: String?
+        if case .paused(let top) = scheduler.phase { reasonText = reasons[top] }
+        if let t = StatusPick.line(source: currentPauseSource?.statusText,
+                                   autoStatus: autoPauseStatus?.title, reason: reasonText) { return t }
         if case .onBreak(let k, _) = scheduler.phase { return k == .long ? L("长休息中") : L("短休息中") }
         let n = scheduler.next
         return L(n.kind == .long ? "长休息：%@ 后" : "短休息：%@ 后", Self.clock(n.remaining))

@@ -729,6 +729,11 @@ final class PauseCapTests {
 }
 let pt = PersistenceTests()
 let pc = PauseCapTests()
+func testStatusPrefersSource() {
+  XCTAssertEqual(StatusPick.line(source: "暂停中：正在看视频（Safari）", autoStatus: "已暂停：Safari 正在播放视频", reason: "x"), "暂停中：正在看视频（Safari）")
+  XCTAssertEqual(StatusPick.line(source: nil, autoStatus: "已推迟：Xcode 在前台", reason: "x"), "已推迟：Xcode 在前台")
+  XCTAssertEqual(StatusPick.line(source: nil, autoStatus: nil, reason: "已暂停：正在开会"), "已暂停：正在开会")
+}
 let cases: [(String, () -> Void)] = [
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
@@ -755,6 +760,6 @@ let cases: [(String, () -> Void)] = [
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck)]
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("status.prefersSource", testStatusPrefersSource)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)
