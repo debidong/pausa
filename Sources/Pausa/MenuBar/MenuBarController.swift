@@ -156,7 +156,10 @@ final class MenuBarController: NSObject {
         st.length = n.kind == .long ? sch.config.longLength : sch.config.shortLength
         st.remaining = n.remaining
         st.held = held
-        if held { st.status = app.statusLine }
+        if held {
+            st.status = app.statusLine
+            if app.manualPauseUntil == nil { st.statusAppID = app.currentPauseSource?.bundleID }
+        }
         st.canBreak = !onBreak
         st.can5 = !held && sch.canPostpone(by: AppController.postponeShort)
         st.can15 = !held && sch.canPostpone(by: AppController.postponeLong)
@@ -928,7 +931,27 @@ enum MenuSnapshot {
         var manual = normal              // 暂停提醒 1 小时 pressed: the same button reads 恢复提醒
         manual.held = true; manual.status = L("已暂停，%@ 后恢复", "58:00"); manual.can5 = false; manual.can15 = false
         manual.manualPaused = true
-        return [("1-normal", normal), ("2-used", used), ("3-long", long), ("3b-long-free", longFree), ("4-limit", limit), ("5-paused", paused), ("6-manual-paused", manual)]
+        var out = [("1-normal", normal), ("2-used", used), ("3-long", long), ("3b-long-free", longFree), ("4-limit", limit), ("5-paused", paused), ("6-manual-paused", manual)]
+        // PauseSource: one paused state per kind with that app's icon (Safari when the app isn't installed),
+        // a browser meeting (browser name + icon) and an unknown app (text only, no parentheses).
+        func app(_ name: String, _ id: String) -> (String, String) {
+            NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) != nil ? (name, id) : ("Safari", "com.apple.Safari")
+        }
+        let z = app("Zoom", "us.zoom.xos"), t = app("腾讯会议", "com.tencent.meeting"), v = app("IINA", "com.colliderli.iina")
+        let k = app("Keynote", "com.apple.iWork.Keynote"), c = app("Google Chrome", "com.google.Chrome")
+        let srcs: [(String, PauseSource)] = [
+            ("meeting", PauseSource(kind: .meeting, appName: z.0, bundleID: z.1)),
+            ("meeting-browser", PauseSource(kind: .meeting, appName: c.0, bundleID: c.1)),
+            ("sharing", PauseSource(kind: .screenSharing, appName: t.0, bundleID: t.1)),
+            ("video", PauseSource(kind: .video, appName: v.0, bundleID: v.1)),
+            ("fullscreen", PauseSource(kind: .fullscreen, appName: k.0, bundleID: k.1)),
+            ("unknown", PauseSource(kind: .meeting)),
+        ]
+        for (tag, src) in srcs {
+            var p = paused; p.status = src.statusText; p.statusAppID = src.bundleID
+            out.append(("7-source-\(tag)", p))
+        }
+        return out
     }
 
     /// Menu-bar item in both 菜单栏图标 modes on a light and a dark bar (offscreen stand-in for the bar).
