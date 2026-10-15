@@ -103,10 +103,10 @@ enum L10nTables {
     ]
 
     static let zhHant: [String: String] = [
-        "暂停中：正在开会": "暫停中：正在開會", "暂停中：正在开会（%@）": "暫停中：正在開會（%@）",
-        "暂停中：正在共享屏幕": "暫停中：正在分享螢幕", "暂停中：正在共享屏幕（%@）": "暫停中：正在分享螢幕（%@）",
-        "暂停中：正在看视频": "暫停中：正在看影片", "暂停中：正在看视频（%@）": "暫停中：正在看影片（%@）",
-        "暂停中：全屏中": "暫停中：全螢幕中", "暂停中：全屏中（%@）": "暫停中：全螢幕中（%@）",
+        "暂停中：正在开会": "暫停中：正在開會",
+        "暂停中：正在共享屏幕": "暫停中：正在分享螢幕",
+        "暂停中：正在看视频": "暫停中：正在看影片",
+        "暂停中：全屏中": "暫停中：全螢幕中",
         // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
         "马上休息一下": "馬上休息一下", "长休息快到了": "長休息快到了", "休息 %d 秒": "休息 %d 秒", "休息 %d 分钟": "休息 %d 分鐘", "跳过这次": "跳過這次", "推迟 %d 分钟": "延後 %d 分鐘", "还能推迟 %d 分钟": "還能延後 %d 分鐘", "推迟额度用完了": "延後額度用完了", "已连续工作 %d 分钟": "已連續工作 %d 分鐘", "刚休息过": "剛休息過", "%d 秒后休息": "%d 秒後休息", "写完这句再休息": "寫完這句再休息", "收起": "收起",
         "随机": "隨機",
@@ -191,10 +191,10 @@ enum L10nTables {
     ]
 
     static let en: [String: String] = [
-        "暂停中：正在开会": "Paused: in a meeting", "暂停中：正在开会（%@）": "Paused: in a meeting (%@)",
-        "暂停中：正在共享屏幕": "Paused: sharing your screen", "暂停中：正在共享屏幕（%@）": "Paused: sharing your screen (%@)",
-        "暂停中：正在看视频": "Paused: watching a video", "暂停中：正在看视频（%@）": "Paused: watching a video (%@)",
-        "暂停中：全屏中": "Paused: full screen", "暂停中：全屏中（%@）": "Paused: full screen (%@)",
+        "暂停中：正在开会": "Paused: in a meeting",
+        "暂停中：正在共享屏幕": "Paused: sharing your screen",
+        "暂停中：正在看视频": "Paused: watching a video",
+        "暂停中：全屏中": "Paused: full screen",
         // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
         "马上休息一下": "Short break coming up", "长休息快到了": "Long break coming up", "休息 %d 秒": "%d-second break", "休息 %d 分钟": "%d-minute break", "跳过这次": "Skip this one", "推迟 %d 分钟": "%d min later", "还能推迟 %d 分钟": "%d min of postponing left", "推迟额度用完了": "No postponing left", "已连续工作 %d 分钟": "Working for %d min", "刚休息过": "Just had a break", "%d 秒后休息": "Break in %d s", "写完这句再休息": "Finish your sentence", "收起": "Hide",
         "随机": "Random",
@@ -361,10 +361,10 @@ enum L10nTables {
         "设置": "Ajustes",
         "暂停提醒 1 小时": "Pausar 1 hora", "恢复提醒": "Reanudar recordatorios", "添加提醒时段": "Añadir horario activo", "添加免打扰时段": "Añadir horario de silencio", "这些时段内不提醒休息，即使落在提醒时段内。": "Pausa no te recuerda descansar en estas horas, aunque estén dentro del horario activo.",
         // Status line (PauseSource)
-        "暂停中：正在开会": "En pausa: en una reunión", "暂停中：正在开会（%@）": "En pausa: en una reunión (%@)",
-        "暂停中：正在共享屏幕": "En pausa: compartiendo la pantalla", "暂停中：正在共享屏幕（%@）": "En pausa: compartiendo la pantalla (%@)",
-        "暂停中：正在看视频": "En pausa: viendo un vídeo", "暂停中：正在看视频（%@）": "En pausa: viendo un vídeo (%@)",
-        "暂停中：全屏中": "En pausa: a pantalla completa", "暂停中：全屏中（%@）": "En pausa: a pantalla completa (%@)",
+        "暂停中：正在开会": "En pausa: en una reunión",
+        "暂停中：正在共享屏幕": "En pausa: compartiendo la pantalla",
+        "暂停中：正在看视频": "En pausa: viendo un vídeo",
+        "暂停中：全屏中": "En pausa: a pantalla completa",
     ]
 
     static let ru: [String: String] = [
@@ -450,10 +450,10 @@ enum L10nTables {
         "设置": "Настройки",
         "暂停提醒 1 小时": "Приостановить на 1 час", "恢复提醒": "Возобновить напоминания", "添加提醒时段": "Добавить активные часы", "添加免打扰时段": "Добавить тихие часы", "这些时段内不提醒休息，即使落在提醒时段内。": "В эти часы Pausa не напоминает о перерывах, даже если они входят в активные часы.",
         // Status line (PauseSource)
-        "暂停中：正在开会": "Пауза: идёт встреча", "暂停中：正在开会（%@）": "Пауза: идёт встреча (%@)",
-        "暂停中：正在共享屏幕": "Пауза: идёт демонстрация экрана", "暂停中：正在共享屏幕（%@）": "Пауза: идёт демонстрация экрана (%@)",
-        "暂停中：正在看视频": "Пауза: вы смотрите видео", "暂停中：正在看视频（%@）": "Пауза: вы смотрите видео (%@)",
-        "暂停中：全屏中": "Пауза: полноэкранный режим", "暂停中：全屏中（%@）": "Пауза: полноэкранный режим (%@)",
+        "暂停中：正在开会": "Пауза: идёт встреча",
+        "暂停中：正在共享屏幕": "Пауза: идёт демонстрация экрана",
+        "暂停中：正在看视频": "Пауза: вы смотрите видео",
+        "暂停中：全屏中": "Пауза: полноэкранный режим",
     ]
 
     static let fr: [String: String] = [
@@ -539,10 +539,10 @@ enum L10nTables {
         "设置": "Réglages",
         "暂停提醒 1 小时": "Suspendre 1 heure", "恢复提醒": "Reprendre les rappels", "添加提醒时段": "Ajouter des heures actives", "添加免打扰时段": "Ajouter des heures calmes", "这些时段内不提醒休息，即使落在提醒时段内。": "Pausa ne vous rappelle pas de faire une pause pendant ces heures, même pendant les heures actives.",
         // Status line (PauseSource)
-        "暂停中：正在开会": "En pause : en réunion", "暂停中：正在开会（%@）": "En pause : en réunion (%@)",
-        "暂停中：正在共享屏幕": "En pause : partage d’écran en cours", "暂停中：正在共享屏幕（%@）": "En pause : partage d’écran en cours (%@)",
-        "暂停中：正在看视频": "En pause : vidéo en cours", "暂停中：正在看视频（%@）": "En pause : vidéo en cours (%@)",
-        "暂停中：全屏中": "En pause : plein écran", "暂停中：全屏中（%@）": "En pause : plein écran (%@)",
+        "暂停中：正在开会": "En pause : en réunion",
+        "暂停中：正在共享屏幕": "En pause : partage d’écran en cours",
+        "暂停中：正在看视频": "En pause : vidéo en cours",
+        "暂停中：全屏中": "En pause : plein écran",
     ]
 
     static let vi: [String: String] = [
@@ -628,10 +628,10 @@ enum L10nTables {
         "设置": "Cài đặt",
         "暂停提醒 1 小时": "Tạm dừng nhắc 1 giờ", "恢复提醒": "Tiếp tục nhắc", "添加提醒时段": "Thêm khung giờ nhắc", "添加免打扰时段": "Thêm khung giờ yên lặng", "这些时段内不提醒休息，即使落在提醒时段内。": "Pausa không nhắc nghỉ trong các khung giờ này, kể cả khi nằm trong khung giờ nhắc.",
         // Status line (PauseSource)
-        "暂停中：正在开会": "Đã tạm dừng: đang họp", "暂停中：正在开会（%@）": "Đã tạm dừng: đang họp (%@)",
-        "暂停中：正在共享屏幕": "Đã tạm dừng: đang chia sẻ màn hình", "暂停中：正在共享屏幕（%@）": "Đã tạm dừng: đang chia sẻ màn hình (%@)",
-        "暂停中：正在看视频": "Đã tạm dừng: đang xem video", "暂停中：正在看视频（%@）": "Đã tạm dừng: đang xem video (%@)",
-        "暂停中：全屏中": "Đã tạm dừng: đang toàn màn hình", "暂停中：全屏中（%@）": "Đã tạm dừng: đang toàn màn hình (%@)",
+        "暂停中：正在开会": "Đã tạm dừng: đang họp",
+        "暂停中：正在共享屏幕": "Đã tạm dừng: đang chia sẻ màn hình",
+        "暂停中：正在看视频": "Đã tạm dừng: đang xem video",
+        "暂停中：全屏中": "Đã tạm dừng: đang toàn màn hình",
     ]
 
     static let th: [String: String] = [
@@ -783,9 +783,9 @@ enum L10nTables {
         "添加免打扰时段": "เพิ่มช่วงเวลาห้ามรบกวน",
         "这些时段内不提醒休息，即使落在提醒时段内。": "Pausa จะไม่เตือนให้พักในช่วงเวลาเหล่านี้ แม้จะอยู่ในช่วงเวลาเตือนก็ตาม",
         // Status line (PauseSource)
-        "暂停中：正在开会": "หยุดชั่วคราว: กำลังประชุม", "暂停中：正在开会（%@）": "หยุดชั่วคราว: กำลังประชุม (%@)",
-        "暂停中：正在共享屏幕": "หยุดชั่วคราว: กำลังแชร์หน้าจอ", "暂停中：正在共享屏幕（%@）": "หยุดชั่วคราว: กำลังแชร์หน้าจอ (%@)",
-        "暂停中：正在看视频": "หยุดชั่วคราว: กำลังดูวิดีโอ", "暂停中：正在看视频（%@）": "หยุดชั่วคราว: กำลังดูวิดีโอ (%@)",
-        "暂停中：全屏中": "หยุดชั่วคราว: เต็มหน้าจอ", "暂停中：全屏中（%@）": "หยุดชั่วคราว: เต็มหน้าจอ (%@)",
+        "暂停中：正在开会": "หยุดชั่วคราว: กำลังประชุม",
+        "暂停中：正在共享屏幕": "หยุดชั่วคราว: กำลังแชร์หน้าจอ",
+        "暂停中：正在看视频": "หยุดชั่วคราว: กำลังดูวิดีโอ",
+        "暂停中：全屏中": "หยุดชั่วคราว: เต็มหน้าจอ",
     ]
 }

@@ -730,7 +730,7 @@ final class PauseCapTests {
 let pt = PersistenceTests()
 let pc = PauseCapTests()
 func testStatusPrefersSource() {
-  XCTAssertEqual(StatusPick.line(source: "暂停中：正在看视频（Safari）", autoStatus: "已暂停：Safari 正在播放视频", reason: "x"), "暂停中：正在看视频（Safari）")
+  XCTAssertEqual(StatusPick.line(source: "暂停中：正在看视频", autoStatus: "已暂停：Safari 正在播放视频", reason: "x"), "暂停中：正在看视频")
   XCTAssertEqual(StatusPick.line(source: nil, autoStatus: "已推迟：Xcode 在前台", reason: "x"), "已推迟：Xcode 在前台")
   XCTAssertEqual(StatusPick.line(source: nil, autoStatus: nil, reason: "已暂停：正在开会"), "已暂停：正在开会")
 }
