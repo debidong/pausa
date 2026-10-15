@@ -726,38 +726,43 @@ struct AboutPage: View {
 
 /// About top card: watercolor lotus pond (App/about, 1440x600 crops of the day/night art) filling the
 /// card, lotus on the left; name and credits on the calm water from 52% width.
-/// Light: deep ink on cream water, dark blue link. Dark: night pond, cream text, cream underlined link.
+/// Light: lotus-leaf greens on cream water (title, body, teal link underlined on hover). Dark: night pond,
+/// cream text, cream underlined link.
 struct AboutCard: View {
     @Environment(\.colorScheme) private var scheme
     static let height: CGFloat = 220
     static let textStart: CGFloat = 0.52
-    static let ink = Color(red: 0x2B / 255, green: 0x2A / 255, blue: 0x33 / 255)
+    static let titleLight = Color(red: 0x24 / 255, green: 0x37 / 255, blue: 0x2D / 255)   // #24372D
+    static let bodyLight = Color(red: 0x3A / 255, green: 0x4A / 255, blue: 0x40 / 255)    // #3A4A40
     static let cream = Color(red: 0xF5 / 255, green: 0xEC / 255, blue: 0xD7 / 255)
     private static func image(dark: Bool) -> NSImage? {
         Bundle.main.url(forResource: dark ? "about-pond-dark" : "about-pond-light", withExtension: "jpg")
             .flatMap(NSImage.init(contentsOf:))
     }
-    /// Light-mode link: fixed #1550B8 (system blue ~4.6:1 and #1A5CD1 ~4.45:1 on the cream water; this ~5.4:1).
-    static let linkLight = Color(red: 0x15 / 255, green: 0x50 / 255, blue: 0xB8 / 255)
+    /// Light-mode link: deep teal #2F6B57 instead of system blue, underlined on hover.
+    static let linkLight = Color(red: 0x2F / 255, green: 0x6B / 255, blue: 0x57 / 255)
+    @State private var linkHover = false
 
     /// New York title, light body, 8 pt rhythm; text column from 52% of the card.
     private func text(dark: Bool, width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Pausa").font(.system(size: 28, weight: .semibold, design: .serif))
+                .foregroundStyle(dark ? Self.cream : Self.titleLight)
                 .padding(.bottom, 4)
             Text(L("名字来自西班牙语中的“暂停”。")).lineSpacing(2)
             Text(L("图标的灵感来自泰国寺庙里的莲花。")).lineSpacing(2)
             Link(destination: URL(string: "https://github.com/debidong")!) {
                 Text(L("由 Bowen（debidong）开发"))
                     .foregroundStyle(dark ? Self.cream : Self.linkLight)
-                    .underline(dark)
+                    .underline(dark || linkHover)
                     .multilineTextAlignment(.leading)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .onHover { linkHover = $0 }
             .padding(.top, 4)
         }
         .font(.system(size: 13, weight: .light))
-        .foregroundStyle(dark ? Self.cream : Self.ink)
+        .foregroundStyle(dark ? Self.cream : Self.bodyLight)
         .lineLimit(2)
         .fixedSize(horizontal: false, vertical: true)
         .multilineTextAlignment(.leading)
