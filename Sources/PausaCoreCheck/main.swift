@@ -567,6 +567,10 @@ final class DeferralTests {
     var s = Scheduler(config: c)   // due at 80, budget would allow 110, the line stops it at 90
     XCTAssertEqual(startAt(&s, from: 0, to: 9000, reasons: [.video]) ?? -1, 5400, accuracy: 2)
   }
+  func testFullscreenStopsAtNinetyLine() {
+    var s = Scheduler(config: cfg(80))
+    XCTAssertEqual(startAt(&s, from: 0, to: 9000, reasons: [.fullscreen]) ?? -1, 5400, accuracy: 2)
+  }
   func testScreenShareKeepsWaitingThenMakeUp() {
     var s = longOnly()
     XCTAssertTrue(startAt(&s, from: 0, to: 7000, reasons: [.screenSharing]) == nil)   // past 90 min, still held
@@ -726,6 +730,16 @@ final class PauseCapTests {
     XCTAssertEqual(c.filter([.meeting], now: 20000), [.meeting])
     XCTAssertEqual(c.filter([.outsideHours], now: 99999), [.outsideHours])
   }
+  func testOutsideHoursNeverCapped() {
+    var c = PauseCap()
+    XCTAssertEqual(c.filter([.outsideHours], now: 0), [.outsideHours])
+    XCTAssertEqual(c.filter([.outsideHours], now: 50000), [.outsideHours])
+  }
+  func testFullscreenDroppedAfterTwoHours() {
+    var c = PauseCap()
+    XCTAssertEqual(c.filter([.fullscreen], now: 0), [.fullscreen])
+    XCTAssertEqual(c.filter([.fullscreen], now: 7200), [])
+  }
 }
 let pt = PersistenceTests()
 let pc = PauseCapTests()
@@ -755,11 +769,11 @@ let cases: [(String, () -> Void)] = [
  ("defer.skipPastLineRefused", dt.testSkipPastLineIsRefused), ("defer.skipBeforeLine", dt.testSkipBeforeLineStillWorks),
  ("lock.longResumes", dt.testLockShortlyDuringLongBreakResumesRest), ("lock.longCompletes", dt.testLockThroughLongBreakCompletesIt),
  ("lock.forcedNotEnded", dt.testLockCannotEndForcedLongBreakEarly), ("lock.shortResumes", dt.testLockDuringShortBreakResumesRest),
- ("defer.videoBudget", dt.testVideoBoundedByBudget), ("defer.videoNinety", dt.testVideoStopsAtNinetyLine),
+ ("defer.videoBudget", dt.testVideoBoundedByBudget), ("defer.videoNinety", dt.testVideoStopsAtNinetyLine), ("defer.fullscreenNinety", dt.testFullscreenStopsAtNinetyLine),
  ("defer.shareMakeUp", dt.testScreenShareKeepsWaitingThenMakeUp), ("defer.videoMakeUp", dt.testVideoEndMakeUpLongBreak),
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("status.prefersSource", testStatusPrefersSource)]
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)

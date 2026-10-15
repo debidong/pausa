@@ -114,7 +114,8 @@ public struct Scheduler {
   private var deferBySource: [DeferralKind: Double] = [:]
   private var noDeferNextLong = false            // set by skipping past the 90-minute line
   public private(set) var deferring: DeferralKind?   // for the menu bar, nil when not deferring
-  static let holds: Set<PauseReason> = [.meeting, .screenSharing, .video]
+  static let holds: Set<PauseReason> = [.meeting, .screenSharing, .video, .fullscreen]
+  static let boundedHolds: Set<PauseReason> = [.video, .fullscreen]
 
   public init(config: Config = Config()) { self.config = config }
 
@@ -179,10 +180,10 @@ public struct Scheduler {
       if due { deferUsed += dt }
       let kind = next.kind
       let budget = config.deferBudget(kind)
-      // Video is bounded: past the budget or the 90-minute line it stops holding. Meetings and
+      // Video and fullscreen are bounded: past the budget or the 90-minute line it stops holding. Meetings and
       // screen sharing keep waiting (no overlay on someone else's screen); the break follows after.
-      if due && reasons.contains(.video) && (deferUsed >= budget || mustNotDefer(kind)) {
-        reasons.remove(.video)
+      if due && !reasons.isDisjoint(with: Self.boundedHolds) && (deferUsed >= budget || mustNotDefer(kind)) {
+        reasons.subtract(Self.boundedHolds)
         if reasons.isDisjoint(with: Self.holds) { meetingSince = nil }   // forced, not "ended": no make-up
       }
     }
