@@ -9,7 +9,8 @@ struct PopoverState: Equatable {
     var length: Double = 20             // seconds of the next break
     var remaining: Double = 0           // until the next break
     var held = false                    // paused / on break: the status line replaces the top line
-    var status: String?                 // 「已暂停：正在开会」 etc. while held
+    var status: String?                 // 「暂停中：正在开会（Zoom）」 etc. while held
+    var statusAppID: String?            // bundle ID whose Dock icon leads the status line (PauseSource)
     var hardLine = false                // long break due and can no longer be postponed
     var canBreak = true
     var can5 = true, can15 = true
@@ -46,6 +47,15 @@ struct MenuPopoverView: View {
     static func lengthText(_ sec: Double) -> String {
         sec < 60 ? L("%d 秒", Int(sec.rounded())) : L("%d 分钟", Int((sec / 60).rounded()))
     }
+    /// App icon via public NSWorkspace APIs; nil without a bundle ID or when the app isn't installed.
+    static func appIcon(_ bundleID: String?) -> NSImage? {
+        guard let id = bundleID, !id.isEmpty,
+              let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) else { return nil }
+        let img = NSWorkspace.shared.icon(forFile: url.path)
+        img.size = NSSize(width: 16, height: 16)
+        return img
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -55,11 +65,18 @@ struct MenuPopoverView: View {
             .frame(height: 22)
 
             // Round 3 §6: one line says how long, which break, and how long it lasts.
-            Text(s.held ? (s.status ?? "") : topLine)
-                .font(.system(size: 15, weight: .semibold)).monospacedDigit()
-                .foregroundColor(s.held ? .secondary : .primary)
-                .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 12)
+            // Steve: the triggering app's own Dock icon, 16 pt, 6 pt before the text; none when unresolvable.
+            HStack(alignment: .center, spacing: 6) {
+                if s.held, let icon = Self.appIcon(s.statusAppID) {
+                    Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16)
+                        .accessibilityHidden(true)
+                }
+                Text(s.held ? (s.status ?? "") : topLine)
+                    .font(.system(size: 15, weight: .semibold)).monospacedDigit()
+                    .foregroundColor(s.held ? .secondary : .primary)
+                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 12)
             if s.hardLine {
                 Text(L("已连续使用 90 分钟，长休息不能再推迟。"))
                     .font(.system(size: 11)).foregroundColor(Color(nsColor: .systemOrange))
