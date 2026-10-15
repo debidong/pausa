@@ -103,6 +103,10 @@ enum L10nTables {
     ]
 
     static let zhHant: [String: String] = [
+        "暂停中：正在开会": "暫停中：正在開會", "暂停中：正在开会（%@）": "暫停中：正在開會（%@）",
+        "暂停中：正在共享屏幕": "暫停中：正在分享螢幕", "暂停中：正在共享屏幕（%@）": "暫停中：正在分享螢幕（%@）",
+        "暂停中：正在看视频": "暫停中：正在看影片", "暂停中：正在看视频（%@）": "暫停中：正在看影片（%@）",
+        "暂停中：全屏中": "暫停中：全螢幕中", "暂停中：全屏中（%@）": "暫停中：全螢幕中（%@）",
         // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
         "马上休息一下": "馬上休息一下", "长休息快到了": "長休息快到了", "休息 %d 秒": "休息 %d 秒", "休息 %d 分钟": "休息 %d 分鐘", "跳过这次": "跳過這次", "推迟 %d 分钟": "延後 %d 分鐘", "还能推迟 %d 分钟": "還能延後 %d 分鐘", "推迟额度用完了": "延後額度用完了", "已连续工作 %d 分钟": "已連續工作 %d 分鐘", "刚休息过": "剛休息過", "%d 秒后休息": "%d 秒後休息", "写完这句再休息": "寫完這句再休息", "收起": "收起",
         "随机": "隨機",
@@ -187,6 +191,10 @@ enum L10nTables {
     ]
 
     static let en: [String: String] = [
+        "暂停中：正在开会": "Paused: in a meeting", "暂停中：正在开会（%@）": "Paused: in a meeting (%@)",
+        "暂停中：正在共享屏幕": "Paused: sharing your screen", "暂停中：正在共享屏幕（%@）": "Paused: sharing your screen (%@)",
+        "暂停中：正在看视频": "Paused: watching a video", "暂停中：正在看视频（%@）": "Paused: watching a video (%@)",
+        "暂停中：全屏中": "Paused: full screen", "暂停中：全屏中（%@）": "Paused: full screen (%@)",
         // pre-break card + cursor pill (SPEC-prebreak-v0.2 §2–3)
         "马上休息一下": "Short break coming up", "长休息快到了": "Long break coming up", "休息 %d 秒": "%d-second break", "休息 %d 分钟": "%d-minute break", "跳过这次": "Skip this one", "推迟 %d 分钟": "%d min later", "还能推迟 %d 分钟": "%d min of postponing left", "推迟额度用完了": "No postponing left", "已连续工作 %d 分钟": "Working for %d min", "刚休息过": "Just had a break", "%d 秒后休息": "Break in %d s", "写完这句再休息": "Finish your sentence", "收起": "Hide",
         "随机": "Random",

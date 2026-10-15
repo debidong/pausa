@@ -52,13 +52,13 @@ enum BrowserVideoMonitor {
     }
 
     /// Name of the frontmost browser that is playing video, if any.
-    static func check() -> String? {
+    static func check() -> NSRunningApplication? {
         guard let front = NSWorkspace.shared.frontmostApplication,
               browserBundleIDs.contains(front.bundleIdentifier ?? "") else { return nil }
         let apps = NSWorkspace.shared.runningApplications
         for pid in assertingPIDs() {
             guard let b = browserOwning(pid, apps: apps), b.processIdentifier == front.processIdentifier else { continue }
-            return front.localizedName ?? "Browser"
+            return front
         }
         return nil
     }

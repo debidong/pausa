@@ -11,6 +11,7 @@ final class AppController {
     let detector = PauseDetector()
     let overlay = BreakOverlayController()
     let settings = Settings.shared
+    private var pauseCap = PauseCap()
     private(set) var reasons: [PausaCore.PauseReason: String] = [:]   // reason -> full 「已暂停：…」 line
     private(set) var manualPauseUntil: Double?
     private var awaySince: Double?
@@ -125,7 +126,7 @@ final class AppController {
 
         let active = !outsideHours
         if hoursGate.update(active) { scheduler.startFresh(now: now) }   // a window just opened
-        var rs = Set(reasons.keys)
+        var rs = pauseCap.filter(Set(reasons.keys), now: now)   // 2 h cap (video/fullscreen drop)
         if !active { rs.insert(.outsideHours) }
 
         let idle = Self.inputIdle()
@@ -285,11 +286,25 @@ final class AppController {
             guard let next = nextWindowStart else { return L("时段外") }
             return L("下次开始 %@", Self.whenText(next, cal: cal))
         }
+        if case .paused(let top) = scheduler.phase, let src = pauseSource(for: top) { return src.statusText }
         if let st = autoPauseStatus { return st.title }   // Linus: v2 reasons / deferrals
         if case .paused(let top) = scheduler.phase, let text = reasons[top] { return text }
         if case .onBreak(let k, _) = scheduler.phase { return k == .long ? L("长休息中") : L("短休息中") }
         let n = scheduler.next
         return L(n.kind == .long ? "长休息：%@ 后" : "短休息：%@ 后", Self.clock(n.remaining))
+    }
+
+    /// Source holding the current pause (Mitchell: icon from `bundleID`). nil = not auto-paused.
+    var currentPauseSource: PauseSource? {
+        if case .paused(let top) = scheduler.phase { return pauseSource(for: top) }
+        return nil
+    }
+    private func pauseSource(for r: PausaCore.PauseReason) -> PauseSource? {
+        if let s = detector.sources[r] { return s }
+        switch r {   // reason without detector data (e.g. debug simulate): text only
+        case .meeting: return PauseSource(kind: .meeting)
+        default: return nil
+        }
     }
 
     var isPaused: Bool {

@@ -1,0 +1,97 @@
+import AppKit
+import CoreAudio
+import PausaCore
+
+/// What is holding a pause, for the menu status line (Mitchell draws icon + text).
+/// `appName` / `bundleID` are nil when Pausa can't tell which app it is: then no icon and no
+/// parenthesis. Icon: `NSWorkspace.shared.icon(forFile:)` on
+/// `NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)`.
+/// `website` is for meetings in a browser (e.g. "Google Meet"); nil when not determinable
+/// (today always nil: reading tab URLs/titles would need Automation or Screen Recording).
+public struct PauseSource: Hashable {
+    public enum Kind: Hashable { case meeting, screenSharing, video, fullscreen }
+    public var kind: Kind
+    public var appName: String?
+    public var bundleID: String?
+    public var website: String?
+
+    public init(kind: Kind, appName: String? = nil, bundleID: String? = nil, website: String? = nil) {
+        self.kind = kind; self.appName = appName; self.bundleID = bundleID; self.website = website
+    }
+
+    init(kind: Kind, app: NSRunningApplication?) {
+        self.init(kind: kind, appName: app?.localizedName, bundleID: app?.bundleIdentifier)
+    }
+
+    /// Name in the parenthesis: website for browser meetings, else app name.
+    public var displayName: String? { website ?? appName }
+
+    public var core: PausaCore.PauseReason {
+        switch kind {
+        case .meeting: return .meeting
+        case .screenSharing: return .screenSharing
+        case .video: return .video
+        case .fullscreen: return .fullscreen
+        }
+    }
+
+    /// 「暂停中：正在开会（Zoom）」 / "Paused: in a meeting (Zoom)".
+    public var statusText: String {
+        let base: String
+        switch kind {
+        case .meeting: base = "暂停中：正在开会"
+        case .screenSharing: base = "暂停中：正在共享屏幕"
+        case .video: base = "暂停中：正在看视频"
+        case .fullscreen: base = "暂停中：全屏中"
+        }
+        guard let n = displayName, !n.isEmpty else { return L(base) }
+        return L(base + "（%@）", n)
+    }
+}
+
+/// Which app is using a microphone. Public CoreAudio process objects (macOS 14+), query only,
+/// no microphone permission. Helper processes (e.g. Chrome Helper) map to their parent app.
+enum MicUserMonitor {
+    static func appsUsingInput() -> [NSRunningApplication] {
+        guard #available(macOS 14.0, *) else { return [] }
+        var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyProcessObjectList,
+                                              mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+        var size: UInt32 = 0
+        let sys = AudioObjectID(kAudioObjectSystemObject)
+        guard AudioObjectGetPropertyDataSize(sys, &addr, 0, nil, &size) == noErr, size > 0 else { return [] }
+        var ids = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
+        guard AudioObjectGetPropertyData(sys, &addr, 0, nil, &size, &ids) == noErr else { return [] }
+        let apps = NSWorkspace.shared.runningApplications
+        var out: [NSRunningApplication] = []
+        for id in ids {
+            var a = AudioObjectPropertyAddress(mSelector: kAudioProcessPropertyIsRunningInput,
+                                               mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
+            var running: UInt32 = 0; var s = UInt32(MemoryLayout<UInt32>.size)
+            guard AudioObjectGetPropertyData(id, &a, 0, nil, &s, &running) == noErr, running != 0 else { continue }
+            a.mSelector = kAudioProcessPropertyPID
+            var pid: pid_t = 0; s = UInt32(MemoryLayout<pid_t>.size)
+            guard AudioObjectGetPropertyData(id, &a, 0, nil, &s, &pid) == noErr else { continue }
+            if let app = owningApp(pid, apps: apps), !out.contains(app) { out.append(app) }
+        }
+        return out
+    }
+
+    /// The regular app a pid belongs to (itself, an ancestor, or the outer .app bundle).
+    static func owningApp(_ pid: pid_t, apps: [NSRunningApplication]) -> NSRunningApplication? {
+        for p in ProcessLineage.lineage(of: pid) {
+            if let a = apps.first(where: { $0.processIdentifier == p && $0.activationPolicy == .regular }) { return a }
+        }
+        if let path = ProcessLineage.path(of: pid), let outer = ProcessLineage.outerAppBundle(path) {
+            return apps.first { $0.bundleURL?.path == outer }
+        }
+        return nil
+    }
+
+    /// Best app to name for a meeting: a known meeting app, then a browser, then anything.
+    static func meetingApp() -> NSRunningApplication? {
+        let users = appsUsingInput()
+        return users.first { ScreenShareMonitor.meetingBundleIDs.contains($0.bundleIdentifier ?? "") }
+            ?? users.first { BrowserVideoMonitor.browserBundleIDs.contains($0.bundleIdentifier ?? "") }
+            ?? users.first
+    }
+}

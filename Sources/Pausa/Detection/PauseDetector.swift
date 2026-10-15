@@ -19,6 +19,8 @@ public final class PauseDetector: ObservableObject {
     public enum AwayEvent { case start(AwayKind), end(AwayKind) }
 
     @Published public private(set) var reasons: Set<PauseReason> = []
+    /// Source per scheduler reason, for the menu status line (icon + 「暂停中：正在开会（Zoom）」).
+    @Published public private(set) var sources: [PausaCore.PauseReason: PauseSource] = [:]
     /// Soft deferrals (§0 R1) for the scheduler; it owns all timing and the shared budget.
     @Published public private(set) var deferrals: [Deferral] = []
     /// True while locked / asleep. Mirrors onAway.
@@ -63,33 +65,45 @@ public final class PauseDetector: ObservableObject {
         UserDefaults.standard.object(forKey: key) == nil ? def : UserDefaults.standard.bool(forKey: key)
     }
 
-    private var lastVideo: (name: String, at: TimeInterval)?
-    private var lastShare: (reason: PauseReason, at: TimeInterval)?
+    private var lastVideo: (app: NSRunningApplication, at: TimeInterval)?
+    private var lastShare: (reason: PauseReason, app: NSRunningApplication, at: TimeInterval)?
+    private var meetingApp: NSRunningApplication?
 
     private func tick() {
         let now = ProcessInfo.processInfo.systemUptime
         let micOrCam = AudioInputMonitor.anyPhysicalInputRunning() || CameraMonitor.anyRunning()
-        if micOrCam { lastMeetingSignal = now }
+        if micOrCam { lastMeetingSignal = now; meetingApp = MicUserMonitor.meetingApp() ?? meetingApp }
         let inMeeting = lastMeetingSignal.map { now - $0 < meetingGrace } ?? false
 
+        if !inMeeting { meetingApp = nil }
         var next: Set<PauseReason> = []
-        if inMeeting { next.insert(.meeting) }
-        if let fs = FullscreenMonitor.check() { next.insert(.fullscreen(appName: fs.appName)) }
+        var src: [PausaCoreReason: PauseSource] = [:]
+        if inMeeting { next.insert(.meeting); src[.meeting] = PauseSource(kind: .meeting, app: meetingApp) }
+        if let fs = FullscreenMonitor.check() {
+            next.insert(.fullscreen(appName: fs.appName))
+            src[.fullscreen] = PauseSource(kind: .fullscreen, appName: fs.appName, bundleID: fs.bundleID)
+        }
 
         // §1 browser video, 2-min grace after the assertion drops (R5, reuses meetingGrace).
         if flag("pauseForBrowserVideo", default: true) {
             if let b = BrowserVideoMonitor.check() { lastVideo = (b, now) }
-            if let v = lastVideo, now - v.at < meetingGrace { next.insert(.browserVideo(appName: v.name)) }
+            if let v = lastVideo, now - v.at < meetingGrace {
+                next.insert(.browserVideo(appName: v.app.localizedName ?? "Browser"))
+                src[.video] = PauseSource(kind: .video, app: v.app)
+            }
         } else { lastVideo = nil }
 
         // §2 screen sharing / recording, same grace.
         if flag("pauseForScreenSharing", default: true) {
             switch ScreenShareMonitor.check(inMeeting: micOrCam || inMeeting) {
-            case .sharing(let a)?: lastShare = (.screenSharing(appName: a), now)
-            case .recording(let a)?: lastShare = (.recording(appName: a), now)
+            case .sharing(let a)?: lastShare = (.screenSharing(appName: a.localizedName ?? ""), a, now)
+            case .recording(let a)?: lastShare = (.recording(appName: a.localizedName ?? ""), a, now)
             case nil: break
             }
-            if let s = lastShare, now - s.at < meetingGrace { next.insert(s.reason) }
+            if let s = lastShare, now - s.at < meetingGrace {
+                next.insert(s.reason)
+                src[.screenSharing] = PauseSource(kind: .screenSharing, app: s.app)
+            }
         } else { lastShare = nil }
 
         // §4 typing / dragging: report only kind + cap; the scheduler decides when it matters.
@@ -107,6 +121,7 @@ public final class PauseDetector: ObservableObject {
             guard let self else { return }
             self.customAppName = custom
             if self.deferrals != defs { self.deferrals = defs }
+            if self.sources != src { self.sources = src }
             if self.reasons != next { self.reasons = next }
         }
     }

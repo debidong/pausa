@@ -708,7 +708,27 @@ final class PersistenceTests {
 let mp = ManualPauseTests()
 let dt = DeferralTests()
 let st = ScheduleTests()
+
+final class PauseCapTests {
+  func testVideoDroppedAfterTwoHours() {
+    var c = PauseCap()
+    XCTAssertEqual(c.filter([.video], now: 0), [.video])
+    XCTAssertEqual(c.filter([.video], now: 7199), [.video])
+    XCTAssertEqual(c.filter([.video], now: 7200), [])
+    XCTAssertEqual(c.filter([.video, .fullscreen], now: 7300), [.fullscreen])   // fullscreen has its own clock
+    XCTAssertEqual(c.filter([], now: 7400), [])
+    XCTAssertEqual(c.filter([.video], now: 7401), [.video])                     // fresh signal
+  }
+  func testMeetingKeptAfterRecheck() {
+    var c = PauseCap()
+    XCTAssertEqual(c.filter([.meeting, .screenSharing], now: 0), [.meeting, .screenSharing])
+    XCTAssertEqual(c.filter([.meeting, .screenSharing], now: 7200), [.meeting, .screenSharing])
+    XCTAssertEqual(c.filter([.meeting], now: 20000), [.meeting])
+    XCTAssertEqual(c.filter([.outsideHours], now: 99999), [.outsideHours])
+  }
+}
 let pt = PersistenceTests()
+let pc = PauseCapTests()
 let cases: [(String, () -> Void)] = [
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
@@ -735,6 +755,6 @@ let cases: [(String, () -> Void)] = [
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart)]
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)
