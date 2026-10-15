@@ -158,7 +158,9 @@ final class MenuBarController: NSObject {
         st.held = held
         if held {
             st.status = app.statusLine
-            if app.manualPauseUntil == nil { st.statusAppID = app.currentPauseSource?.bundleID }
+            if app.manualPauseUntil == nil, let src = app.currentPauseSource, st.status == src.statusText {
+                st.statusAppID = src.bundleID; st.statusAppName = src.displayName
+            }
         }
         st.canBreak = !onBreak
         st.can5 = !held && sch.canPostpone(by: AppController.postponeShort)
@@ -948,7 +950,7 @@ enum MenuSnapshot {
             ("unknown", PauseSource(kind: .meeting)),
         ]
         for (tag, src) in srcs {
-            var p = paused; p.status = src.statusText; p.statusAppID = src.bundleID
+            var p = paused; p.status = src.statusText; p.statusAppID = src.bundleID; p.statusAppName = src.displayName
             out.append(("7-source-\(tag)", p))
         }
         return out

@@ -4,7 +4,7 @@ import PausaCore
 
 /// What is holding a pause, for the menu status line (Mitchell draws icon + text).
 /// `appName` / `bundleID` are nil when Pausa can't tell which app it is: then no icon and no
-/// parenthesis. Icon: `NSWorkspace.shared.icon(forFile:)` on
+/// app line. Icon: `NSWorkspace.shared.icon(forFile:)` on
 /// `NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID)`.
 /// `website` is for meetings in a browser (e.g. "Google Meet"); nil when not determinable
 /// (today always nil: reading tab URLs/titles would need Automation or Screen Recording).
@@ -23,7 +23,7 @@ public struct PauseSource: Hashable {
         self.init(kind: kind, appName: app?.localizedName, bundleID: app?.bundleIdentifier)
     }
 
-    /// Name in the parenthesis: website for browser meetings, else app name.
+    /// Name on the app line: website for browser meetings, else app name.
     public var displayName: String? { website ?? appName }
 
     public var core: PausaCore.PauseReason {
@@ -35,7 +35,8 @@ public struct PauseSource: Hashable {
         }
     }
 
-    /// 「暂停中：正在开会（Zoom）」 / "Paused: in a meeting (Zoom)".
+    /// Line 1 of the status: the reason only, 「暂停中：正在开会」 / "Paused: in a meeting".
+    /// The app (icon + `displayName`) is line 2, drawn by the popover; no parenthesis.
     public var statusText: String {
         let base: String
         switch kind {
@@ -44,8 +45,7 @@ public struct PauseSource: Hashable {
         case .video: base = "暂停中：正在看视频"
         case .fullscreen: base = "暂停中：全屏中"
         }
-        guard let n = displayName, !n.isEmpty else { return L(base) }
-        return L(base + "（%@）", n)
+        return L(base)
     }
 }
 

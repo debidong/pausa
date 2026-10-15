@@ -10,7 +10,8 @@ struct PopoverState: Equatable {
     var remaining: Double = 0           // until the next break
     var held = false                    // paused / on break: the status line replaces the top line
     var status: String?                 // 「暂停中：正在开会（Zoom）」 etc. while held
-    var statusAppID: String?            // bundle ID whose Dock icon leads the status line (PauseSource)
+    var statusAppID: String?            // bundle ID whose Dock icon leads the app line (PauseSource)
+    var statusAppName: String?          // line 2 under the reason: app (or website) name, no parenthesis
     var hardLine = false                // long break due and can no longer be postponed
     var canBreak = true
     var can5 = true, can15 = true
@@ -66,16 +67,23 @@ struct MenuPopoverView: View {
 
             // Round 3 §6: one line says how long, which break, and how long it lasts.
             // Steve: the triggering app's own Dock icon, 16 pt, 6 pt before the text; none when unresolvable.
-            HStack(alignment: .center, spacing: 6) {
-                if s.held, let icon = Self.appIcon(s.statusAppID) {
-                    Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16)
-                        .accessibilityHidden(true)
-                }
+            // Bowen: line 1 the reason, line 2 the app's icon + name; both centred.
+            VStack(spacing: 4) {
                 Text(s.held ? (s.status ?? "") : topLine)
                     .font(.system(size: 15, weight: .semibold)).monospacedDigit()
                     .foregroundColor(s.held ? .secondary : .primary)
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                if s.held, let name = s.statusAppName, !name.isEmpty {
+                    HStack(alignment: .center, spacing: 6) {
+                        if let icon = Self.appIcon(s.statusAppID) {
+                            Image(nsImage: icon).resizable().interpolation(.high).frame(width: 16, height: 16)
+                                .accessibilityHidden(true)
+                        }
+                        Text(name).font(.system(size: 13)).foregroundColor(.secondary).lineLimit(1)
+                    }
+                }
             }
+            .frame(maxWidth: .infinity)
             .padding(.top, 12)
             if s.hardLine {
                 Text(L("已连续使用 90 分钟，长休息不能再推迟。"))
