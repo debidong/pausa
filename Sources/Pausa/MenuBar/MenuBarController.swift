@@ -99,18 +99,25 @@ final class MenuBarController: NSObject {
     /// First launch only: tells the user Pausa is running and when the next break is.
     /// Icon visible: a popover under it, arrow pointing at it. Icon hidden (notch, menu bar manager):
     /// the same text in a panel at the top right, just under the menu bar, no arrow. 8 s, click closes.
+    /// An item pushed behind the notch still reports itself visible and on screen.
+    static func underNotch(_ f: NSRect, on s: NSScreen) -> Bool {
+        guard #available(macOS 12, *), let l = s.auxiliaryTopLeftArea, let r = s.auxiliaryTopRightArea else { return false }
+        return f.maxX > l.maxX && f.minX < r.minX
+    }
+
     func showWelcomeOnce() {
         let d = UserDefaults.standard
         guard !d.bool(forKey: "didShowWelcome") else { return }
         d.set(true, forKey: "didShowWelcome")
-        let text = L("Pausa 已在运行，下次休息在 %@ 后。", Self.welcomeDuration(app.scheduler.next.remaining))
+        let text = L("Pausa 已在运行，下次休息在 %@后。", Self.welcomeDuration(app.scheduler.next.remaining))
         let label = Text(text)
             .environment(\.locale, AppLanguage.current.locale)
             .font(.callout)
             .padding(.horizontal, 14).padding(.vertical, 10)
             .fixedSize()
         if let button = item.button, let w = button.window, w.occlusionState.contains(.visible),
-           NSScreen.screens.contains(where: { $0.frame.contains(NSPoint(x: w.frame.midX, y: w.frame.midY)) }) {
+           let s = NSScreen.screens.first(where: { $0.frame.contains(NSPoint(x: w.frame.midX, y: w.frame.midY)) }),
+           !Self.underNotch(w.frame, on: s) {
             let pop = NSPopover()
             pop.behavior = .transient   // any click closes it
             pop.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
