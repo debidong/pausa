@@ -105,7 +105,7 @@ final class MenuBarController: NSObject {
         return f.maxX > l.maxX && f.minX < r.minX
     }
 
-    static let hiddenHint = "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用，或者按住 ⌘ 把 Pausa 拖到更靠右的位置。"
+    static let hiddenHint = "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用，或者按住 ⌘ 把其他图标拖出菜单栏。"
 
     /// The icon can be seen: its window is visible, on a screen (menu bar managers move it off screen), and not behind the notch.
     var iconVisible: Bool {
