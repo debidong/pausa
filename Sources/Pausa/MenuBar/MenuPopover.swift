@@ -154,9 +154,9 @@ struct MenuPopoverView: View {
         L(s.kind == .long ? "%@ 后开始长休息，%@" : "%@ 后开始短休息，%@", AppController.clock(s.remaining), Self.lengthText(s.length))
     }
 
-    /// At the 90-minute line only 「现在休息」 is left. 15 is hidden when the allowance can never reach it.
+    /// While paused, or at the 90-minute line, only 「现在休息」 is left. 15 is hidden when the allowance can never reach it.
     private var postponeButtons: some View {
-        ForEach(s.hardLine ? [] : (s.show15 ? [5, 15] : [5]), id: \.self) { m in
+        ForEach(s.hardLine || s.held ? [] : (s.show15 ? [5, 15] : [5]), id: \.self) { m in
             Button(BreakOverlayController.Copy.snooze(m)) { actions.postpone(Double(m * 60)) }
                 .buttonStyle(.bordered).fixedSize()
                 .disabled(m == 5 ? !s.can5 : !s.can15)
