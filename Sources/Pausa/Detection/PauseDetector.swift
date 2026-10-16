@@ -71,7 +71,8 @@ public final class PauseDetector: ObservableObject {
 
     private func tick() {
         let now = ProcessInfo.processInfo.systemUptime
-        let micOrCam = AudioInputMonitor.anyPhysicalInputRunning() || CameraMonitor.anyRunning()
+        let mic = AudioInputMonitor.anyPhysicalInputRunning() && (MicUserMonitor.nonInputMethodInUse() ?? true)   // input-method voice typing isn't a meeting
+        let micOrCam = mic || CameraMonitor.anyRunning()
         if micOrCam { lastMeetingSignal = now; meetingApp = MicUserMonitor.meetingApp() ?? meetingApp }
         let inMeeting = lastMeetingSignal.map { now - $0 < meetingGrace } ?? false
 

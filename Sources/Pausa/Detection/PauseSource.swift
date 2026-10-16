@@ -1,4 +1,5 @@
 import AppKit
+import Carbon
 import CoreAudio
 import PausaCore
 
@@ -52,17 +53,17 @@ public struct PauseSource: Hashable {
 /// Which app is using a microphone. Public CoreAudio process objects (macOS 14+), query only,
 /// no microphone permission. Helper processes (e.g. Chrome Helper) map to their parent app.
 enum MicUserMonitor {
-    static func appsUsingInput() -> [NSRunningApplication] {
-        guard #available(macOS 14.0, *) else { return [] }
+    /// Pids currently recording from an input device; nil when the API is unavailable (< macOS 14).
+    static func inputPids() -> [pid_t]? {
+        guard #available(macOS 14.0, *) else { return nil }
         var addr = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyProcessObjectList,
                                               mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
         var size: UInt32 = 0
         let sys = AudioObjectID(kAudioObjectSystemObject)
-        guard AudioObjectGetPropertyDataSize(sys, &addr, 0, nil, &size) == noErr, size > 0 else { return [] }
+        guard AudioObjectGetPropertyDataSize(sys, &addr, 0, nil, &size) == noErr, size > 0 else { return nil }
         var ids = [AudioObjectID](repeating: 0, count: Int(size) / MemoryLayout<AudioObjectID>.size)
-        guard AudioObjectGetPropertyData(sys, &addr, 0, nil, &size, &ids) == noErr else { return [] }
-        let apps = NSWorkspace.shared.runningApplications
-        var out: [NSRunningApplication] = []
+        guard AudioObjectGetPropertyData(sys, &addr, 0, nil, &size, &ids) == noErr else { return nil }
+        var out: [pid_t] = []
         for id in ids {
             var a = AudioObjectPropertyAddress(mSelector: kAudioProcessPropertyIsRunningInput,
                                                mScope: kAudioObjectPropertyScopeGlobal, mElement: kAudioObjectPropertyElementMain)
@@ -71,6 +72,43 @@ enum MicUserMonitor {
             a.mSelector = kAudioProcessPropertyPID
             var pid: pid_t = 0; s = UInt32(MemoryLayout<pid_t>.size)
             guard AudioObjectGetPropertyData(id, &a, 0, nil, &s, &pid) == noErr else { continue }
+            out.append(pid)
+        }
+        return out
+    }
+
+    /// Input methods (e.g. WeChat IME voice typing) are typing, not a meeting. Identified by type,
+    /// not a list: installed input sources from Text Input Sources (public HIToolbox), plus any
+    /// bundle living in an "Input Methods" folder.
+    static func isInputMethod(_ pid: pid_t) -> Bool {
+        guard let path = ProcessLineage.path(of: pid) else { return false }
+        if path.contains("/Input Methods/") { return true }
+        let outer = ProcessLineage.outerAppBundle(path) ?? path
+        guard let id = Bundle(path: outer)?.bundleIdentifier else { return false }
+        return inputMethodBundleIDs().contains(id)
+    }
+
+    static func inputMethodBundleIDs() -> Set<String> {
+        guard let list = TISCreateInputSourceList(nil, true)?.takeRetainedValue() as? [TISInputSource] else { return [] }
+        var out = Set<String>()
+        for src in list {
+            guard let raw = TISGetInputSourceProperty(src, kTISPropertyBundleID) else { continue }
+            out.insert(Unmanaged<CFString>.fromOpaque(raw).takeUnretainedValue() as String)
+        }
+        return out
+    }
+
+    /// Is anything other than an input method recording? nil = can't tell (fall back to device state).
+    static func nonInputMethodInUse() -> Bool? {
+        guard let pids = inputPids() else { return nil }
+        return pids.contains { !isInputMethod($0) }
+    }
+
+    static func appsUsingInput() -> [NSRunningApplication] {
+        guard let pids = inputPids() else { return [] }
+        let apps = NSWorkspace.shared.runningApplications
+        var out: [NSRunningApplication] = []
+        for pid in pids where !isInputMethod(pid) {
             if let app = owningApp(pid, apps: apps), !out.contains(app) { out.append(app) }
         }
         return out
