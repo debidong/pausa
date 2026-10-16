@@ -172,7 +172,7 @@ enum L10nTables {
         // menu popover
         "短休息": "短休息", "%d 秒": "%d 秒", "%d 分钟": "%d 分鐘",
         "现在休息": "現在休息", "已连续使用 90 分钟，长休息不能再推迟。": "已連續使用 90 分鐘，長休息不能再延後。",
-        "Pausa 已在运行，下次休息在 %@后。": "Pausa 已在執行，下次休息在 %@後。",
+        "Pausa 已在运行，下次休息在 %@后。": "Pausa 已在執行，下次休息在 %@後。", "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用，或者按住 ⌘ 把 Pausa 拖到更靠右的位置。": "選單列空間不足，Pausa 的圖示被擋住了。您可以結束一些選單列 App，或按住 ⌘ 把 Pausa 拖到更靠右的位置。",
         "分钟": "分鐘", "秒": "秒", 
         "主题": "主題", "预览": "預覽", "语言": "語言",
         HealthNote.key: "若眼部持續不適，請及時就醫。Pausa 不能取代專業的治療。",
@@ -260,7 +260,7 @@ enum L10nTables {
         // menu popover
         "短休息": "Short break", "%d 秒": "%d sec", "%d 分钟": "%d min",
         "现在休息": "Break now", "已连续使用 90 分钟，长休息不能再推迟。": "You've been at it for 90 minutes. This long break can't wait.",
-        "Pausa 已在运行，下次休息在 %@后。": "Pausa is running. Next break in %@.",
+        "Pausa 已在运行，下次休息在 %@后。": "Pausa is running. Next break in %@.", "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用，或者按住 ⌘ 把 Pausa 拖到更靠右的位置。": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps, or hold ⌘ and drag Pausa farther right.",
         "分钟": "min", "秒": "s", 
         "主题": "Theme", "预览": "Preview", "语言": "Language",
         HealthNote.key: "If eye discomfort persists, please see a doctor promptly. Pausa is not a substitute for professional treatment.",

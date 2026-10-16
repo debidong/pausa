@@ -105,19 +105,29 @@ final class MenuBarController: NSObject {
         return f.maxX > l.maxX && f.minX < r.minX
     }
 
+    static let hiddenHint = "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用，或者按住 ⌘ 把 Pausa 拖到更靠右的位置。"
+
+    /// The icon can be seen: its window is visible, on a screen (menu bar managers move it off screen), and not behind the notch.
+    var iconVisible: Bool {
+        guard let w = item.button?.window, w.occlusionState.contains(.visible),
+              let s = NSScreen.screens.first(where: { $0.frame.contains(NSPoint(x: w.frame.midX, y: w.frame.midY)) })
+        else { return false }
+        return !Self.underNotch(w.frame, on: s)
+    }
+
     func showWelcomeOnce() {
         let d = UserDefaults.standard
         guard !d.bool(forKey: "didShowWelcome") else { return }
         d.set(true, forKey: "didShowWelcome")
-        let text = L("Pausa 已在运行，下次休息在 %@后。", Self.welcomeDuration(app.scheduler.next.remaining))
+        let visible = iconVisible
+        let text = visible ? L("Pausa 已在运行，下次休息在 %@后。", Self.welcomeDuration(app.scheduler.next.remaining))
+                           : L(Self.hiddenHint)
         let label = Text(text)
             .environment(\.locale, AppLanguage.current.locale)
             .font(.callout)
             .padding(.horizontal, 14).padding(.vertical, 10)
             .fixedSize()
-        if let button = item.button, let w = button.window, w.occlusionState.contains(.visible),
-           let s = NSScreen.screens.first(where: { $0.frame.contains(NSPoint(x: w.frame.midX, y: w.frame.midY)) }),
-           !Self.underNotch(w.frame, on: s) {
+        if visible, let button = item.button {
             let pop = NSPopover()
             pop.behavior = .transient   // any click closes it
             pop.animates = !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion
@@ -324,7 +334,13 @@ final class MenuBarController: NSObject {
     }
 #endif
 
-    @objc func openSettings() { showSettings(page: nil) }
+    @objc func openSettings() { IconHint.shared.hidden = false; showSettings(page: nil) }
+
+    /// Reopen (Dock click, launching Pausa again): Settings, with a note on top when the icon can't be seen.
+    func reopen() {
+        IconHint.shared.hidden = !iconVisible
+        showSettings(page: nil)
+    }
 
     func showSettings(page: SettingsPage?) {
         if settingsWindow == nil {
@@ -362,6 +378,12 @@ enum SettingsPage: String, CaseIterable, Identifiable, Hashable {
     }
 }
 
+/// Set on reopen: the menu bar icon can't be seen, so Settings says why.
+final class IconHint: ObservableObject {
+    static let shared = IconHint()
+    @Published var hidden = false
+}
+
 /// Last-viewed tab (UserDefaults "settingsTab"); the first tab on first open.
 final class SettingsNav: ObservableObject {
     static let shared = SettingsNav()
@@ -380,12 +402,22 @@ struct SettingsView: View {
     /// Minimum content width (round 7c rev 2: the window starts 500 pt wide and can grow).
     static let width: CGFloat = 500
 
+    @ObservedObject private var hint = IconHint.shared
+
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            if hint.hidden {
+                Text(L(MenuBarController.hiddenHint))
+                    .font(.callout).fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20).padding(.top, 12)
+            }
+            Group {
             switch page {
             case .breaks: BreaksPage(settings: settings)
             case .general: GeneralPage(settings: settings, onPreview: onPreview)
             case .about: AboutPage(settings: settings)
+            }
             }
         }
         .id(settings.language)

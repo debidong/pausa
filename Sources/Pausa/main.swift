@@ -66,9 +66,9 @@ if let i = args.firstIndex(of: "--render-menu"), i + 1 < args.count {
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    /// Dock icon click (only possible with "Show in Dock" on) opens Settings.
+    /// Dock icon click or launching Pausa again opens Settings (with the hidden-icon note when needed).
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        menuBar?.openSettings()
+        menuBar?.reopen()
         return true
     }
     var controller: AppController!
