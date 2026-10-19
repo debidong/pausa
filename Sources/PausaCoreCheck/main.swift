@@ -998,6 +998,7 @@ func testAccept24BarLabels() {
   XCTAssertEqual(StatsChart.label(2 * 3600), .hours("2.0"))
   XCTAssertEqual(StatsChart.label(45 * 60), .minutes(45))
   XCTAssertEqual(StatsChart.label(24 * 3600), .hours("24.0"))
+  XCTAssertEqual(StatsChart.label(6 * 3600 + 20 * 60, locale: Locale(identifier: "fr")), .hours("6,3"))
 }
 func testAccept27EmptyDay() {
   let d = Stats.days([], endingAt: Accept.at(19, 12), count: 1, calendar: Accept.tp)[0]

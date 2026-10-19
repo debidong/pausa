@@ -136,10 +136,10 @@ public enum StatsChart {
   }
 
   public enum Label: Equatable { case hours(String), minutes(Int) }   // 「6.3 小时」 / 「45 分钟」
-  /// nil for a day without work: no label, only the 2 pt line.
-  public static func label(_ work: Double) -> Label? {
+  /// nil for a day without work: no label, only the 2 pt line. `locale` picks the decimal mark (fr: 「6,3」).
+  public static func label(_ work: Double, locale: Locale = Locale(identifier: "en_US_POSIX")) -> Label? {
     guard work > 0 else { return nil }
     if work < 3600 { return .minutes(Int(work) / 60) }
-    return .hours(String(format: "%.1f", locale: Locale(identifier: "en_US_POSIX"), work / 3600))
+    return .hours(String(format: "%.1f", locale: locale, work / 3600))
   }
 }

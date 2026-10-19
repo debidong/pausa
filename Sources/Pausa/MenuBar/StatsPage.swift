@@ -182,7 +182,7 @@ enum StatsText {
 
     /// Over a bar: 「6.3 小时」 / "6.3 hr" from 1 hour, 「45 分钟」 / "45 min" below; nil without work.
     static func barLabel(_ work: Double) -> String? {
-        switch StatsChart.label(work) {
+        switch StatsChart.label(work, locale: AppLanguage.current.locale) {
         case .hours(let h)?: return glue(L("%@ 小时", h))
         case .minutes(let m)?: return glue(L("%d 分钟", m))
         case nil: return nil
