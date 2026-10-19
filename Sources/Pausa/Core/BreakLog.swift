@@ -79,12 +79,13 @@ final class BreakLog {
         try? FileManager.default.removeItem(at: openURL)
     }
 
-    private struct Dated: Decodable { var start: Date }
+    /// Work rows age by `end`, break rows by `start` (spec §6).
+    private struct Dated: Decodable { var start: Date; var end: Date? }
 
     private func prune(now: Date) {
-        guard let cut = Calendar.current.date(byAdding: .day, value: -Self.keepDays, to: now) else { return }
+        let cut = Stats.keepFrom(now: now, days: Self.keepDays, calendar: .current)
         let all = lines()
-        let keep = all.filter { (try? decoder.decode(Dated.self, from: $0)).map { $0.start >= cut } ?? false }
+        let keep = all.filter { (try? decoder.decode(Dated.self, from: $0)).map { ($0.end ?? $0.start) >= cut } ?? false }
         guard keep.count != all.count else { return }
         let body = keep.reduce(into: Data()) { $0.append($1); $0.append(0x0A) }
         try? body.write(to: url, options: .atomic)

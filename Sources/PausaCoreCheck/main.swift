@@ -813,6 +813,152 @@ func testWorkMeetingIgnoresIdle() {
   XCTAssertEqual(s?.end ?? -1, 3600, accuracy: 0.01)
 }
 
+// Acceptance list, spec v2 §10 (/workspace/pausa-stats/spec.md). Numbers are the spec's.
+// 9 (kill -9 recovery), 19–21, 23–25, 27–31 are UI or app-target checks, done by hand on macBowena.
+enum Accept {
+  static let tp: Calendar = { var c = Calendar(identifier: .gregorian); c.timeZone = TimeZone(identifier: "Asia/Taipei")!; return c }()
+  static func at(_ d: Int, _ h: Int, _ m: Int = 0, _ s: Int = 0) -> Date {
+    tp.date(from: DateComponents(year: 2026, month: 10, day: d, hour: h, minute: m, second: s))!
+  }
+  /// Drive a WorkClock once a second over [from, to) and sum the closed spans.
+  static func workSeconds(from: Double, to: Double, step: (Double) -> (counting: Bool, holding: Bool, idle: Double)) -> Double {
+    var w = WorkClock(), total = 0.0, t = from
+    while t < to {
+      let x = step(t)
+      if let s = w.update(now: t, counting: x.counting, holding: x.holding, inputIdle: x.idle, idleLimit: Config().longLength) { total += s.end - s.start }
+      t += 1
+    }
+    if let s = w.close(at: to) { total += s.end - s.start }
+    return total
+  }
+  static func records(_ cmds: [Command], start: Date) -> [BreakRecord] {
+    cmds.compactMap { if case .recorded(let k, let p, let r) = $0 { return BreakRecord(start: start, kind: k, planned: p, result: r) }; return nil }
+  }
+}
+
+func testAccept1MidnightSplit() {
+  let w = WorkSpan(start: Accept.at(18, 22), end: Accept.at(19, 2))
+  let d = Stats.days([], work: [w], endingAt: Accept.at(19, 12), count: 2, calendar: Accept.tp)
+  XCTAssertEqual(d[0].work, 7200, accuracy: 0.1); XCTAssertEqual(d[1].work, 7200, accuracy: 0.1)
+}
+func testAccept2IdleEndsAtLastInput() {
+  var w = WorkClock()
+  _ = w.update(now: 0, counting: true, inputIdle: 0, idleLimit: 300)          // 09:00
+  let s = w.update(now: 3900, counting: true, inputIdle: 300, idleLimit: 300) // 10:05, last input 10:00
+  XCTAssertEqual(s?.end ?? -1, 3600, accuracy: 0.01)
+}
+func testAccept3BreakNotWork() {
+  var s = Scheduler()
+  let total = Accept.workSeconds(from: 0, to: 3600) { t in
+    if t == 1000 { _ = s.breakNow(.long, now: t) }
+    if t == 1300 { _ = s.finish(.completed, now: t) }
+    if case .onBreak = s.phase { return (false, false, 0) }
+    return (true, false, 0)
+  }
+  XCTAssertEqual(total, 3300, accuracy: 1)
+}
+func testAccept4MeetingIgnoresIdle() {
+  XCTAssertEqual(Accept.workSeconds(from: 0, to: 3600) { t in (true, true, t) }, 3600, accuracy: 1)
+}
+func testAccept5LockNotWork() {
+  // Locked 600..<1800: AppController closes the span at the lock (handleAway(.start)) and ticks stop.
+  XCTAssertEqual(Accept.workSeconds(from: 0, to: 3600) { t in (!(600..<1800).contains(t), false, 0) }, 2400, accuracy: 1)
+}
+func testAccept6ActiveAndQuietHours() {
+  let all = Set(1...7)
+  var sch = PausaSchedule(enabled: true, rules: [PausaWindow(start: ClockTime(9), end: ClockTime(18), weekdays: all)])
+  sch.exclude = HoursSet(rules: [PausaWindow(start: ClockTime(12), end: ClockTime(13), weekdays: all)])
+  let day0 = Accept.at(19, 0).timeIntervalSince1970
+  func used(_ s: PausaSchedule) -> Double {
+    var total = 0.0
+    for m in 0..<1440 where isActive(s, at: Date(timeIntervalSince1970: day0 + Double(m * 60)), cal: Accept.tp) { total += 60 }
+    return total
+  }
+  XCTAssertEqual(used(sch), 8 * 3600, accuracy: 0.1)
+  sch.enabled = false
+  XCTAssertEqual(used(sch), 24 * 3600, accuracy: 0.1)
+}
+func testAccept7MeetingAfterHours() {
+  let sch = PausaSchedule(enabled: true, rules: [PausaWindow(start: ClockTime(9), end: ClockTime(18), weekdays: Set(1...7))])
+  let t0 = Accept.at(19, 18, 30).timeIntervalSince1970
+  let total = Accept.workSeconds(from: t0, to: t0 + 3600) { t in
+    (isActive(sch, at: Date(timeIntervalSince1970: t), cal: Accept.tp), true, 0)   // in a meeting, at the Mac
+  }
+  XCTAssertEqual(total, 0, accuracy: 0.1)
+}
+func testAccept8ManualPauseIsWork() {
+  // 暂停 1 小时: AppController passes counting = in hours, holding = false.
+  var s = Scheduler()
+  let total = Accept.workSeconds(from: 0, to: 3600) { t in s.manualPauseTick(now: t, inputIdle: 1); return (true, false, 1) }
+  XCTAssertEqual(total, 3600, accuracy: 1)
+}
+func testAccept10ShortCompletes() {
+  var s = Scheduler(); var out: [Command] = []
+  var t = 0.0
+  while t <= 1300 { out += s.tick(now: t, reasons: [], inputIdle: 10); t += 1 }
+  let d = Stats.days(Accept.records(out, start: Accept.at(19, 10)), endingAt: Accept.at(19, 12), count: 1, calendar: Accept.tp)
+  XCTAssertEqual(d[0].taken, 1); XCTAssertEqual(d[0].seconds, 20, accuracy: 0.1)
+}
+func testAccept11LockThroughLong() {
+  var s = Scheduler()
+  _ = s.breakNow(.long, now: 1000)
+  XCTAssertEqual(Accept.records(s.away(.locked, seconds: 360, now: 1360), start: Accept.at(19, 10)),
+                 [BreakRecord(start: Accept.at(19, 10), kind: .long, planned: 300, result: .completed)])
+}
+func testAccept12SkipAddsNoTime() {
+  var s = Scheduler()
+  _ = s.breakNow(.short, now: 0)
+  let d = Stats.days(Accept.records(s.finish(.skipped, now: 5), start: Accept.at(19, 10)), endingAt: Accept.at(19, 12), count: 1, calendar: Accept.tp)
+  XCTAssertEqual(d[0].skipped, 1); XCTAssertEqual(d[0].taken, 0); XCTAssertEqual(d[0].seconds, 0, accuracy: 0.1)
+}
+func testAccept13SnoozeThenComplete() {
+  var s = Scheduler(); var out: [Command] = []
+  _ = s.breakNow(.long, now: 0)
+  out += s.finish(.snoozed, now: 1)
+  XCTAssertEqual(Accept.records(out, start: Date()).count, 0)
+  var t = 2.0
+  while t <= 2000 { out += s.tick(now: t, reasons: [], inputIdle: 10); if case .onBreak = s.phase { break }; t += 1 }
+  out += s.finish(.completed, now: t + 300)
+  let r = Accept.records(out, start: Date())
+  XCTAssertEqual(r.count, 1); XCTAssertEqual(r.first?.result, .completed)
+}
+func testAccept14MeetingNoBreakRows() {
+  var s = Scheduler(); var out: [Command] = []
+  var t = 0.0
+  while t <= 7200 { out += s.tick(now: t, reasons: [.meeting], inputIdle: 600); t += 1 }
+  XCTAssertEqual(Accept.records(out, start: Date()).count, 0)
+}
+func testAccept15BreakBelongsToStartDay() {
+  let r = BreakRecord(start: Accept.at(18, 23, 59, 50), kind: .short, planned: 20, result: .completed)
+  let d = Stats.days([r], endingAt: Accept.at(19, 12), count: 2, calendar: Accept.tp)
+  XCTAssertEqual(d[0].taken, 1); XCTAssertEqual(d[1].taken, 0)
+}
+func testAccept16BarProportional() {
+  let a = StatsChart.barHeight(work: 6 * 3600 + 20 * 60, longest: 7 * 3600 + 40 * 60)
+  let b = StatsChart.barHeight(work: 7 * 3600 + 40 * 60, longest: 7 * 3600 + 40 * 60)
+  XCTAssertEqual(a, b * (380.0 / 460.0), accuracy: 1)
+  XCTAssertEqual(StatsChart.barHeight(work: 0, longest: 0), 0, accuracy: 0.001)
+}
+func testAccept17ScaleFloor() {
+  XCTAssertEqual(StatsChart.barHeight(work: 85 * 60, longest: 85 * 60), 150 * 85 / 480, accuracy: 0.5)
+}
+func testAccept18BarLabels() {
+  XCTAssertEqual(StatsChart.label(6 * 3600 + 20 * 60), .hours("6.3"))
+  XCTAssertEqual(StatsChart.label(2 * 3600), .hours("2.0"))
+  XCTAssertEqual(StatsChart.label(45 * 60), .minutes(45))
+  XCTAssertEqual(StatsChart.label(12 * 3600 + 59 * 60), .hours("13.0"))
+  XCTAssertTrue(StatsChart.label(0) == nil)   // 23: no label, only the line
+}
+func testAccept26KeepThirtyDays() {
+  let cut = Stats.keepFrom(now: Accept.at(19, 12), days: 30, calendar: Accept.tp)
+  XCTAssertEqual(cut, Accept.tp.date(from: DateComponents(year: 2026, month: 9, day: 20))!)   // today and the 29 before
+}
+func testDurationParts() {   // spec §5.4
+  XCTAssertEqual(DurationParts(0), .minutes(0)); XCTAssertEqual(DurationParts(40), .seconds(40))
+  XCTAssertEqual(DurationParts(18 * 60 + 59), .minutes(18))
+  XCTAssertEqual(DurationParts(4 * 3600 + 12 * 60), .hours(4, minutes: 12)); XCTAssertEqual(DurationParts(7200), .hours(2, minutes: 0))
+}
+
 let cases: [(String, () -> Void)] = [
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
@@ -839,6 +985,6 @@ let cases: [(String, () -> Void)] = [
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle)]
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle), ("accept.1", testAccept1MidnightSplit), ("accept.2", testAccept2IdleEndsAtLastInput), ("accept.3", testAccept3BreakNotWork), ("accept.4", testAccept4MeetingIgnoresIdle), ("accept.5", testAccept5LockNotWork), ("accept.6", testAccept6ActiveAndQuietHours), ("accept.7", testAccept7MeetingAfterHours), ("accept.8", testAccept8ManualPauseIsWork), ("accept.10", testAccept10ShortCompletes), ("accept.11", testAccept11LockThroughLong), ("accept.12", testAccept12SkipAddsNoTime), ("accept.13", testAccept13SnoozeThenComplete), ("accept.14", testAccept14MeetingNoBreakRows), ("accept.15", testAccept15BreakBelongsToStartDay), ("accept.16", testAccept16BarProportional), ("accept.17", testAccept17ScaleFloor), ("accept.18", testAccept18BarLabels), ("accept.26", testAccept26KeepThirtyDays), ("stats.durationParts", testDurationParts)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)

@@ -88,3 +88,47 @@ public struct WorkClock: Equatable {
     return t > s ? (s, t) : nil
   }
 }
+
+public extension Stats {
+  /// Oldest moment kept: 00:00 of the first of the last `days` calendar days (today and the 29 before it).
+  static func keepFrom(now: Date, days: Int, calendar: Calendar) -> Date {
+    let today = calendar.startOfDay(for: now)
+    return calendar.date(byAdding: .day, value: -(max(1, days) - 1), to: today) ?? today
+  }
+}
+
+/// How a duration is written on the stats page (spec §5.4). The words live in L10n; this picks the form.
+public enum DurationParts: Equatable {
+  case seconds(Int)                 // 1–59 s: 「40 秒」
+  case minutes(Int)                 // 0 and 60–3599 s: 「18 分钟」, the rest dropped
+  case hours(Int, minutes: Int)     // ≥ 1 h: 「4 小时 12 分钟」, minutes 0 means 「2 小时」
+  public init(_ seconds: Double) {
+    let s = Int(max(0, seconds))
+    switch s {
+    case 0: self = .minutes(0)
+    case 1..<60: self = .seconds(s)
+    case 60..<3600: self = .minutes(s / 60)
+    default: self = .hours(s / 3600, minutes: s % 3600 / 60)
+    }
+  }
+}
+
+/// The 7-day chart (spec §8): bar height is work time, the scale never below 8 hours.
+public enum StatsChart {
+  public static let plotHeight: Double = 150
+  public static let minScale: Double = 8 * 3600
+  public static let barWidthRatio: Double = 0.72
+
+  /// Points of bar for `work` seconds when the longest day in view had `longest`.
+  public static func barHeight(work: Double, longest: Double) -> Double {
+    work <= 0 ? 0 : plotHeight * work / max(longest, minScale)
+  }
+
+  public enum Label: Equatable { case hours(String), minutes(Int) }   // 「6.3 小时」 / 「45 分钟」
+  /// nil for a day without work: no label, only the 2 pt line.
+  public static func label(_ work: Double) -> Label? {
+    guard work > 0 else { return nil }
+    if work < 3600 { return .minutes(Int(work) / 60) }
+    return .hours(String(format: "%.1f", locale: Locale(identifier: "en_US_POSIX"), work / 3600))
+  }
+}
