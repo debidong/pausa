@@ -722,7 +722,7 @@
   "pause.meeting": {
     "zh-Hans": "暂停中：正在使用麦克风",
     "zh-Hant": "暫停中：正在使用麥克風",
-    "en": "Paused: Microphone in use",
+    "en": "Paused: microphone in use",
     "es": "En pausa: micrófono en uso",
     "ru": "Пауза: используется микрофон",
     "fr": "En pause : microphone utilisé",
@@ -802,7 +802,7 @@
   "pause.source.meeting": {
     "zh-Hans": "暂停中：正在使用麦克风",
     "zh-Hant": "暫停中：正在使用麥克風",
-    "en": "Paused: Microphone in use",
+    "en": "Paused: microphone in use",
     "es": "En pausa: micrófono en uso",
     "ru": "Пауза: используется микрофон",
     "fr": "En pause : microphone utilisé",
