@@ -118,7 +118,12 @@ final class AppController {
         let now = Self.now()
         if now - lastSave >= 60 { saveState() }
         if let until = manualPauseUntil {
-            if now < until { endWork(at: now); scheduler.manualPauseTick(now: now, inputIdle: Self.inputIdle()); return }
+            if now < until {
+                let idle = Self.inputIdle()
+                scheduler.manualPauseTick(now: now, inputIdle: idle)
+                trackWork(now: now, idle: idle, inHours: awaySince == nil && !outsideHours, holding: false)   // 暂停 1 小时 is still work; a lock is not
+                return
+            }
             resume()
             return
         }
@@ -133,23 +138,26 @@ final class AppController {
         // No input is not rest: keep counting. A long stretch only offsets the long break.
         scheduler.away(.idle, seconds: idle, now: now)
         apply(scheduler.tick(now: now, reasons: rs, deferrals: detector.allDeferrals, inputIdle: idle))
-        trackWork(now: now, idle: idle, active: active)
+        trackWork(now: now, idle: idle, inHours: active, holding: !rs.isDisjoint(with: Self.holds))
         onChange?()
     }
 
     // MARK: work time (stats)
 
     private var work = WorkClock()
+    /// The stats page refreshes at once when a break ends or data is cleared.
+    var onStatsChanged: (() -> Void)?
     private var lastWorkCheckpoint: Double = 0
     private static let workCheckpointEvery: Double = 300
 
-    /// After the scheduler has moved: a break that just started or hours that just closed end the span.
-    /// `active`: inside active hours and outside quiet hours. Checked directly, not through the phase:
-    /// a meeting outranks outsideHours there, so the phase alone would count meetings after hours.
-    private func trackWork(now: Double, idle: Double, active: Bool) {
-        var counting = active   // meetings, sharing, video, full screen: still at the Mac
+    private static let holds: Set<PausaCore.PauseReason> = [.meeting, .screenSharing, .video, .fullscreen]
+
+    /// After the scheduler has moved, so a break that just started ends the span at its start.
+    /// Hours come from `isActive` directly, not from the phase: a meeting outside hours shows as .paused(.meeting).
+    private func trackWork(now: Double, idle: Double, inHours: Bool, holding: Bool) {
+        var counting = inHours
         if case .onBreak = scheduler.phase { counting = false }
-        if let s = work.update(now: now, counting: counting, inputIdle: idle, idleLimit: scheduler.config.longLength) {
+        if let s = work.update(now: now, counting: counting, holding: holding, inputIdle: idle, idleLimit: scheduler.config.longLength) {
             BreakLog.shared.append(span(s))
         } else if let open = work.openedAt, now - lastWorkCheckpoint >= Self.workCheckpointEvery {
             BreakLog.shared.checkpoint(span((open, now)))
@@ -157,7 +165,15 @@ final class AppController {
         }
     }
 
-    /// Lock, manual pause, quit.
+    /// 清除数据…: everything goes, and the span running now starts over from this moment.
+    func clearStats() {
+        BreakLog.shared.clear()
+        if work.openedAt != nil { _ = work.close(at: Self.now()) }
+        lastWorkCheckpoint = 0
+        onStatsChanged?()
+    }
+
+    /// Lock, quit.
     func endWork() { endWork(at: Self.now()) }
 
     private func endWork(at now: Double) {
@@ -178,6 +194,7 @@ final class AppController {
             case .recorded(let kind, let planned, let result):
                 BreakLog.shared.append(BreakRecord(start: breakStart ?? Date(), kind: kind, planned: planned, result: result))
                 breakStart = nil
+                onStatsChanged?()
             case .startBreak(.short, let len):
                 breakStart = Date()
                 overlay.showShort(duration: len,

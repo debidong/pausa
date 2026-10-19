@@ -805,6 +805,14 @@ func testWorkSplitsAtMidnight() {
   XCTAssertEqual(days[0].work, 30 * 60, accuracy: 0.1); XCTAssertEqual(days[1].work, 45 * 60, accuracy: 0.1)
 }
 
+func testWorkMeetingIgnoresIdle() {
+  var w = WorkClock()
+  _ = w.update(now: 0, counting: true, holding: true, inputIdle: 0, idleLimit: 300)
+  XCTAssertTrue(w.update(now: 3600, counting: true, holding: true, inputIdle: 3600, idleLimit: 300) == nil)   // hands off, still in the call
+  let s = w.close(at: 3600)   // lock
+  XCTAssertEqual(s?.end ?? -1, 3600, accuracy: 0.01)
+}
+
 let cases: [(String, () -> Void)] = [
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
@@ -831,6 +839,6 @@ let cases: [(String, () -> Void)] = [
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight)]
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)

@@ -68,10 +68,12 @@ public struct WorkClock: Equatable {
   public private(set) var openedAt: Double?
   public init() {}
 
-  /// `counting`: in active hours, not in quiet hours, no manual pause, no break on screen, not locked.
-  /// Meetings, screen sharing, video and full screen still count.
-  public mutating func update(now: Double, counting: Bool, inputIdle: Double, idleLimit: Double) -> (start: Double, end: Double)? {
-    let idle = inputIdle >= idleLimit
+  /// `counting`: Pausa would remind now (active hours, not quiet hours), no break on screen, not locked.
+  /// 暂停提醒 1 小时 still counts. `holding`: a meeting, screen share, video or full screen, where the
+  /// scheduler already treats the person as at the screen; idle does not end the span then.
+  public mutating func update(now: Double, counting: Bool, holding: Bool = false, inputIdle: Double,
+                              idleLimit: Double) -> (start: Double, end: Double)? {
+    let idle = !holding && inputIdle >= idleLimit
     if counting && !idle {
       if openedAt == nil { openedAt = now }
       return nil

@@ -34,7 +34,7 @@ final class BreakLog {
 
     /// The span still running, as of now. Replaces the previous checkpoint.
     func checkpoint(_ w: WorkSpan) {
-        guard let data = try? encoder.encode(w) else { return }
+        guard !Settings.dryRun, let data = try? encoder.encode(w) else { return }
         try? FileManager.default.createDirectory(at: openURL.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? data.write(to: openURL, options: .atomic)
     }
@@ -46,7 +46,7 @@ final class BreakLog {
     }
 
     private func appendLine<T: Encodable>(_ r: T) {
-        guard var line = try? encoder.encode(r) else { return }
+        guard !Settings.dryRun, var line = try? encoder.encode(r) else { return }
         line.append(0x0A)
         let fm = FileManager.default
         try? fm.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
@@ -59,8 +59,10 @@ final class BreakLog {
     }
 
     /// Unreadable lines (a crash mid-write) are skipped, never fatal.
-    func all() -> [BreakRecord] { rows(BreakRecord.self) }
-    func work() -> [WorkSpan] { rows(WorkSpan.self) }
+    /// Both drop rows older than `keepDays` first, so a Pausa left running for weeks still keeps
+    /// only 30 days: what the stats page reads is what the bottom card says.
+    func all() -> [BreakRecord] { prune(now: Date()); return rows(BreakRecord.self) }
+    func work() -> [WorkSpan] { prune(now: Date()); return rows(WorkSpan.self) }
 
     /// A line is whichever type decodes it (the two have different required keys).
     private func rows<T: Decodable>(_: T.Type) -> [T] {
