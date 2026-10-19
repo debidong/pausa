@@ -65,13 +65,9 @@ struct UpdateRow: View {
     @ObservedObject var model: UpdateModel
     let version: String
     var body: some View {
-        LabeledContent {
-            if model.readyVersion != nil {
-                Button(L("立即重启"), action: model.install).disabled(!model.canInstall)
-            } else {
-                Button(L("检查更新"), action: model.check).disabled(model.busy)
-            }
-        } label: {
+        // HStack, not LabeledContent: in a grouped Form LabeledContent pins the button to the first
+        // text line, so it sat high against the two-line label. Centre it on the whole row.
+        HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(L("版本 %@", version))
                 HStack(spacing: 6) {
@@ -79,6 +75,12 @@ struct UpdateRow: View {
                     Text(line).foregroundStyle(.secondary)
                 }
                 .font(.callout)
+            }
+            Spacer(minLength: 12)
+            if model.readyVersion != nil {
+                Button(L("立即重启"), action: model.install).disabled(!model.canInstall)
+            } else {
+                Button(L("检查更新"), action: model.check).disabled(model.busy)
             }
         }
     }
