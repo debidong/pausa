@@ -33,6 +33,9 @@ final class StatsModel: ObservableObject {
         app.onStatsChanged = { [weak self] in self?.reload() }
     }
 
+    /// The window re-fits 统计 to its content after every reload (set by the settings window).
+    var onContentChange: (() -> Void)?
+
     func reload() {
         let (records, work, open) = load()
         let all = work + (open.map { [$0] } ?? [])   // today's numbers and cuts include the span running now
@@ -40,6 +43,7 @@ final class StatsModel: ObservableObject {
         // Spec §4 空状态: the full page as soon as the log holds one row, work or break.
         hasData = !records.isEmpty || !work.isEmpty
         if !hasData { selectedDay = nil }
+        onContentChange?()
     }
 
     /// The page came on screen: always today, fresh numbers, then every minute and at midnight.

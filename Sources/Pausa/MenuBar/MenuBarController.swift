@@ -451,6 +451,8 @@ final class SettingsTabsController: NSTabViewController {
     /// Round 7c (j, rev 2): portrait golden ratio 500 × 809, capped at the screen's visible height.
     static let goldenSize = NSSize(width: 500, height: 809)
     static let minimumSize = NSSize(width: 500, height: 420)
+    /// Steve (2026-10-19): the tallest a Settings window gets from a page; taller pages scroll inside.
+    static let maxFittedHeight: CGFloat = 880
     static func initialSize(for screen: NSScreen?) -> NSSize {
         let h = screen?.visibleFrame.height ?? goldenSize.height
         return NSSize(width: goldenSize.width, height: max(minimumSize.height, min(goldenSize.height, h)))
@@ -479,6 +481,11 @@ final class SettingsTabsController: NSTabViewController {
         }
         tabs.adoptWindowSize()
         tabs.fitHeight(to: SettingsNav.shared.page)   // the selected tab's height (saved position: top edge kept)
+        // While 统计 is the selected tab, its content height can change (empty -> data, 清除, refresh).
+        StatsModel.shared.onContentChange = { [weak tabs] in
+            guard let tabs, SettingsNav.shared.page == .stats, tabs.view.window != nil else { return }
+            tabs.fitHeight(to: .stats)   // no-op unless the height really changed (no per-minute jitter)
+        }
         if !restored { w.center() }
         w.setFrameAutosaveName(autosave)
         tabs.liveResizeObserver = NotificationCenter.default.addObserver(forName: NSWindow.didEndLiveResizeNotification,
@@ -548,9 +555,8 @@ final class SettingsTabsController: NSTabViewController {
     static var visibleHeightOverride: CGFloat?
     #endif
     /// Stats spec items 28 / 33 (Steve): like macOS's own Settings windows, every tab sets the window's
-    /// height to its content, growing AND shrinking, animated with the system default. Width is kept and
-    /// the top edge stays put. Only a screen whose visible frame is shorter than the content caps the
-    /// height; that page then scrolls.
+    /// height to min(content, `maxFittedHeight`, screen visible height), growing AND shrinking, animated
+    /// with the system default. Width is kept and the top edge stays put; a capped page scrolls.
     func fitHeight(to page: SettingsPage) {
         guard let w = view.window else { return }
         let content = SettingsView.contentHeight(settings, page, width: w.contentLayoutRect.width) + 1
@@ -561,7 +567,7 @@ final class SettingsTabsController: NSTabViewController {
         if let o = Self.visibleHeightOverride { capH = o; faked = true }
         #endif
         var f = w.frame
-        f.size.height = max(Self.minimumFrame(w).height, min(chrome + content, capH))
+        f.size.height = max(Self.minimumFrame(w).height, min(chrome + content, Self.maxFittedHeight, capH))
         f.origin.y = w.frame.maxY - f.height
         if let screen, !faked, f.minY < screen.minY { f.origin.y = screen.minY }   // only when the top can't stay
         guard abs(f.height - w.frame.height) > 0.5 || f.origin != w.frame.origin else { return }

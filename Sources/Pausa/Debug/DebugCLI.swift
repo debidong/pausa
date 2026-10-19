@@ -150,10 +150,10 @@ enum DebugCLI {
             MainActor.assumeIsolated {
                 var ok = true
                 func check(_ n: String, _ c: Bool) { print(c ? "ok   \(n)" : "FAIL \(n)"); ok = ok && c }
+                SettingsNav.shared.page = .breaks   // dry run: not persisted
                 var (w, tabs) = SettingsTabsController.makeWindow(settings: .shared, onPreview: {}, autosave: key)
-                let want = SettingsTabsController.initialSize(for: w.screen ?? NSScreen.main)
-                // First open: 500 wide, the selected page's height (capped at the screen).
-                check("first open 500 wide, page height (\(w.frame.size); was \(want))", w.frame.width == want.width)
+                let maxH = min(SettingsTabsController.maxFittedHeight, (w.screen ?? NSScreen.main)?.visibleFrame.height ?? 10000)
+                check("first open on 休息: 500 x \(Int(maxH)) (\(w.frame.size))", w.frame.width == 500 && abs(w.frame.height - maxH) <= 0.5)
                 if let sc = w.screen ?? NSScreen.main {
                     check("centred", abs(w.frame.midX - sc.visibleFrame.midX) < 2)
                 }
@@ -195,8 +195,8 @@ enum DebugCLI {
                     tabs.select(p)
                     let need = w.frame.height - w.contentLayoutRect.height + SettingsView.contentHeight(.shared, p, width: w.contentLayoutRect.width) + 1
                     let cap = (w.screen ?? NSScreen.main)?.visibleFrame.height ?? .greatestFiniteMagnitude
-                    let h = max(SettingsTabsController.minimumFrame(w).height, min(need, cap))
-                    let capped = need > cap   // fills the visible frame; the window moves up only as far as it must
+                    let h = max(SettingsTabsController.minimumFrame(w).height, min(need, SettingsTabsController.maxFittedHeight, cap))
+                    let capped = min(need, SettingsTabsController.maxFittedHeight) > cap   // screen-capped: moves up only as far as it must
                     check("\(p.rawValue) fits its page: 900 x \(Int(h)) (\(w.frame.size)), \(capped ? "capped, on screen" : "top kept")",
                           w.frame.width == 900 && abs(w.frame.height - h) <= 0.5
                           && (capped ? w.frame.maxY <= vis.maxY + 0.5 && w.frame.minY >= vis.minY - 0.5 : abs(w.frame.maxY - top) <= 0.5))
@@ -209,6 +209,33 @@ enum DebugCLI {
                 w.close()
                 (w, tabs) = SettingsTabsController.makeWindow(settings: .shared, onPreview: {}, autosave: key)
                 check("reopen keeps width 900, fitted height (\(w.frame.size))", w.frame.width == 900)
+                // Steve's numbers (500 wide, the sample week loaded): height = min(content, 880, screen).
+                do {
+                    let m = StatsModel.shared, cal = Calendar.autoupdatingCurrent
+                    let now = cal.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 15))!
+                    let data = StatsSnapshot.rows(StatsSnapshot.example, now: now, cal: cal)
+                    m.frozen = true; m.calendar = cal; m.now = { now }; m.load = { (data.0, data.1, nil) }; m.reload()
+                    let vis = (w.screen ?? NSScreen.main)!.visibleFrame
+                    w.setFrame(NSRect(x: vis.minX + 50, y: vis.maxY - 40 - 600, width: 500, height: 600), display: false)
+                    let top = w.frame.maxY, lang = AppLanguage.current.rawValue
+                    @MainActor func page(_ p: SettingsPage) -> CGFloat { SettingsView.contentHeight(.shared, p, width: w.contentLayoutRect.width) }
+                    tabs.select(.breaks)
+                    check("休息: 880 (\(w.frame.height)), page \(page(.breaks)) > area \(w.contentLayoutRect.height) scrolls, top kept",
+                          w.frame.height == 880 && page(.breaks) > w.contentLayoutRect.height && abs(w.frame.maxY - top) <= 0.5)
+                    // en 统计 is 839 at 500 wide (820 at 560, where the data-card line fits on one line).
+                    let statsWant: CGFloat? = ["zh-Hans": 806, "en": 839][lang], aboutWant: CGFloat? = ["zh-Hans": 448, "en": 462][lang]
+                    tabs.select(.stats)
+                    check("统计: \(w.frame.height) (expected \(statsWant.map { "\(Int($0))" } ?? "-")), shown fully, top kept",
+                          (statsWant.map { w.frame.height == $0 } ?? true) && page(.stats) <= w.contentLayoutRect.height && abs(w.frame.maxY - top) <= 0.5)
+                    tabs.select(.about)
+                    check("关于: \(w.frame.height) (expected \(aboutWant.map { "\(Int($0))" } ?? "-")), top kept",
+                          (aboutWant.map { w.frame.height == $0 } ?? true) && abs(w.frame.maxY - top) <= 0.5)
+                    SettingsTabsController.visibleHeightOverride = 520
+                    tabs.select(.stats)
+                    check("520 pt screen: 统计 capped at 520 (\(w.frame.height)), scrolls", w.frame.height == 520 && page(.stats) > w.contentLayoutRect.height)
+                    SettingsTabsController.visibleHeightOverride = nil
+                    m.onContentChange = nil
+                }
                 NSWindow.removeFrame(usingName: key)
                 print(ok ? "SETTINGSWINDOW PASS" : "SETTINGSWINDOW FAIL"); exit(ok ? 0 : 1)
             }

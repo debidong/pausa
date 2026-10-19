@@ -118,14 +118,15 @@ enum StatsSnapshot {
             let vis = (w.screen ?? NSScreen.main)!.visibleFrame
             w.setFrame(NSRect(x: vis.minX + 100, y: vis.maxY - 40 - 420, width: 560, height: 420), display: false)
             var top = w.frame.maxY
-            func want(_ p: SettingsPage) -> CGFloat { min(vis.height, max(SettingsTabsController.minimumFrame(w).height, wantRaw(p))) }
+            func want(_ p: SettingsPage) -> CGFloat {
+                max(SettingsTabsController.minimumFrame(w).height, min(wantRaw(p), SettingsTabsController.maxFittedHeight, vis.height)) }
             tabs.select(.stats)
             let statsH = w.frame.height
             check("统计 sets height \(fmt(statsH)) = content \(fmt(want(.stats))), top kept, width 560",
                   abs(statsH - want(.stats)) <= 0.5 && abs(w.frame.maxY - top) <= 0.5 && w.frame.width == 560)
             for p in [SettingsPage.breaks, .stats] {   // 休息 is taller than 统计 here; then back down
                 tabs.select(p)
-                let capped = wantRaw(p) > vis.height, topOK = capped ? w.frame.maxY <= vis.maxY + 0.5 : abs(w.frame.maxY - top) <= 0.5
+                let capped = min(wantRaw(p), SettingsTabsController.maxFittedHeight) > vis.height, topOK = capped ? w.frame.maxY <= vis.maxY + 0.5 : abs(w.frame.maxY - top) <= 0.5
                 check("\(p.rawValue): height \(fmt(w.frame.height)) = \(capped ? "screen" : "content") \(fmt(want(p))), \(capped ? "on screen" : "top kept")",
                       abs(w.frame.height - want(p)) <= 0.5 && topOK)
                 top = w.frame.maxY   // capped: the window moved up to stay on screen; later switches keep this top
@@ -144,6 +145,27 @@ enum StatsSnapshot {
             check("short screen (520 pt): capped at \(fmt(w.frame.height)), page \(fmt(page)) > area \(fmt(area)) scrolls, top kept",
                   abs(w.frame.height - 520) <= 0.5 && page > area && abs(w.frame.maxY - top) <= 0.5)
             SettingsTabsController.visibleHeightOverride = nil
+            // Live content changes while 统计 is selected: empty -> data grows, 清除 shrinks, a refresh with
+            // the same height never touches the frame.
+            tabs.select(.stats)
+            let sample = rows(example, now: now, cal: cal)
+            m.calendar = cal; m.now = { now }
+            m.load = { ([], [], nil) }; m.reload()
+            let emptyH = w.frame.height
+            check("empty 统计: \(fmt(emptyH)) = content \(fmt(want(.stats)))", abs(emptyH - want(.stats)) <= 0.5)
+            m.load = { (sample.0, sample.1, nil) }; m.reload()
+            let dataH = w.frame.height
+            check("empty -> data grows \(fmt(emptyH)) -> \(fmt(dataH)) = content \(fmt(want(.stats))), top kept",
+                  dataH > emptyH && abs(dataH - want(.stats)) <= 0.5 && abs(w.frame.maxY - top) <= 0.5)
+            var resizes = 0
+            let obs = NotificationCenter.default.addObserver(forName: NSWindow.didResizeNotification, object: w, queue: nil) { _ in resizes += 1 }
+            m.reload(); m.reload()   // minute refresh, same content
+            check("refresh with the same height: no resize (\(resizes))", resizes == 0)
+            NotificationCenter.default.removeObserver(obs)
+            m.load = { ([], [], nil) }; m.reload()   // what 清除 does: clearAll, then reload
+            check("清除 -> empty shrinks \(fmt(dataH)) -> \(fmt(w.frame.height)), top kept",
+                  abs(w.frame.height - emptyH) <= 0.5 && abs(w.frame.maxY - top) <= 0.5)
+            m.onContentChange = nil
             tabs.select(wasPage); w.setFrameAutosaveName(""); NSWindow.removeFrame(usingName: key); w.close()
         }
         // English plurals in the summary and tooltip; Chinese unchanged.
