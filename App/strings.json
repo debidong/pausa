@@ -83,11 +83,11 @@
     "zh-Hans": "配色模式",
     "zh-Hant": "配色模式",
     "en": "Color Mode",
-    "es": "Color Mode",
-    "ru": "Color Mode",
-    "fr": "Color Mode",
-    "vi": "Color Mode",
-    "th": "Color Mode"
+    "es": "Modo de color",
+    "ru": "Цветовой режим",
+    "fr": "Mode de couleur",
+    "vi": "Chế độ màu",
+    "th": "โหมดสี"
   },
   "appearance.previewBreak": {
     "zh-Hans": "休息界面",
@@ -663,7 +663,7 @@
     "zh-Hans": "还可延后 %lld 分钟",
     "zh-Hant": "還可延後 %lld 分鐘",
     "en": "Can snooze %lld more min",
-    "es": "Aún puede posponer %lld min",
+    "es": "Aún puedes posponer %lld min",
     "ru": "Можно отложить ещё на %lld мин",
     "fr": "Encore %lld min de report possible",
     "vi": "Còn có thể hoãn %lld phút",
