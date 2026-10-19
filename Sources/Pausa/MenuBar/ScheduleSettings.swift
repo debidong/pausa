@@ -92,7 +92,7 @@ struct ScheduleSection: View {
                 Toggle(L("schedule.activeOnly"), isOn: $settings.schedule.enabled.animation())
                 if settings.schedule.enabled {
                     ForEach(settings.schedule.include.rules) { r in RuleRow(settings: settings, editor: editor, side: .include, r: r) }
-                    LabeledContent(L("schedule.active.add")) { Button(L("common.add")) { editor.editRule(.include, nil) } }
+                    AddRow(title: L("schedule.hours.add")) { editor.editRule(.include, nil) }
                 }
             } header: {
                 Text(L("schedule.active"))
@@ -100,11 +100,9 @@ struct ScheduleSection: View {
             if settings.schedule.enabled {
                 Section {
                     ForEach(settings.schedule.exclude.rules) { r in RuleRow(settings: settings, editor: editor, side: .exclude, r: r) }
-                    LabeledContent(L("schedule.quiet.add")) { Button(L("common.add")) { editor.editRule(.exclude, nil) } }
+                    AddRow(title: L("schedule.hours.add")) { editor.editRule(.exclude, nil) }
                 } header: {
                     Text(L("schedule.quiet"))
-                } footer: {
-                    FormFooter(L("schedule.quiet.footer"))
                 }
                 Section {
                     ForEach(dates, id: \.0) { k, kind in
@@ -113,7 +111,7 @@ struct ScheduleSection: View {
                         }
                         .monospacedDigit()
                     }
-                    LabeledContent(L("schedule.dates.add")) { Button(L("common.add")) { editor.editDate(nil, nil) } }
+                    AddRow(title: L("schedule.dates.add")) { editor.editDate(nil, nil) }
                 } header: {
                     Text(L("schedule.dates"))
                 } footer: {

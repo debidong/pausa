@@ -5,38 +5,28 @@ import UniformTypeIdentifiers
 /// 暂停提醒 groups of the 休息 page. Native controls only.
 struct AutoPauseSection: View {
     @ObservedObject var settings: Settings
-    @ObservedObject var focus = FocusFilterStatus.shared
 
     var body: some View {
         // Steve (round 6): four separate Sections; only the first has a header; no footer.
         Section {
-            SettingItem(title: L("autoPause.meetings"), detail: L("autoPause.meetings.detail"), isOn: $settings.pauseForMeetings)
-            SettingItem(title: L("autoPause.video"), detail: L("autoPause.video.detail"), isOn: $settings.pauseForBrowserVideo)
+            SettingItem(title: L("autoPause.meetings"), isOn: $settings.pauseForMeetings)
+            SettingItem(title: L("autoPause.video"), isOn: $settings.pauseForBrowserVideo)
             SettingItem(title: L("autoPause.sharing"), isOn: $settings.pauseForScreenSharing)
             SettingItem(title: L("autoPause.typing"), detail: L("autoPause.typing.detail"), isOn: $settings.pauseWhileTyping)
         } header: {
-            // Steve (round 7): renamed 暂停提醒; one caption line under the header, above the rows.
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L("autoPause.title"))
-                Text(L("autoPause.intro"))
-                    .font(.footnote).fontWeight(.regular).foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(L("autoPause.title"))   // Steve (copy pass): no caption; the rows say what pauses
         }
         Section {
             SettingItem(title: L("autoPause.apps"), isOn: $settings.pauseForCustomApps)
             if settings.pauseForCustomApps {
                 ForEach(settings.customPauseApps) { app in AppRows(settings: settings, app: app) }
-                LabeledContent(L("autoPause.apps.add")) { Button(L("common.add"), action: addApp) }
+                AddRow(title: L("autoPause.apps.add"), action: addApp)
             }
         }
         Section {
             SettingItem(title: L("autoPause.focus"), isOn: $settings.pauseForFocusMode)
-            if !focus.configured {
-                LabeledContent(L("autoPause.focus.missing")) {
-                    Button(L("autoPause.focus.openSettings")) { FocusFilterStatus.openSystemSettings() }
-                }
-            }
+            // No status line: macOS can't tell us whether the filter is added, only that it ran.
+            AddRow(title: L("autoPause.focus.setup")) { FocusFilterStatus.openSystemSettings() }
         }
         Section {
             Picker(L("autoPause.scope"), selection: $settings.focusModeScope) {
@@ -150,6 +140,16 @@ final class FocusFilterStatus: ObservableObject {
 }
 
 /// One 自动暂停 setting: a plain Form row, name (+ optional detail line) on the left, one switch on the right.
+/// A row that is just one button, trailing like System Settings' 「添加…」 buttons (Steve: one
+/// button, no label + 添加 pair).
+struct AddRow: View {
+    let title: String
+    let action: () -> Void
+    var body: some View {
+        HStack { Spacer(); Button(title, action: action) }
+    }
+}
+
 struct SettingItem: View {
     let title: String
     var detail: String? = nil

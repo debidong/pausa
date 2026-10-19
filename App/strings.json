@@ -20,9 +20,9 @@
     "th": "ไอคอนได้แรงบันดาลใจจากดอกบัวในวัดไทย"
   },
   "about.medical": {
-    "zh-Hans": "若眼部持续不适，请及时就医。Pausa 不能替代专业的治疗。",
-    "zh-Hant": "若眼部持續不適，請及時就醫。Pausa 不能取代專業的治療。",
-    "en": "If eye discomfort persists, please see a doctor promptly. Pausa is not a substitute for professional treatment.",
+    "zh-Hans": "若眼部持续不适，请及时就医。Pausa 不能替代专业治疗。",
+    "zh-Hant": "若眼部持續不適，請及時就醫。Pausa 不能取代專業治療。",
+    "en": "If eye discomfort persists, see a doctor. Pausa is not a treatment.",
     "es": "Si las molestias en los ojos persisten, acude al médico sin demora. Pausa no sustituye un tratamiento profesional.",
     "ru": "Если дискомфорт в глазах не проходит, своевременно обратитесь к врачу. Pausa не заменяет профессиональное лечение.",
     "fr": "Si la gêne oculaire persiste, consultez rapidement un médecin. Pausa ne remplace pas un traitement professionnel.",
@@ -80,24 +80,24 @@
     "th": "สว่าง"
   },
   "appearance.mode": {
-    "zh-Hans": "配色模式",
-    "zh-Hant": "配色模式",
-    "en": "Mode",
-    "es": "Modo",
-    "ru": "Режим",
-    "fr": "Mode",
-    "vi": "Chế độ",
-    "th": "โหมด"
+    "zh-Hans": "外观",
+    "zh-Hant": "外觀",
+    "en": "Appearance",
+    "es": "Appearance",
+    "ru": "Appearance",
+    "fr": "Appearance",
+    "vi": "Appearance",
+    "th": "Appearance"
   },
   "appearance.previewBreak": {
-    "zh-Hans": "预览休息界面",
-    "zh-Hant": "預覽休息畫面",
-    "en": "Preview break screen",
-    "es": "Vista previa de la pantalla de descanso",
-    "ru": "Просмотр экрана перерыва",
-    "fr": "Aperçu de l’écran de pause",
-    "vi": "Xem trước màn hình nghỉ",
-    "th": "ดูตัวอย่างหน้าจอพัก"
+    "zh-Hans": "休息界面",
+    "zh-Hant": "休息畫面",
+    "en": "Break Screen",
+    "es": "Break Screen",
+    "ru": "Break Screen",
+    "fr": "Break Screen",
+    "vi": "Break Screen",
+    "th": "Break Screen"
   },
   "appearance.system": {
     "zh-Hans": "跟随系统",
@@ -140,14 +140,14 @@
     "th": "ขณะใช้แอปที่เลือก"
   },
   "autoPause.apps.add": {
-    "zh-Hans": "添加应用",
-    "zh-Hant": "加入 App",
-    "en": "Add app",
-    "es": "Añadir app",
-    "ru": "Добавить приложение",
-    "fr": "Ajouter une app",
-    "vi": "Thêm ứng dụng",
-    "th": "เพิ่มแอป"
+    "zh-Hans": "添加应用…",
+    "zh-Hant": "加入 App…",
+    "en": "Add App…",
+    "es": "Añadir app…",
+    "ru": "Добавить приложение…",
+    "fr": "Ajouter une app…",
+    "vi": "Thêm ứng dụng…",
+    "th": "เพิ่มแอป…"
   },
   "autoPause.condition": {
     "zh-Hans": "生效条件",
@@ -199,35 +199,15 @@
     "vi": "Khi bật Tập trung",
     "th": "ขณะเปิดโฟกัส"
   },
-  "autoPause.focus.missing": {
-    "zh-Hans": "尚未在系统设置中添加 Pausa 专注过滤器",
-    "zh-Hant": "尚未在系統設定中加入 Pausa 專注過濾器",
-    "en": "The Pausa Focus filter isn't added in System Settings",
-    "es": "El filtro de concentración de Pausa no está añadido en Ajustes del Sistema",
-    "ru": "Фильтр фокуса Pausa не добавлен в Системных настройках",
-    "fr": "Le filtre de concentration Pausa n’est pas ajouté dans Réglages Système",
-    "vi": "Chưa thêm bộ lọc Tập trung của Pausa trong Cài đặt hệ thống",
-    "th": "ยังไม่ได้เพิ่มตัวกรองโฟกัสของ Pausa ในการตั้งค่าระบบ"
-  },
-  "autoPause.focus.openSettings": {
-    "zh-Hans": "打开系统设置…",
-    "zh-Hant": "打開系統設定…",
-    "en": "Open System Settings…",
-    "es": "Abrir Ajustes del Sistema…",
-    "ru": "Открыть Системные настройки…",
-    "fr": "Ouvrir Réglages Système…",
-    "vi": "Mở Cài đặt hệ thống…",
-    "th": "เปิดการตั้งค่าระบบ…"
-  },
-  "autoPause.intro": {
-    "zh-Hans": "在以下情况下，暂时不提醒休息。",
-    "zh-Hant": "在以下情況下，暫時不提醒休息。",
-    "en": "Pausa won't remind you to take a break in these situations.",
-    "es": "Pausa no te recordará descansar en estas situaciones.",
-    "ru": "В этих ситуациях Pausa не будет напоминать о перерыве.",
-    "fr": "Pausa ne vous rappellera pas de faire une pause dans ces situations.",
-    "vi": "Pausa sẽ không nhắc bạn nghỉ trong các trường hợp sau.",
-    "th": "Pausa จะไม่เตือนให้พักในกรณีต่อไปนี้"
+  "autoPause.focus.setup": {
+    "zh-Hans": "设置专注模式…",
+    "en": "Set Up Focus…",
+    "zh-Hant": "設定專注模式…",
+    "es": "Set Up Focus…",
+    "ru": "Set Up Focus…",
+    "fr": "Set Up Focus…",
+    "vi": "Set Up Focus…",
+    "th": "Set Up Focus…"
   },
   "autoPause.meetings": {
     "zh-Hans": "会议进行时",
@@ -238,16 +218,6 @@
     "fr": "Pendant les réunions",
     "vi": "Khi đang họp",
     "th": "ระหว่างประชุม"
-  },
-  "autoPause.meetings.detail": {
-    "zh-Hans": "麦克风或摄像头正在使用",
-    "zh-Hant": "麥克風或攝影機正在使用",
-    "en": "Microphone or camera is in use",
-    "es": "El micrófono o la cámara están en uso",
-    "ru": "Используется микрофон или камера",
-    "fr": "Le micro ou la caméra est utilisé",
-    "vi": "Micrô hoặc camera đang được dùng",
-    "th": "ไมโครโฟนหรือกล้องกำลังทำงาน"
   },
   "autoPause.scope": {
     "zh-Hans": "暂停范围",
@@ -329,20 +299,10 @@
     "vi": "Khi phát video",
     "th": "ขณะเล่นวิดีโอ"
   },
-  "autoPause.video.detail": {
-    "zh-Hans": "视频播放器和网页里的视频",
-    "zh-Hant": "影片播放器和網頁裡的影片",
-    "en": "Video players and videos in web pages",
-    "es": "Reproductores de vídeo y vídeos en páginas web",
-    "ru": "Видеоплееры и видео на веб-страницах",
-    "fr": "Lecteurs vidéo et vidéos des pages web",
-    "vi": "Trình phát video và video trên trang web",
-    "th": "โปรแกรมเล่นวิดีโอและวิดีโอในหน้าเว็บ"
-  },
   "break.hardLine": {
-    "zh-Hans": "已连续使用 90 分钟，长休息不能再推迟。",
+    "zh-Hans": "已连续使用 90 分钟，长休息不能再延后。",
     "zh-Hant": "已連續使用 90 分鐘，長休息不能再延後。",
-    "en": "You've been at it for 90 minutes. This long break can't wait.",
+    "en": "After 90 minutes, this long break can't be delayed.",
     "es": "Llevas 90 minutos trabajando. La pausa larga ya no se puede posponer.",
     "ru": "Вы работаете уже 90 минут. Длинный перерыв больше нельзя отложить.",
     "fr": "Vous travaillez depuis 90 minutes. La pause longue ne peut plus être reportée.",
@@ -418,16 +378,6 @@
     "fr": "Durée de la pause courte",
     "vi": "Thời lượng nghỉ ngắn",
     "th": "ระยะเวลาพักสั้น"
-  },
-  "common.add": {
-    "zh-Hans": "添加",
-    "zh-Hant": "加入",
-    "en": "Add",
-    "es": "Añadir",
-    "ru": "Добавить",
-    "fr": "Ajouter",
-    "vi": "Thêm",
-    "th": "เพิ่ม"
   },
   "common.cancel": {
     "zh-Hans": "取消",
@@ -580,14 +530,14 @@
     "th": "พักเดี๋ยวนี้"
   },
   "menu.iconHidden": {
-    "zh-Hans": "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用，或者按住 ⌘ 把其他图标拖出菜单栏。",
-    "zh-Hant": "選單列空間不足，Pausa 的圖示被擋住了。您可以結束一些選單列應用程式，或按住 ⌘ 把其他圖示拖出選單列。",
-    "en": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps, or hold ⌘ and drag other icons out of the menu bar.",
-    "es": "Tu barra de menús está llena y el icono de Pausa está oculto. Cierra algunas apps de la barra de menús o mantén pulsada ⌘ y arrastra otros iconos fuera de ella.",
-    "ru": "Строка меню заполнена, и значок Pausa скрыт. Закройте несколько приложений в строке меню или, удерживая ⌘, перетащите другие значки из строки меню.",
-    "fr": "Votre barre des menus est pleine, l'icône de Pausa est masquée. Quittez quelques apps de la barre des menus, ou maintenez ⌘ et faites glisser d'autres icônes hors de la barre.",
-    "vi": "Thanh menu đã đầy nên biểu tượng Pausa bị che. Hãy thoát bớt vài ứng dụng trên thanh menu, hoặc giữ ⌘ rồi kéo các biểu tượng khác ra khỏi thanh menu.",
-    "th": "แถบเมนูเต็มแล้ว ไอคอน Pausa จึงถูกซ่อนอยู่ ลองปิดแอปในแถบเมนูบางตัว หรือกด ⌘ ค้างไว้แล้วลากไอคอนอื่นออกจากแถบเมนู"
+    "zh-Hans": "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用。",
+    "zh-Hant": "選單列空間不足，Pausa 的圖示被擋住了。您可以結束一些選單列應用程式。",
+    "en": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
+    "es": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
+    "ru": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
+    "fr": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
+    "vi": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
+    "th": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps."
   },
   "menu.kind.long": {
     "zh-Hans": "长休息",
@@ -640,9 +590,9 @@
     "th": "หยุดเตือน 1 ชั่วโมง"
   },
   "menu.postpone": {
-    "zh-Hans": "休息延后 %d 分钟",
-    "zh-Hant": "休息延後 %d 分鐘",
-    "en": "Postpone break %d min",
+    "zh-Hans": "稍后 %d 分钟",
+    "zh-Hant": "稍後 %d 分鐘",
+    "en": "Snooze %d Min",
     "es": "Posponer descanso %d min",
     "ru": "Отложить перерыв на %d мин",
     "fr": "Reporter la pause de %d min",
@@ -680,8 +630,8 @@
     "th": "การตั้งค่า"
   },
   "menu.welcome": {
-    "zh-Hans": "Pausa 已在运行，下次休息在 %@后。",
-    "zh-Hant": "Pausa 已在執行，下次休息在 %@後。",
+    "zh-Hans": "Pausa 已在运行，下次休息在 %@ 后。",
+    "zh-Hant": "Pausa 已在執行，下次休息在 %@ 後。",
     "en": "Pausa is running. Next break in %@.",
     "es": "Pausa está en marcha. Próximo descanso en %@.",
     "ru": "Pausa работает. Следующий перерыв через %@.",
@@ -710,7 +660,7 @@
     "th": "เวลาที่เหลือ"
   },
   "pause.canPostpone": {
-    "zh-Hans": "还可推迟 %lld 分钟",
+    "zh-Hans": "还可延后 %lld 分钟",
     "zh-Hant": "還可延後 %lld 分鐘",
     "en": "Can postpone %lld more min",
     "es": "Aún puede posponer %lld min",
@@ -740,7 +690,7 @@
     "th": "โฟกัส “%@”: %@"
   },
   "pause.frontmostApp": {
-    "zh-Hans": "已推迟：%@ 在前台",
+    "zh-Hans": "已延后：%@ 在前台",
     "zh-Hant": "已延後：%@ 在前景",
     "en": "Postponed: %@ is frontmost",
     "es": "Pospuesto: %@ en primer plano",
@@ -800,7 +750,7 @@
     "th": "หยุดชั่วคราว: กำลังบันทึกหน้าจอ (%@)"
   },
   "pause.scope.postponed": {
-    "zh-Hans": "休息已推迟",
+    "zh-Hans": "休息已延后",
     "zh-Hant": "休息已延後",
     "en": "breaks postponed",
     "es": "descansos pospuestos",
@@ -880,14 +830,14 @@
     "th": "หยุดชั่วคราว: กำลังดูวิดีโอ"
   },
   "pause.typing": {
-    "zh-Hans": "等你打完这句…",
-    "zh-Hant": "等你打完這句…",
-    "en": "Waiting for you to finish typing…",
-    "es": "Esperando a que termines de escribir…",
-    "ru": "Ждём, пока вы допечатаете…",
-    "fr": "On attend la fin de votre phrase…",
-    "vi": "Chờ bạn gõ xong…",
-    "th": "รอให้คุณพิมพ์ให้เสร็จก่อน…"
+    "zh-Hans": "输入结束后休息",
+    "zh-Hant": "輸入結束後休息",
+    "en": "Break After Typing",
+    "es": "Break After Typing",
+    "ru": "Break After Typing",
+    "fr": "Break After Typing",
+    "vi": "Break After Typing",
+    "th": "Break After Typing"
   },
   "pause.videoApp": {
     "zh-Hans": "已暂停：%@ 正在播放视频",
@@ -930,14 +880,14 @@
     "th": "พักใน %d วินาที"
   },
   "pill.typing": {
-    "zh-Hans": "写完这句再休息",
-    "zh-Hant": "寫完這句再休息",
-    "en": "Finish your sentence",
-    "es": "Termina la frase",
-    "ru": "Допишите фразу",
-    "fr": "Finissez votre phrase",
-    "vi": "Viết xong câu đã",
-    "th": "พิมพ์ให้จบประโยคก่อน"
+    "zh-Hans": "输入结束后休息",
+    "zh-Hant": "輸入結束後休息",
+    "en": "Break After Typing",
+    "es": "Break After Typing",
+    "ru": "Break After Typing",
+    "fr": "Break After Typing",
+    "vi": "Break After Typing",
+    "th": "Break After Typing"
   },
   "prebreak.hide": {
     "zh-Hans": "收起",
@@ -980,9 +930,9 @@
     "th": "พัก %d วินาที"
   },
   "prebreak.postpone": {
-    "zh-Hans": "推迟 %d 分钟",
-    "zh-Hant": "延後 %d 分鐘",
-    "en": "%d min later",
+    "zh-Hans": "稍后 %d 分钟",
+    "zh-Hant": "稍後 %d 分鐘",
+    "en": "Snooze %d Min",
     "es": "%d min más tarde",
     "ru": "Через %d мин",
     "fr": "Dans %d min",
@@ -990,7 +940,7 @@
     "th": "เลื่อน %d นาที"
   },
   "prebreak.postponeLeft": {
-    "zh-Hans": "还能推迟 %d 分钟",
+    "zh-Hans": "还能延后 %d 分钟",
     "zh-Hant": "還能延後 %d 分鐘",
     "en": "%d min of postponing left",
     "es": "Puedes posponer %d min más",
@@ -1000,9 +950,9 @@
     "th": "เลื่อนได้อีก %d นาที"
   },
   "prebreak.postponeUsedUp": {
-    "zh-Hans": "推迟额度用完了",
-    "zh-Hant": "延後額度用完了",
-    "en": "No postponing left",
+    "zh-Hans": "不能再延后",
+    "zh-Hant": "不能再延後",
+    "en": "Can't Snooze Again",
     "es": "Ya no puedes posponer",
     "ru": "Откладывать больше нельзя",
     "fr": "Plus de report possible",
@@ -1010,9 +960,9 @@
     "th": "เลื่อนไม่ได้แล้ว"
   },
   "prebreak.skip": {
-    "zh-Hans": "跳过这次",
-    "zh-Hant": "跳過這次",
-    "en": "Skip this one",
+    "zh-Hans": "跳过休息",
+    "zh-Hant": "跳過休息",
+    "en": "Skip Break",
     "es": "Saltar este",
     "ru": "Пропустить",
     "fr": "Passer celle-ci",
@@ -1020,8 +970,8 @@
     "th": "ข้ามครั้งนี้"
   },
   "prebreak.title.long": {
-    "zh-Hans": "长休息快到了",
-    "zh-Hant": "長休息快到了",
+    "zh-Hans": "长休息即将开始",
+    "zh-Hant": "長休息即將開始",
     "en": "Long break coming up",
     "es": "Descanso largo en breve",
     "ru": "Скоро длинный перерыв",
@@ -1030,8 +980,8 @@
     "th": "ใกล้ถึงเวลาพักยาว"
   },
   "prebreak.title.short": {
-    "zh-Hans": "马上休息一下",
-    "zh-Hant": "馬上休息一下",
+    "zh-Hans": "短休息即将开始",
+    "zh-Hant": "短休息即將開始",
     "en": "Short break coming up",
     "es": "Descanso corto en breve",
     "ru": "Скоро короткий перерыв",
@@ -1060,24 +1010,24 @@
     "th": "กำหนดเอง"
   },
   "preset.eyes": {
-    "zh-Hans": "护眼优先",
-    "zh-Hant": "護眼優先",
-    "en": "Eye care",
-    "es": "Cuidado visual",
-    "ru": "Забота о глазах",
-    "fr": "Confort visuel",
-    "vi": "Bảo vệ mắt",
-    "th": "ถนอมสายตา"
+    "zh-Hans": "频繁休息",
+    "zh-Hant": "頻繁休息",
+    "en": "Frequent Breaks",
+    "es": "Frequent Breaks",
+    "ru": "Frequent Breaks",
+    "fr": "Frequent Breaks",
+    "vi": "Frequent Breaks",
+    "th": "Frequent Breaks"
   },
   "preset.gentle": {
-    "zh-Hans": "低频提醒",
-    "zh-Hant": "低頻提醒",
-    "en": "Fewer reminders",
-    "es": "Menos avisos",
-    "ru": "Реже",
-    "fr": "Moins de rappels",
-    "vi": "Ít nhắc hơn",
-    "th": "เตือนน้อยลง"
+    "zh-Hans": "较少休息",
+    "zh-Hant": "較少休息",
+    "en": "Fewer Breaks",
+    "es": "Fewer Breaks",
+    "ru": "Fewer Breaks",
+    "fr": "Fewer Breaks",
+    "vi": "Fewer Breaks",
+    "th": "Fewer Breaks"
   },
   "preset.standard": {
     "zh-Hans": "标准",
@@ -1131,16 +1081,6 @@
     "vi": "Khung giờ nhắc",
     "th": "ช่วงเวลาเตือน"
   },
-  "schedule.active.add": {
-    "zh-Hans": "添加提醒时段",
-    "zh-Hant": "加入提醒時段",
-    "en": "Add active hours",
-    "es": "Añadir horario activo",
-    "ru": "Добавить активные часы",
-    "fr": "Ajouter des heures actives",
-    "vi": "Thêm khung giờ nhắc",
-    "th": "เพิ่มช่วงเวลาเตือน"
-  },
   "schedule.activeOnly": {
     "zh-Hans": "仅在指定时段提醒",
     "zh-Hant": "僅在指定時段提醒",
@@ -1162,9 +1102,9 @@
     "th": "ทั้งวัน"
   },
   "schedule.crossesMidnight": {
-    "zh-Hans": "结束早于开始：时段跨过午夜。",
-    "zh-Hant": "結束早於開始：時段跨過午夜。",
-    "en": "End is before start: the hours cross midnight.",
+    "zh-Hans": "结束时间早于开始时间，表示跨过午夜。",
+    "zh-Hant": "結束時間早於開始時間，表示跨過午夜。",
+    "en": "An end time before the start time means the hours cross midnight.",
     "es": "El fin es anterior al inicio: el horario cruza la medianoche.",
     "ru": "Конец раньше начала: часы переходят через полночь.",
     "fr": "La fin précède le début : les heures passent minuit.",
@@ -1192,14 +1132,14 @@
     "th": "วันที่เฉพาะ"
   },
   "schedule.dates.add": {
-    "zh-Hans": "添加日期",
-    "zh-Hant": "加入日期",
-    "en": "Add date",
-    "es": "Añadir fecha",
-    "ru": "Добавить дату",
-    "fr": "Ajouter une date",
-    "vi": "Thêm ngày",
-    "th": "เพิ่มวันที่"
+    "zh-Hans": "添加日期…",
+    "zh-Hant": "加入日期…",
+    "en": "Add Date…",
+    "es": "Añadir fecha…",
+    "ru": "Добавить дату…",
+    "fr": "Ajouter une date…",
+    "vi": "Thêm ngày…",
+    "th": "เพิ่มวันที่…"
   },
   "schedule.dates.delete": {
     "zh-Hans": "删除日期",
@@ -1212,14 +1152,14 @@
     "th": "ลบวันที่"
   },
   "schedule.dates.footer": {
-    "zh-Hans": "这些日期按设置上班或休息，不按星期几。",
-    "zh-Hant": "這些日期按設定上班或休息，不按星期幾。",
-    "en": "These dates follow your setting instead of the day of the week.",
-    "es": "Estas fechas siguen tu ajuste en lugar del día de la semana.",
-    "ru": "Эти даты следуют вашей настройке, а не дню недели.",
-    "fr": "Ces dates suivent votre réglage plutôt que le jour de la semaine.",
-    "vi": "Những ngày này theo cài đặt của bạn thay vì theo thứ trong tuần.",
-    "th": "วันที่เหล่านี้เป็นวันทำงานหรือวันหยุดตามที่ตั้งไว้ ไม่ขึ้นกับวันในสัปดาห์"
+    "zh-Hans": "特定日期优先于每周设置。",
+    "zh-Hant": "特定日期優先於每週設定。",
+    "en": "Specific dates override your weekly settings.",
+    "es": "Specific dates override your weekly settings.",
+    "ru": "Specific dates override your weekly settings.",
+    "fr": "Specific dates override your weekly settings.",
+    "vi": "Specific dates override your weekly settings.",
+    "th": "Specific dates override your weekly settings."
   },
   "schedule.day.off": {
     "zh-Hans": "休息",
@@ -1261,6 +1201,16 @@
     "vi": "Kết thúc",
     "th": "สิ้นสุด"
   },
+  "schedule.hours.add": {
+    "zh-Hans": "添加时段…",
+    "en": "Add Hours…",
+    "zh-Hant": "加入時段…",
+    "es": "Add Hours…",
+    "ru": "Add Hours…",
+    "fr": "Add Hours…",
+    "vi": "Add Hours…",
+    "th": "Add Hours…"
+  },
   "schedule.hours.delete": {
     "zh-Hans": "删除时段",
     "zh-Hant": "刪除時段",
@@ -1280,26 +1230,6 @@
     "fr": "Heures calmes",
     "vi": "Khung giờ yên lặng",
     "th": "ช่วงเวลาห้ามรบกวน"
-  },
-  "schedule.quiet.add": {
-    "zh-Hans": "添加免打扰时段",
-    "zh-Hant": "加入勿擾時段",
-    "en": "Add quiet hours",
-    "es": "Añadir horario de silencio",
-    "ru": "Добавить тихие часы",
-    "fr": "Ajouter des heures calmes",
-    "vi": "Thêm khung giờ yên lặng",
-    "th": "เพิ่มช่วงเวลาห้ามรบกวน"
-  },
-  "schedule.quiet.footer": {
-    "zh-Hans": "这些时段内不提醒休息，即使落在提醒时段内。",
-    "zh-Hant": "這些時段內不提醒休息，即使落在提醒時段內。",
-    "en": "Pausa doesn't remind you to take breaks during these hours, even within active hours.",
-    "es": "Pausa no te recuerda descansar en estas horas, aunque estén dentro del horario activo.",
-    "ru": "В эти часы Pausa не напоминает о перерывах, даже если они входят в активные часы.",
-    "fr": "Pausa ne vous rappelle pas de faire une pause pendant ces heures, même pendant les heures actives.",
-    "vi": "Pausa không nhắc nghỉ trong các khung giờ này, kể cả khi nằm trong khung giờ nhắc.",
-    "th": "Pausa จะไม่เตือนให้พักในช่วงเวลาเหล่านี้ แม้จะอยู่ในช่วงเวลาเตือนก็ตาม"
   },
   "schedule.repeat": {
     "zh-Hans": "重复",
@@ -1444,9 +1374,9 @@
     "th": "ล้าง"
   },
   "stats.clear.message": {
-    "zh-Hans": "这台 Mac 上的休息记录将被删除，无法恢复。",
-    "zh-Hant": "這台 Mac 上的休息紀錄將被刪除，無法復原。",
-    "en": "This deletes the break history stored on this Mac. You can't undo this.",
+    "zh-Hans": "这台 Mac 上的休息记录将永久删除。",
+    "zh-Hant": "這台 Mac 上的休息紀錄將永久刪除。",
+    "en": "This permanently deletes the break history on this Mac.",
     "es": "Se eliminará el historial de descansos guardado en este Mac. No se puede deshacer.",
     "ru": "История перерывов на этом Mac будет удалена. Это действие нельзя отменить.",
     "fr": "L’historique des pauses enregistré sur ce Mac sera supprimé. Cette action est irréversible.",
@@ -1454,9 +1384,9 @@
     "th": "ประวัติการพักใน Mac เครื่องนี้จะถูกลบและกู้คืนไม่ได้"
   },
   "stats.clear.title": {
-    "zh-Hans": "清除所有统计数据？",
-    "zh-Hant": "清除所有統計資料？",
-    "en": "Clear all stats?",
+    "zh-Hans": "清除所有休息记录？",
+    "zh-Hant": "清除所有休息紀錄？",
+    "en": "Clear all break history?",
     "es": "¿Borrar todas las estadísticas?",
     "ru": "Удалить всю статистику?",
     "fr": "Effacer toutes les statistiques ?",
@@ -1464,9 +1394,9 @@
     "th": "ล้างสถิติทั้งหมดใช่ไหม"
   },
   "stats.data.clear": {
-    "zh-Hans": "清除数据…",
-    "zh-Hant": "清除資料…",
-    "en": "Clear Data…",
+    "zh-Hans": "清除记录…",
+    "zh-Hant": "清除紀錄…",
+    "en": "Clear History…",
     "es": "Borrar datos…",
     "ru": "Удалить данные…",
     "fr": "Effacer les données…",
@@ -1610,8 +1540,8 @@
     "th": "เวลาทำงาน"
   },
   "status.away": {
-    "zh-Hans": "你离开了电脑",
-    "zh-Hant": "你離開了電腦",
+    "zh-Hans": "您已离开电脑",
+    "zh-Hant": "您已離開電腦",
     "en": "You're away from your computer",
     "es": "Te has alejado del ordenador",
     "ru": "Вы отошли от компьютера",
@@ -1810,8 +1740,8 @@
     "th": "จะติดตั้งหลังพักเสร็จ"
   },
   "update.auto": {
-    "zh-Hans": "已开启自动更新",
-    "zh-Hant": "已開啟自動更新",
+    "zh-Hans": "自动更新已开启",
+    "zh-Hant": "自動更新已開啟",
     "en": "Automatic updates are on",
     "es": "Las actualizaciones automáticas están activadas",
     "ru": "Автообновление включено",
