@@ -121,10 +121,14 @@ struct GlassClock: View {
             .multilineTextAlignment(.center)
             .fixedSize(horizontal: false, vertical: true)
         if !flat, !reduceTransparency, #available(macOS 26, *) {
+            // Liquid Glass refracts strongest at its own edge. A glass rectangle the size of the text frame
+            // put that edge band through the glyphs at the top/bottom of the line (bright, tinted streaks at
+            // stroke crossings); bleeding it 0.5 x font size past the frame keeps the edge off the strokes.
+            let bleed = size * 0.5
             ZStack {
                 digits.foregroundColor(.black.opacity(tone.backing)).blur(radius: size * 0.06)
                 digits.foregroundColor(.white.opacity(tone.fill))
-                    .overlay(Color.clear.glassEffect(.clear, in: Rectangle()).mask(digits))
+                    .overlay(Color.clear.glassEffect(.clear, in: Rectangle()).padding(-bleed).mask(digits))
             }
         } else {
             digits.foregroundColor(.white.opacity(tone.flat))

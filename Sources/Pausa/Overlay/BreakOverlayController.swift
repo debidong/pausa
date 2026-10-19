@@ -231,7 +231,7 @@ public final class BreakOverlayController {
         longWindows = NSScreen.screens.map { screen in
             let w = LongBreakWindow(contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
             w.setFrame(screen.frame, display: false)
-        w.sharingType = .none   // never in anyone's screen share / recording
+        w.sharingType = .none
             w.level = .screenSaver
             w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
             w.isOpaque = false
