@@ -690,14 +690,14 @@
     "th": "โฟกัส “%@”: %@"
   },
   "pause.frontmostApp": {
-    "zh-Hans": "已延后：%@ 在前台",
-    "zh-Hant": "已延後：%@ 在前景",
-    "en": "Snoozed: %@ is frontmost",
-    "es": "Pospuesto: %@ en primer plano",
-    "ru": "Отложено: %@ активно",
-    "fr": "Reporté : %@ au premier plan",
-    "vi": "Đã hoãn: %@ ở phía trước",
-    "th": "เลื่อนออกไป: %@ อยู่ด้านหน้า"
+    "zh-Hans": "使用 %@ 期间，休息已延后",
+    "zh-Hant": "使用 %@ 期間，休息已延後",
+    "en": "Break delayed while you use %@",
+    "es": "Descanso pospuesto mientras usas %@",
+    "ru": "Перерыв отложен, пока вы используете %@",
+    "fr": "Pause reportée pendant que vous utilisez %@",
+    "vi": "Đã hoãn nghỉ trong lúc bạn dùng %@",
+    "th": "เลื่อนการพักออกไประหว่างที่คุณใช้ %@"
   },
   "pause.fullscreenApp": {
     "zh-Hans": "已暂停：%@ 全屏中",
@@ -752,7 +752,7 @@
   "pause.scope.postponed": {
     "zh-Hans": "休息已延后",
     "zh-Hant": "休息已延後",
-    "en": "breaks snoozed",
+    "en": "breaks delayed",
     "es": "descansos pospuestos",
     "ru": "перерывы отложены",
     "fr": "pauses reportées",
