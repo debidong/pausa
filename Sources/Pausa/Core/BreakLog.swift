@@ -1,8 +1,8 @@
 import Foundation
 import PausaCore
 
-/// Stats on this Mac only: one JSON object per line in ~/Library/Application Support/Pausa/breaks.jsonl,
-/// either a break (`BreakRecord`) or a closed work span (`WorkSpan`). Rows past `keepDays` are dropped at launch.
+/// Stats on this Mac only: one JSON object per line in ~/Library/Application Support/Pausa/breaks.jsonl
+/// (Pausa Dev/breaks.jsonl in the dev build), either a break (`BreakRecord`) or a closed work span (`WorkSpan`). Rows past `keepDays` are dropped at launch.
 ///
 /// The open work span is checkpointed to work-open.json beside it, every few minutes and replaced each
 /// time, so the log itself stays append-only. After a crash the next launch appends it as closed at its
@@ -26,7 +26,7 @@ final class BreakLog {
 
     static var defaultURL: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent(appName, isDirectory: true)   // dev build keeps its own stats.appendingPathComponent("breaks.jsonl")
+        return base.appendingPathComponent(appName, isDirectory: true).appendingPathComponent("breaks.jsonl")   // dev build keeps its own stats
     }
 
     func append(_ r: BreakRecord) { appendLine(r) }

@@ -131,7 +131,7 @@ struct MenuPopoverView: View {
             HStack {
                 Button(L("设置"), action: actions.settings).keyboardShortcut(",")
                 Spacer()
-                Button(L("退出 Pausa"), action: actions.quit).keyboardShortcut("q")
+                Button(L("退出 Pausa").replacingOccurrences(of: "Pausa", with: appName), action: actions.quit).keyboardShortcut("q")
             }
             .buttonStyle(.borderless)
             .padding(.top, 8)
