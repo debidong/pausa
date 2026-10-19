@@ -114,10 +114,16 @@ final class StatsModel: ObservableObject {
         }
         let done: (NSApplication.ModalResponse) -> Void = { [weak self] r in
             if let esc { NSEvent.removeMonitor(esc) }
-            guard r == .alertSecondButtonReturn, let self else { return }
-            self.clearAll()
-            self.selectedDay = nil
-            self.reload()
+            // Take the sheet down first; clearing shrinks the page and re-fits the window, which must not
+            // happen while the sheet is still attached.
+            alert.window.orderOut(nil)
+            guard r == .alertSecondButtonReturn else { return }
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.clearAll()
+                self.selectedDay = nil
+                self.reload()
+            }
         }
         if let w = window { alert.beginSheetModal(for: w, completionHandler: done) } else { done(alert.runModal()) }
     }
@@ -227,24 +233,28 @@ struct StatsPage: View {
     var body: some View {
         Form {
             if model.hasData {
-                // One card: the week first, then the picked day's four numbers under it.
+                // The picked day on top (today by default), the week under it; tapping a bar changes the top card.
                 Section {
                     VStack(spacing: 0) {
-                        StatsWeekChart(days: model.days, selected: model.selectedIndex, today: model.todayIndex,
-                                       accent: accent, onSelect: model.select)
-                            .padding(.top, 14).padding(.horizontal, 16)
-                        Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 1).padding(.horizontal, 16)
                         titleRow.padding(.horizontal, 16).padding(.top, 8)
                         StatsNumbers(day: model.selected)
                     }
                     .padding(-10).listRowInsets(EdgeInsets())
-                } header: {
-                    HStack {
-                        Text(L("过去 7 天")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
-                        Spacer()
-                        legend
+                }
+                Section {
+                    VStack(spacing: 0) {
+                        HStack {
+                            Text(L("过去 7 天")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
+                            Spacer()
+                            legend
+                        }
+                        .frame(minHeight: 28)
+                        .padding(.horizontal, 16).padding(.top, 8)
+                        StatsWeekChart(days: model.days, selected: model.selectedIndex, today: model.todayIndex,
+                                       accent: accent, onSelect: model.select)
+                            .padding(.horizontal, 16)
                     }
-                    .frame(minHeight: 28)
+                    .padding(-10).listRowInsets(EdgeInsets())
                 } footer: { footnote }
             } else {
                 Section {
@@ -279,20 +289,12 @@ struct StatsPage: View {
         .onDisappear { model.close() }
     }
 
-    /// 「今天 … 10月19日 周一」, or 「10月15日 周四 … 回到今天」 when another day is picked.
+    /// 「今天 · 10月19日 周一」 or 「10月15日 周四」, always in the same place. The 今天 bar goes back to today.
     private var titleRow: some View {
-        HStack(alignment: .center) {
-            Text(model.isToday ? L("今天") : StatsText.date(model.selected.day))
-                .font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
-            Spacer()
-            if model.isToday {
-                Text(StatsText.date(model.now())).font(.system(size: 12)).foregroundStyle(.secondary)
-            } else {
-                Button(L("回到今天")) { model.selectedDay = nil }
-                    .buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(accent)
-            }
-        }
-        .frame(minHeight: 28)
+        let date = StatsText.date(model.selected.day)
+        return Text(model.isToday ? L("今天") + " · " + date : date)
+            .font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
+            .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
     }
 
     /// Solid swatch 「工作时长」, swatch with a cut 「休息」: the picture says which part is which.
