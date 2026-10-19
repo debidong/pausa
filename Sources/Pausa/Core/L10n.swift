@@ -46,10 +46,19 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     var locale: Locale { Locale(identifier: self == .system ? AppLanguage.current.rawValue : rawValue) }
 }
 
+/// The name the app shows for itself. The dev build (App/build-app.sh DEV=1) says "Pausa Dev"
+/// everywhere, so it can't be mistaken for the installed Pausa running next to it.
+#if PAUSA_DEV
+let appName = "Pausa Dev"
+#else
+let appName = "Pausa"
+#endif
+
 /// Translate a Simplified Chinese source string. Missing key -> the source itself.
 func L(_ key: String, _ args: CVarArg...) -> String {
     let lang = AppLanguage.current
-    let fmt = L10nTables.all[lang]?[key] ?? L10nTables.zhHans[key] ?? key
+    var fmt = L10nTables.all[lang]?[key] ?? L10nTables.zhHans[key] ?? key
+    if appName != "Pausa" { fmt = fmt.replacingOccurrences(of: "Pausa", with: appName) }
     return args.isEmpty ? fmt : String(format: fmt, locale: lang.locale, arguments: args)
 }
 

@@ -60,7 +60,7 @@ struct MenuPopoverView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("Pausa").font(.system(size: 13, weight: .semibold))
+                Text(appName).font(.system(size: 13, weight: .semibold))
                 Spacer()
             }
             .frame(height: 22)

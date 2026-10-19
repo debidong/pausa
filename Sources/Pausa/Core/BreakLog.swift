@@ -26,7 +26,7 @@ final class BreakLog {
 
     static var defaultURL: URL {
         let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        return base.appendingPathComponent("Pausa", isDirectory: true).appendingPathComponent("breaks.jsonl")
+        return base.appendingPathComponent(appName, isDirectory: true)   // dev build keeps its own stats.appendingPathComponent("breaks.jsonl")
     }
 
     func append(_ r: BreakRecord) { appendLine(r) }

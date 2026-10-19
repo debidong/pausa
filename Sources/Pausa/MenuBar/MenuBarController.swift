@@ -28,13 +28,13 @@ final class MenuBarController: NSObject {
         rebuildContent()
         item.button?.target = self
         item.button?.action = #selector(togglePopover)
-        item.button?.setAccessibilityLabel("Pausa")
+        item.button?.setAccessibilityLabel(appName)
         app.onChange = { [weak self] in self?.refresh() }
         langSub = app.settings.$language.dropFirst().receive(on: RunLoop.main).sink { [weak self] _ in
             self?.rebuildContent()
             self?.refresh()
             self?.settingsTabs?.relabel()
-            self?.settingsWindow?.title = "Pausa"
+            self?.settingsWindow?.title = appName
         }
         item.button?.font = .monospacedDigitSystemFont(ofSize: NSFont.systemFontSize, weight: .regular)
         themeSub = app.settings.$theme.dropFirst().receive(on: RunLoop.main).sink { [weak self] _ in
@@ -471,7 +471,7 @@ final class SettingsTabsController: NSTabViewController {
         let w = NSWindow(contentViewController: tabs)
         w.styleMask = [.titled, .closable, .miniaturizable, .resizable]
         w.toolbarStyle = .preference
-        w.title = "Pausa"
+        w.title = appName
         w.isReleasedWhenClosed = false
         pinMinimum(w)
         w.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
@@ -522,7 +522,7 @@ final class SettingsTabsController: NSTabViewController {
 
     func relabel() {
         for (item, p) in zip(tabViewItems, SettingsPage.allCases) { item.label = p.title }
-        view.window?.title = "Pausa"
+        view.window?.title = appName
     }
 
     /// Every tab's preferred size = the window's current content size, so the tab controller never
@@ -588,7 +588,7 @@ final class SettingsTabsController: NSTabViewController {
         if let f = frameBeforeSwitch, f != w.frame { w.setFrame(f, display: true) }   // undo any AppKit resize first
         frameBeforeSwitch = nil
         fitHeight(to: SettingsNav.shared.page)
-        w.title = "Pausa"
+        w.title = appName
         Self.scrollToTop(vc.view)
         // Only the new page's content fades in (0.25 s).
         vc.view.alphaValue = 0
@@ -614,7 +614,7 @@ final class SettingsTabsController: NSTabViewController {
     /// ~/Library/Logs/Pausa/settings-frames.log
     func logFrame(_ event: String) {
         guard let w = view.window, !Settings.dryRun else { return }
-        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/Pausa")
+        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/" + appName)
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         let url = dir.appendingPathComponent("settings-frames.log")
         let f = w.frame, c = w.contentView?.frame.size ?? .zero
@@ -824,7 +824,7 @@ struct AboutCard: View {
     /// New York title, light body, 8 pt rhythm; text column from 52% of the card.
     private func text(dark: Bool, width: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Pausa").font(.system(size: 28, weight: .semibold, design: .serif))
+            Text(appName).font(.system(size: 28, weight: .semibold, design: .serif))
                 .foregroundStyle(dark ? Self.cream : Self.titleLight)
                 .padding(.bottom, 4)
             Text(L("名字来自西班牙语中的“暂停”。")).lineSpacing(2)
