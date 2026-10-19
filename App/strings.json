@@ -700,8 +700,8 @@
     "th": "เลื่อนการพักออกไประหว่างที่คุณใช้ %@"
   },
   "pause.fullscreenApp": {
-    "zh-Hans": "已暂停：%@ 全屏中",
-    "zh-Hant": "已暫停：%@ 全螢幕中",
+    "zh-Hans": "暂停中：%@ 全屏中",
+    "zh-Hant": "暫停中：%@ 全螢幕中",
     "en": "Paused: %@ is full screen",
     "es": "En pausa: %@ en pantalla completa",
     "ru": "Пауза: %@ в полноэкранном режиме",
@@ -720,18 +720,18 @@
     "th": "จะมีพักยาวหนึ่งครั้งหลังจบ"
   },
   "pause.meeting": {
-    "zh-Hans": "已暂停：正在使用麦克风",
-    "zh-Hant": "已暫停：正在使用麥克風",
+    "zh-Hans": "暂停中：正在使用麦克风",
+    "zh-Hant": "暫停中：正在使用麥克風",
     "en": "Paused: Microphone in use",
     "es": "En pausa: micrófono en uso",
     "ru": "Пауза: используется микрофон",
     "fr": "En pause : microphone utilisé",
-    "vi": "Tạm dừng: đang dùng micrô",
+    "vi": "Đã tạm dừng: đang dùng micrô",
     "th": "หยุดชั่วคราว: กำลังใช้ไมโครโฟน"
   },
   "pause.recording": {
-    "zh-Hans": "已暂停：正在录屏",
-    "zh-Hant": "已暫停：正在錄影",
+    "zh-Hans": "暂停中：正在录屏",
+    "zh-Hant": "暫停中：正在錄影",
     "en": "Paused: recording screen",
     "es": "En pausa: grabando pantalla",
     "ru": "Пауза: запись экрана",
@@ -740,8 +740,8 @@
     "th": "หยุดชั่วคราว: กำลังบันทึกหน้าจอ"
   },
   "pause.recordingApp": {
-    "zh-Hans": "已暂停：正在录屏（%@）",
-    "zh-Hant": "已暫停：正在錄影（%@）",
+    "zh-Hans": "暂停中：正在录屏（%@）",
+    "zh-Hant": "暫停中：正在錄影（%@）",
     "en": "Paused: recording screen (%@)",
     "es": "En pausa: grabando pantalla (%@)",
     "ru": "Пауза: запись экрана (%@)",
@@ -770,8 +770,8 @@
     "th": "หยุดพักสั้นชั่วคราว"
   },
   "pause.sharing": {
-    "zh-Hans": "已暂停：正在共享屏幕",
-    "zh-Hant": "已暫停：正在分享螢幕",
+    "zh-Hans": "暂停中：正在共享屏幕",
+    "zh-Hant": "暫停中：正在分享螢幕",
     "en": "Paused: sharing screen",
     "es": "En pausa: compartiendo pantalla",
     "ru": "Пауза: демонстрация экрана",
@@ -780,8 +780,8 @@
     "th": "หยุดชั่วคราว: กำลังแชร์หน้าจอ"
   },
   "pause.sharingApp": {
-    "zh-Hans": "已暂停：正在共享屏幕（%@）",
-    "zh-Hant": "已暫停：正在分享螢幕（%@）",
+    "zh-Hans": "暂停中：正在共享屏幕（%@）",
+    "zh-Hant": "暫停中：正在分享螢幕（%@）",
     "en": "Paused: sharing screen (%@)",
     "es": "En pausa: compartiendo pantalla (%@)",
     "ru": "Пауза: демонстрация экрана (%@)",
@@ -840,8 +840,8 @@
     "th": "พักเมื่อพิมพ์เสร็จ"
   },
   "pause.videoApp": {
-    "zh-Hans": "已暂停：%@ 正在播放视频",
-    "zh-Hant": "已暫停：%@ 正在播放影片",
+    "zh-Hans": "暂停中：%@ 正在播放视频",
+    "zh-Hant": "暫停中：%@ 正在播放影片",
     "en": "Paused: %@ is playing video",
     "es": "En pausa: %@ reproduce vídeo",
     "ru": "Пауза: %@ воспроизводит видео",
