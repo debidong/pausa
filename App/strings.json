@@ -720,9 +720,9 @@
     "th": "จะมีพักยาวหนึ่งครั้งหลังจบ"
   },
   "pause.meeting": {
-    "zh-Hans": "已暂停：正在开会",
+    "zh-Hans": "已暂停：正在使用麦克风",
     "zh-Hant": "已暫停：正在開會",
-    "en": "Paused: in a meeting",
+    "en": "Paused: Microphone in use",
     "es": "En pausa: en una reunión",
     "ru": "Пауза: идёт встреча",
     "fr": "En pause : en réunion",
@@ -800,9 +800,9 @@
     "th": "หยุดชั่วคราว: เต็มหน้าจอ"
   },
   "pause.source.meeting": {
-    "zh-Hans": "暂停中：正在开会",
+    "zh-Hans": "暂停中：正在使用麦克风",
     "zh-Hant": "暫停中：正在開會",
-    "en": "Paused: in a meeting",
+    "en": "Paused: Microphone in use",
     "es": "En pausa: en una reunión",
     "ru": "Пауза: идёт встреча",
     "fr": "En pause : en réunion",

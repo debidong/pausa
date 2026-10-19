@@ -79,8 +79,13 @@ public final class PauseDetector: ObservableObject {
         let micOn = AudioInputMonitor.anyPhysicalInputRunning() && (MicUserMonitor.nonInputMethodInUse() ?? true)   // input-method voice typing isn't a meeting
         if !micOn { micSince = nil } else if micSince == nil { micSince = now }
         let mic = micSince.map { now - $0 >= micMinRun } ?? false
-        let micOrCam = mic || CameraMonitor.anyRunning()
-        if micOrCam { lastMeetingSignal = now; meetingApp = MicUserMonitor.meetingApp() ?? meetingApp }
+        let cam = CameraMonitor.anyRunning()
+        let micOrCam = mic || cam
+        if micOrCam { lastMeetingSignal = now }
+        // The app line names whoever holds the mic right now, every tick. nil (no line) when that is a
+        // system process with no app (replayd …) or only the camera is on. In the grace after the
+        // signal stops nobody holds it: keep the last app seen.
+        if micOn || cam { meetingApp = MicUserMonitor.meetingApp() }
         let inMeeting = lastMeetingSignal.map { now - $0 < meetingGrace } ?? false
 
         if !inMeeting { meetingApp = nil }
