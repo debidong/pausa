@@ -37,21 +37,21 @@ struct PreBreakState: Equatable {
     var showPill: Bool
 }
 
-/// Strings (Chinese source keys, translated in L10n.swift).
+/// Strings (keys in App/strings.json).
 enum PreBreakCopy {
-    static func title(_ k: BreakKind) -> String { k == .short ? L("马上休息一下") : L("长休息快到了") }
+    static func title(_ k: BreakKind) -> String { k == .short ? L("prebreak.title.short") : L("prebreak.title.long") }
     static func length(_ k: BreakKind, seconds: Int) -> String {
-        k == .short ? L("休息 %d 秒", seconds) : L("休息 %d 分钟", max(1, seconds / 60))
+        k == .short ? L("prebreak.length.seconds", seconds) : L("prebreak.length.minutes", max(1, seconds / 60))
     }
-    static func worked(_ m: Int) -> String { m < 1 ? L("刚休息过") : L("已连续工作 %d 分钟", m) }
-    static var breakNow: String { L("现在休息") }
-    static var skip: String { L("跳过这次") }
-    static func plus(_ m: Int) -> String { L("推迟 %d 分钟", m) }
-    static func deferLeft(_ m: Int) -> String { m > 0 ? L("还能推迟 %d 分钟", m) : L("推迟额度用完了") }
-    static var hardLine: String { L("已连续使用 90 分钟，长休息不能再推迟。") }
-    static func pill(_ s: Int) -> String { L("%d 秒后休息", s) }
-    static var typing: String { L("写完这句再休息") }
-    static var closeA11y: String { L("收起") }
+    static func worked(_ m: Int) -> String { m < 1 ? L("prebreak.justRested") : L("prebreak.workedFor", m) }
+    static var breakNow: String { L("menu.breakNow") }
+    static var skip: String { L("prebreak.skip") }
+    static func plus(_ m: Int) -> String { L("prebreak.postpone", m) }
+    static func deferLeft(_ m: Int) -> String { m > 0 ? L("prebreak.postponeLeft", m) : L("prebreak.postponeUsedUp") }
+    static var hardLine: String { L("break.hardLine") }
+    static func pill(_ s: Int) -> String { L("pill.countdown", s) }
+    static var typing: String { L("pill.typing") }
+    static var closeA11y: String { L("prebreak.hide") }
 }
 
 /// Live model the panels observe, so each tick redraws without rebuilding the windows.

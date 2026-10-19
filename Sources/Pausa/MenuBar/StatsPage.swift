@@ -93,11 +93,11 @@ final class StatsModel: ObservableObject {
     /// 清除 is destructive; 取消 is the default button and also answers Esc.
     func makeClearAlert() -> (NSAlert, cancel: NSButton) {
         let a = NSAlert()
-        a.messageText = L("清除所有统计数据？")
-        a.informativeText = L("这台 Mac 上的休息记录将被删除，无法恢复。")
+        a.messageText = L("stats.clear.title")
+        a.informativeText = L("stats.clear.message")
         a.alertStyle = .warning
-        let cancel = a.addButton(withTitle: L("取消"))   // first button: default, Return
-        let clear = a.addButton(withTitle: L("清除"))
+        let cancel = a.addButton(withTitle: L("common.cancel"))   // first button: default, Return
+        let clear = a.addButton(withTitle: L("stats.clear.confirm"))
         clear.hasDestructiveAction = true
         clear.keyEquivalent = ""
         cancel.keyEquivalent = "\r"
@@ -146,9 +146,9 @@ enum StatsText {
     /// 「4 小时 12 分钟」 as (number, unit template) pairs, from PausaCore's DurationParts.
     static func parts(_ seconds: Double) -> [(Int, String)] {
         switch DurationParts(seconds) {
-        case .seconds(let n): return [(n, "%d 秒")]
-        case .minutes(let n): return [(n, "%d 分钟")]
-        case .hours(let h, let m): return [(h, "%d 小时")] + (m > 0 ? [(m, "%d 分钟")] : [])
+        case .seconds(let n): return [(n, "unit.seconds")]
+        case .minutes(let n): return [(n, "unit.minutes")]
+        case .hours(let h, let m): return [(h, "unit.hours")] + (m > 0 ? [(m, "unit.minutes")] : [])
         }
     }
     /// A number and its unit never break apart.
@@ -165,7 +165,7 @@ enum StatsText {
         return ValuePiece(pre: trim(parts.first ?? ""), num: "\(n)", post: parts.count > 1 ? trim(parts[1]) : "")
     }
     static func durationPieces(_ s: Double) -> [ValuePiece] { parts(s).map { pieces($0.1, $0.0) } }
-    static func countPieces(_ n: Int) -> [ValuePiece] { [pieces("%d 次", n)] }
+    static func countPieces(_ n: Int) -> [ValuePiece] { [pieces("unit.count", n)] }
 
     /// A sentence template with each "%d" glued to the word after it, then filled in.
     /// `template` is already localized (a `Plural.pick` result).
@@ -185,7 +185,7 @@ enum StatsText {
 
     /// Hover tip and VoiceOver: 「10月15日 周四：工作 6 小时 20 分钟，完成 13 次休息，休息 23 分钟，跳过 4 次」.
     static func tip(_ s: DayStats, isToday: Bool) -> String {
-        sentence(Plural.pick("stats.tip", s.taken), isToday ? L("今天") : date(s.day),
+        sentence(Plural.pick("stats.tip", s.taken), isToday ? L("stats.today") : date(s.day),
                  duration(s.work), s.taken, duration(s.seconds), s.skipped)
     }
     static func summary(_ days: [DayStats]) -> String {
@@ -197,8 +197,8 @@ enum StatsText {
     /// Over a bar: 「6.3 小时」 / "6.3 hr" from 1 hour, 「45 分钟」 / "45 min" below; nil without work.
     static func barLabel(_ work: Double) -> String? {
         switch StatsChart.label(work, locale: AppLanguage.current.locale) {
-        case .hours(let h)?: return glue(L("%@ 小时", h))
-        case .minutes(let m)?: return glue(L("%d 分钟", m))
+        case .hours(let h)?: return glue(L("unit.hoursDecimal", h))
+        case .minutes(let m)?: return glue(L("unit.minutes", m))
         case nil: return nil
         }
     }
@@ -225,7 +225,7 @@ enum StatsText {
         return out
     }
 
-    static let footnote = "只统计 Pausa 提醒您的休息。开会、共享屏幕、播放视频、全屏、不在提醒时段内或处于免打扰时段时，Pausa 会自动暂停，不会提醒，这段时间也不算跳过。"
+    static let footnote = "stats.footnote"
 }
 
 // MARK: - page
@@ -244,7 +244,7 @@ struct StatsPage: View {
                         StatsNumbers(day: model.selected)
                         Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 1).padding(.horizontal, 16)
                         HStack {
-                            Text(L("过去 7 天")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
+                            Text(L("stats.title")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
                             Spacer()
                             legend
                         }
@@ -259,8 +259,8 @@ struct StatsPage: View {
             } else {
                 Section {
                     VStack(spacing: 6) {
-                        Text(L("还没有休息记录")).font(.system(size: 15, weight: .semibold))
-                        Text(L("完成第一次休息后，这里会显示您每天的工作时长和休息情况。"))
+                        Text(L("stats.empty.title")).font(.system(size: 15, weight: .semibold))
+                        Text(L("stats.empty.message"))
                             .font(.system(size: 12)).foregroundStyle(.secondary)
                             .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                     }
@@ -271,10 +271,10 @@ struct StatsPage: View {
             }
             Section {
                 HStack(alignment: .center, spacing: 16) {
-                    Text(L("Pausa 将过去 30 天的休息数据存储在本地。")).font(.system(size: 13))
+                    Text(L("stats.data.note")).font(.system(size: 13))
                         .fixedSize(horizontal: false, vertical: true)
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    Button(L("清除数据…")) { model.confirmClear(in: NSApp.keyWindow) }
+                    Button(L("stats.data.clear")) { model.confirmClear(in: NSApp.keyWindow) }
                         .disabled(!model.hasData)
                         .statsProbe("data.button")
                 }
@@ -292,7 +292,7 @@ struct StatsPage: View {
     /// 「今天 · 10月19日 周一」 or 「10月15日 周四」, always in the same place. The 今天 bar goes back to today.
     private var titleRow: some View {
         let date = StatsText.date(model.selected.day)
-        return Text(model.isToday ? L("今天") + " · " + date : date)
+        return Text(model.isToday ? L("stats.today") + " · " + date : date)
             .font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
             .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
     }
@@ -300,8 +300,8 @@ struct StatsPage: View {
     /// Solid swatch 「工作时长」, swatch with a cut 「休息」: the picture says which part is which.
     private var legend: some View {
         HStack(spacing: 12) {
-            HStack(spacing: 5) { GappedBar(cuts: [], radius: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("工作时长")) }
-            HStack(spacing: 5) { GappedBar(cuts: [5.5], radius: 1.5, cut: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("休息")) }
+            HStack(spacing: 5) { GappedBar(cuts: [], radius: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("stats.legend.work")) }
+            HStack(spacing: 5) { GappedBar(cuts: [5.5], radius: 1.5, cut: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("stats.legend.break")) }
         }
         .font(.system(size: 12)).foregroundStyle(.secondary)
         .accessibilityElement(children: .combine)
@@ -330,10 +330,10 @@ struct StatsNumbers: View {
             let col = g.size.width / 4
             let size = Self.numberSize(column: col, widestAt19: StatsValue.width(StatsText.durationPieces(Self.widest), size: 19))
             HStack(spacing: 0) {
-                cell(0, StatsText.durationPieces(day.work), L("工作时长"), size, col)
-                cell(1, StatsText.countPieces(day.taken), L("完成休息"), size, col)
-                cell(2, StatsText.durationPieces(day.seconds), L("休息时长"), size, col)
-                cell(3, StatsText.countPieces(day.skipped), L("跳过休息"), size, col)
+                cell(0, StatsText.durationPieces(day.work), L("stats.work"), size, col)
+                cell(1, StatsText.countPieces(day.taken), L("stats.taken"), size, col)
+                cell(2, StatsText.durationPieces(day.seconds), L("stats.breakTime"), size, col)
+                cell(3, StatsText.countPieces(day.skipped), L("stats.skipped"), size, col)
             }
             .overlay(alignment: .topLeading) {
                 ForEach(1..<4, id: \.self) { i in
@@ -496,7 +496,7 @@ struct StatsWeekChart: View {
     private func labels(_ i: Int) -> some View {
         let d = days[i], on = i == selected
         return VStack(spacing: 0) {
-            Text(i == today ? L("今天") : StatsText.weekday(d.day))
+            Text(i == today ? L("stats.today") : StatsText.weekday(d.day))
                 .foregroundStyle(on ? .primary : .secondary)
             Text(hasRecords(d) ? StatsText.breaks(d.taken) : " ")
                 .foregroundStyle(.secondary)

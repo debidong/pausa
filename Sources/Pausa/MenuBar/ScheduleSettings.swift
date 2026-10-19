@@ -7,16 +7,16 @@ enum ScheduleFormat {
     static func time(_ t: ClockTime) -> String { AppController.colonPair(t.minutes) }
     /// The one time-range formatter: spaced en dash, "9:00 – 12:00" (U+2013). 0:00 – 0:00 = all day.
     static func range(_ a: ClockTime, _ b: ClockTime) -> String {
-        a.minutes == 0 && b.minutes == 0 ? L("全天") : "\(time(a)) \u{2013} \(time(b))"
+        a.minutes == 0 && b.minutes == 0 ? L("schedule.allDay") : "\(time(a)) \u{2013} \(time(b))"
     }
     /// Weekdays in display order (respects firstWeekday), 1...7 = Sun...Sat.
     static var orderedWeekdays: [Int] { let f = cal.firstWeekday; return (0..<7).map { (f - 1 + $0) % 7 + 1 } }
     static func summary(_ days: Set<Int>) -> String {
         let sym = cal.shortStandaloneWeekdaySymbols
-        if days.isEmpty { return L("从不") }
-        if days.count == 7 { return L("每天") }
-        if days == [2, 3, 4, 5, 6] { return L("工作日") }
-        if days == [1, 7] { return L("周末") }
+        if days.isEmpty { return L("schedule.repeat.never") }
+        if days.count == 7 { return L("schedule.repeat.everyDay") }
+        if days == [2, 3, 4, 5, 6] { return L("schedule.repeat.weekdays") }
+        if days == [1, 7] { return L("schedule.repeat.weekends") }
         return orderedWeekdays.filter(days.contains).map { sym[$0 - 1] }.joined(separator: " ")
     }
     /// 特定日期 row date: zh "10 月 11 日" (spaced, Ruan Yifeng), others the locale's short month-day.
@@ -89,35 +89,35 @@ struct ScheduleSection: View {
         // 特定日期 is a third group: one row per date, 上班 or 休息.
         Group {
             Section {
-                Toggle(L("仅在指定时段提醒"), isOn: $settings.schedule.enabled.animation())
+                Toggle(L("schedule.activeOnly"), isOn: $settings.schedule.enabled.animation())
                 if settings.schedule.enabled {
                     ForEach(settings.schedule.include.rules) { r in RuleRow(settings: settings, editor: editor, side: .include, r: r) }
-                    LabeledContent(L("添加提醒时段")) { Button(L("添加")) { editor.editRule(.include, nil) } }
+                    LabeledContent(L("schedule.active.add")) { Button(L("common.add")) { editor.editRule(.include, nil) } }
                 }
             } header: {
-                Text(L("提醒时段"))
+                Text(L("schedule.active"))
             }
             if settings.schedule.enabled {
                 Section {
                     ForEach(settings.schedule.exclude.rules) { r in RuleRow(settings: settings, editor: editor, side: .exclude, r: r) }
-                    LabeledContent(L("添加免打扰时段")) { Button(L("添加")) { editor.editRule(.exclude, nil) } }
+                    LabeledContent(L("schedule.quiet.add")) { Button(L("common.add")) { editor.editRule(.exclude, nil) } }
                 } header: {
-                    Text(L("免打扰时段"))
+                    Text(L("schedule.quiet"))
                 } footer: {
-                    FormFooter(L("这些时段内不提醒休息，即使落在提醒时段内。"))
+                    FormFooter(L("schedule.quiet.footer"))
                 }
                 Section {
                     ForEach(dates, id: \.0) { k, kind in
-                        LabeledContent("\(ScheduleFormat.monthDay(k)) · \(kind == .work ? L("上班") : L("日期休息"))") {
-                            Button(L("编辑")) { editor.editDate(k, kind) }
+                        LabeledContent("\(ScheduleFormat.monthDay(k)) · \(kind == .work ? L("schedule.day.work") : L("schedule.day.off"))") {
+                            Button(L("common.edit")) { editor.editDate(k, kind) }
                         }
                         .monospacedDigit()
                     }
-                    LabeledContent(L("添加日期")) { Button(L("添加")) { editor.editDate(nil, nil) } }
+                    LabeledContent(L("schedule.dates.add")) { Button(L("common.add")) { editor.editDate(nil, nil) } }
                 } header: {
-                    Text(L("特定日期"))
+                    Text(L("schedule.dates"))
                 } footer: {
-                    FormFooter(L("这些日期按设置上班或休息，不按星期几。"))
+                    FormFooter(L("schedule.dates.footer"))
                 }
             }
         }
@@ -133,7 +133,7 @@ private struct RuleRow: View {
     let side: HoursSide, r: PausaWindow
     var body: some View {
         LabeledContent("\(ScheduleFormat.range(r.start, r.end)) \(ScheduleFormat.summary(r.weekdays))") {
-            Button(L("编辑")) { editor.editRule(side, r) }
+            Button(L("common.edit")) { editor.editRule(side, r) }
         }
         .monospacedDigit()
     }
@@ -141,15 +141,15 @@ private struct RuleRow: View {
 
 private struct SheetButtons: View {
     var onDelete: (() -> Void)?
-    var deleteTitle = L("删除")
+    var deleteTitle = L("common.delete")
     let onCancel: () -> Void, onDone: () -> Void
     var doneDisabled = false
     var body: some View {
         HStack {
             if let d = onDelete { Button(deleteTitle, role: .destructive, action: d).foregroundStyle(.red) }
             Spacer()
-            Button(L("取消"), action: onCancel).keyboardShortcut(.cancelAction)
-            Button(L("完成"), action: onDone).keyboardShortcut(.defaultAction).disabled(doneDisabled)
+            Button(L("common.cancel"), action: onCancel).keyboardShortcut(.cancelAction)
+            Button(L("common.done"), action: onDone).keyboardShortcut(.defaultAction).disabled(doneDisabled)
         }
         .padding([.horizontal, .bottom], 20)
     }
@@ -164,10 +164,10 @@ private struct RuleSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                Section(t.side == .include ? L("提醒时段") : L("免打扰时段")) {
-                    DatePicker(L("开始"), selection: $editor.start, displayedComponents: .hourAndMinute)
-                    DatePicker(L("结束"), selection: $editor.end, displayedComponents: .hourAndMinute)
-                    LabeledContent(L("重复")) {
+                Section(t.side == .include ? L("schedule.active") : L("schedule.quiet")) {
+                    DatePicker(L("schedule.start"), selection: $editor.start, displayedComponents: .hourAndMinute)
+                    DatePicker(L("schedule.end"), selection: $editor.end, displayedComponents: .hourAndMinute)
+                    LabeledContent(L("schedule.repeat")) {
                         HStack(spacing: 2) {
                             ForEach(ScheduleFormat.orderedWeekdays, id: \.self) { wd in
                                 Toggle(ScheduleFormat.cal.veryShortStandaloneWeekdaySymbols[wd - 1], isOn: Binding(
@@ -179,12 +179,12 @@ private struct RuleSheet: View {
                     }
                 }
                 if ScheduleEditor.clock(editor.end) <= ScheduleEditor.clock(editor.start) {
-                    Text(L("结束早于开始：时段跨过午夜。")).font(.footnote).foregroundStyle(.secondary)
+                    Text(L("schedule.crossesMidnight")).font(.footnote).foregroundStyle(.secondary)
                 }
             }
             .formStyle(.grouped).scrollDisabled(true)
             SheetButtons(onDelete: existing.map { i in { settings.schedule[keyPath: t.side.path].rules.remove(at: i); editor.target = nil } },
-                         deleteTitle: L("删除时段"),
+                         deleteTitle: L("schedule.hours.delete"),
                          onCancel: { editor.target = nil }, onDone: save, doneDisabled: editor.days.isEmpty)
         }
         .frame(width: 400)
@@ -211,18 +211,18 @@ struct DateSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                Section(L("特定日期")) {
-                    DatePicker(L("日期"), selection: $editor.day, displayedComponents: .date)
-                    Picker(L("这一天"), selection: $editor.kind) {
-                        Text(L("上班")).tag(DayKind.work)
-                        Text(L("日期休息")).tag(DayKind.off)
+                Section(L("schedule.dates")) {
+                    DatePicker(L("schedule.date"), selection: $editor.day, displayedComponents: .date)
+                    Picker(L("schedule.dayIs"), selection: $editor.kind) {
+                        Text(L("schedule.day.work")).tag(DayKind.work)
+                        Text(L("schedule.day.off")).tag(DayKind.off)
                     }
                     .pickerStyle(.segmented)
                 }
             }
             .formStyle(.grouped).scrollDisabled(true)
             SheetButtons(onDelete: t.dateKey.map { k in { settings.schedule.days[k] = nil; editor.target = nil } },
-                         deleteTitle: L("删除日期"),
+                         deleteTitle: L("schedule.dates.delete"),
                          onCancel: { editor.target = nil }, onDone: save)
         }
         .frame(width: 400)

@@ -335,7 +335,7 @@ struct LongBreakView: View {
                     Spacer()
                     HStack(spacing: 10) {
                         if locked {
-                            Text(L("已连续使用 90 分钟，长休息不能再推迟。"))
+                            Text(L("break.hardLine"))
                                 .font(.system(size: 13, weight: .medium)).foregroundColor(.white.opacity(0.85))
                         } else {
                             if !skipOnly { Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) } }

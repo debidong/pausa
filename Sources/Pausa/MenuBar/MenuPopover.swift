@@ -44,9 +44,9 @@ struct MenuPopoverView: View {
 
     private var s: PopoverState { model.state }
 
-    static func kindTitle(_ k: BreakKind) -> String { k == .long ? L("长休息") : L("短休息") }
+    static func kindTitle(_ k: BreakKind) -> String { k == .long ? L("menu.kind.long") : L("menu.kind.short") }
     static func lengthText(_ sec: Double) -> String {
-        sec < 60 ? L("%d 秒", Int(sec.rounded())) : L("%d 分钟", Int((sec / 60).rounded()))
+        sec < 60 ? L("unit.seconds", Int(sec.rounded())) : L("unit.minutes", Int((sec / 60).rounded()))
     }
     /// App icon via public NSWorkspace APIs; nil without a bundle ID or when the app isn't installed.
     static func appIcon(_ bundleID: String?) -> NSImage? {
@@ -86,7 +86,7 @@ struct MenuPopoverView: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 12)
             if s.hardLine {
-                Text(L("已连续使用 90 分钟，长休息不能再推迟。"))
+                Text(L("break.hardLine"))
                     .font(.system(size: 11)).foregroundColor(Color(nsColor: .systemOrange))
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)
@@ -101,7 +101,7 @@ struct MenuPopoverView: View {
                     VStack(spacing: Self.buttonGap) { breakButton; HStack(spacing: Self.buttonGap) { postponeButtons } }
                 }
                 if s.manualPaused || !s.autoPaused {
-                    Button(s.manualPaused ? L("恢复提醒") : L("暂停提醒 1 小时"), action: actions.togglePause)
+                    Button(s.manualPaused ? L("menu.resume") : L("menu.pauseHour"), action: actions.togglePause)
                         .buttonStyle(.bordered).fixedSize()
                         .disabled(!s.manualPaused && !s.canPause)
                 }
@@ -117,8 +117,8 @@ struct MenuPopoverView: View {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         Image(systemName: "arrow.down.circle.fill")
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(L("有新版本 %@", v))
-                            if !s.canInstall { Text(L("休息结束后安装")).font(.system(size: 11)).foregroundStyle(.secondary) }
+                            Text(L("update.available", v))
+                            if !s.canInstall { Text(L("update.afterBreak")).font(.system(size: 11)).foregroundStyle(.secondary) }
                         }
                         Spacer(minLength: 0)
                     }
@@ -129,9 +129,9 @@ struct MenuPopoverView: View {
                 Divider().padding(.top, 8)
             }
             HStack {
-                Button(L("设置"), action: actions.settings).keyboardShortcut(",")
+                Button(L("menu.settings"), action: actions.settings).keyboardShortcut(",")
                 Spacer()
-                Button(L("退出 Pausa").replacingOccurrences(of: "Pausa", with: appName), action: actions.quit).keyboardShortcut("q")
+                Button(L("menu.quit").replacingOccurrences(of: "Pausa", with: appName), action: actions.quit).keyboardShortcut("q")
             }
             .buttonStyle(.borderless)
             .padding(.top, 8)
@@ -145,13 +145,13 @@ struct MenuPopoverView: View {
     static let buttonGap: CGFloat = 6
 
     private var breakButton: some View {
-        Button(L("现在休息"), action: actions.breakNow)
+        Button(L("menu.breakNow"), action: actions.breakNow)
             .buttonStyle(.borderedProminent)
             .disabled(!s.canBreak).fixedSize()
     }
 
     private var topLine: String {
-        L(s.kind == .long ? "%@ 后开始长休息，%@" : "%@ 后开始短休息，%@", AppController.clock(s.remaining), Self.lengthText(s.length))
+        L(s.kind == .long ? "menu.next.long" : "menu.next.short", AppController.clock(s.remaining), Self.lengthText(s.length))
     }
 
     /// While paused, or at the 90-minute line, only 「现在休息」 is left. 15 is hidden when the allowance can never reach it.

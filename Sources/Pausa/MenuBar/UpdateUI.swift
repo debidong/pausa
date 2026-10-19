@@ -50,11 +50,11 @@ final class UpdateModel: ObservableObject {
     /// The status line under 「检查更新」; nil when there is nothing to say yet.
     var statusText: String? {
         switch status {
-        case .checking: return L("正在检查…")
-        case .downloading(let v): return v.isEmpty ? L("正在检查…") : L("正在下载 %@", v)
-        case .ready(let v): return L("%@ 已就绪，重启后生效", v)
-        case .error: return L("暂时无法检查更新")   // feed unreachable etc.; reason is logged (app.pausa/update)
-        case .idle: return upToDate ? L("已是最新版本") : nil
+        case .checking: return L("update.checking")
+        case .downloading(let v): return v.isEmpty ? L("update.checking") : L("update.downloading", v)
+        case .ready(let v): return L("update.ready", v)
+        case .error: return L("update.failed")   // feed unreachable etc.; reason is logged (app.pausa/update)
+        case .idle: return upToDate ? L("update.upToDate") : nil
         }
     }
 }
@@ -69,7 +69,7 @@ struct UpdateRow: View {
         // text line, so it sat high against the two-line label. Centre it on the whole row.
         HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(L("版本 %@", version))
+                Text(L("about.version", version))
                 HStack(spacing: 6) {
                     if model.busy { ProgressView().controlSize(.mini) }
                     Text(line).foregroundStyle(.secondary)
@@ -78,15 +78,15 @@ struct UpdateRow: View {
             }
             Spacer(minLength: 12)
             if model.readyVersion != nil {
-                Button(L("立即重启"), action: model.install).disabled(!model.canInstall)
+                Button(L("update.restart"), action: model.install).disabled(!model.canInstall)
             } else {
-                Button(L("检查更新"), action: model.check).disabled(model.busy)
+                Button(L("update.check"), action: model.check).disabled(model.busy)
             }
         }
     }
     private var line: String {
-        if model.readyVersion != nil, !model.canInstall { return L("%@ 已就绪，重启后生效", model.readyVersion!) + " · " + L("休息结束后安装") }
-        return model.statusText ?? L("已开启自动更新")
+        if model.readyVersion != nil, !model.canInstall { return L("update.ready", model.readyVersion!) + " · " + L("update.afterBreak") }
+        return model.statusText ?? L("update.auto")
     }
 }
 
@@ -112,7 +112,7 @@ enum UpdateUISnapshot {
                 guard tag == "5-ready" || tag == "6-ready-onbreak" || tag == "1-idle" else { continue }
                 var ps = MenuSnapshot.samples[0].1
                 ps.update = m.readyVersion; ps.canInstall = can
-                if !can { ps.held = true; ps.status = L("短休息中"); ps.canBreak = false; ps.can5 = false; ps.can15 = false }
+                if !can { ps.held = true; ps.status = L("status.onShortBreak"); ps.canBreak = false; ps.can5 = false; ps.can15 = false }
                 let model = PopoverModel(); model.state = ps
                 let host = NSHostingView(rootView: MenuPopoverView(model: model).pausaTheme(Settings.shared.theme)
                     .background(Color(nsColor: .windowBackgroundColor)))

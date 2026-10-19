@@ -105,7 +105,7 @@ final class MenuBarController: NSObject {
         return f.maxX > l.maxX && f.minX < r.minX
     }
 
-    static let hiddenHint = "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用，或者按住 ⌘ 把其他图标拖出菜单栏。"
+    static let hiddenHint = "menu.iconHidden"
 
     /// The icon can be seen: its window is visible, on a screen (menu bar managers move it off screen), and not behind the notch.
     var iconVisible: Bool {
@@ -120,7 +120,7 @@ final class MenuBarController: NSObject {
         guard !d.bool(forKey: "didShowWelcome") else { return }
         d.set(true, forKey: "didShowWelcome")
         let visible = iconVisible
-        let text = visible ? L("Pausa 已在运行，下次休息在 %@后。", Self.welcomeDuration(app.scheduler.next.remaining))
+        let text = visible ? L("menu.welcome", Self.welcomeDuration(app.scheduler.next.remaining))
                            : L(Self.hiddenHint)
         let label = Text(text)
             .environment(\.locale, AppLanguage.current.locale)
@@ -316,7 +316,7 @@ final class MenuBarController: NSObject {
                 try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out))
                 print("[\(tag)] sidebar image:", out)
             }
-            print("[\(tag)] toolbar title:", settingsWindow?.title ?? "-", "| popover:", MenuPopoverView.kindTitle(.short), L("现在休息"), L("休息延后 %d 分钟", 5))
+            print("[\(tag)] toolbar title:", settingsWindow?.title ?? "-", "| popover:", MenuPopoverView.kindTitle(.short), L("menu.breakNow"), L("menu.postpone", 5))
         }
         var steps: [(TimeInterval, () -> Void)] = [
             (1.0, { self.app.settings.language = .vi }),
@@ -368,8 +368,8 @@ enum SettingsPage: String, CaseIterable, Identifiable, Hashable {
     }
     var title: String {
         switch self {
-        case .breaks: return L("休息"); case .general: return L("通用")
-        case .stats: return L("统计"); case .about: return L("关于")
+        case .breaks: return L("settings.tab.breaks"); case .general: return L("settings.tab.general")
+        case .stats: return L("settings.tab.stats"); case .about: return L("settings.tab.about")
         }
     }
     var symbol: String {
@@ -659,19 +659,19 @@ struct BreaksPage: View {
         // Steve: grouped Form, one control per row; the rhythm sentence is the one exception.
         Form {
             Section {
-                Picker(L("预设"), selection: Binding(get: { settings.preset }, set: { settings.preset = $0 })) {
+                Picker(L("breaks.preset"), selection: Binding(get: { settings.preset }, set: { settings.preset = $0 })) {
                     ForEach(S.Preset.allCases) { Text($0.title).tag($0) }
                 }
                 RhythmSentence(settings: settings, interval: interval)
             } header: {
-                Text(L("休息节奏"))
+                Text(L("breaks.rhythm"))
             }
             Section {
-                Picker(L("短休息时长"), selection: $settings.shortLengthSec) {
-                    ForEach(S.shortLengthOptions, id: \.self) { v in Text(L("%d 秒", v)).tag(v) }
+                Picker(L("breaks.shortLength"), selection: $settings.shortLengthSec) {
+                    ForEach(S.shortLengthOptions, id: \.self) { v in Text(L("unit.seconds", v)).tag(v) }
                 }
-                Picker(L("长休息时长"), selection: $settings.longLengthMin) {
-                    ForEach(S.longLengthOptions, id: \.self) { v in Text(L("%d 分钟", v)).tag(v) }
+                Picker(L("breaks.longLength"), selection: $settings.longLengthMin) {
+                    ForEach(S.longLengthOptions, id: \.self) { v in Text(L("unit.minutes", v)).tag(v) }
                 }
             }
             AutoPauseSection(settings: settings)
@@ -692,7 +692,7 @@ struct RhythmSentence: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             line(L("rhythm.line1"), Picker("", selection: interval) {
-                ForEach(S.shortEveryOptions, id: \.self) { v in Text(L("%d 分钟", v)).tag(v).disabled(BreaksPage.intervalDisabled(v)) }
+                ForEach(S.shortEveryOptions, id: \.self) { v in Text(L("unit.minutes", v)).tag(v).disabled(BreaksPage.intervalDisabled(v)) }
             })
             line(Plural.pick("rhythm.line2", settings.shortsBeforeLong), Picker("", selection: $settings.shortsBeforeLong) {
                 ForEach(S.shortsBeforeLongOptions, id: \.self) { n in
@@ -725,13 +725,13 @@ struct GeneralPage: View {
     var body: some View {
         Form {
             Section {
-                Toggle(L("登录时打开"), isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0 }).animation())
+                Toggle(L("general.openAtLogin"), isOn: Binding(get: { settings.launchAtLogin }, set: { settings.launchAtLogin = $0 }).animation())
                 Picker(selection: $settings.language) {
                     ForEach(AppLanguage.allCases) { Text($0.nativeName).tag($0) }
                 } label: {
                     // Globe after the word so every row's label starts at the same x.
                     HStack(spacing: 5) {
-                        Text(L("语言"))
+                        Text(L("general.language"))
                         Image(systemName: "globe").foregroundStyle(.secondary)
                     }
                 }
@@ -748,24 +748,24 @@ struct AppearanceSection: View {
     var onPreview: () -> Void
     var body: some View {
             Section {
-                Picker(L("菜单栏显示"), selection: $settings.menuBarDisplay) {
+                Picker(L("general.menuBarShows"), selection: $settings.menuBarDisplay) {
                     ForEach(MenuBarDisplay.allCases) { Text($0.title).tag($0) }
                 }
                 IconChooser(selection: $settings.icon)
-                Toggle(L("在程序坞显示"), isOn: $settings.showInDock.animation())
-                Picker(L("配色模式"), selection: $settings.appearance) {
+                Toggle(L("general.showInDock"), isOn: $settings.showInDock.animation())
+                Picker(L("appearance.mode"), selection: $settings.appearance) {
                     ForEach(AppearanceMode.allCases) { Text($0.title).tag($0) }
                 }
-                Picker(L("主题"), selection: $settings.theme) {
+                Picker(L("appearance.theme"), selection: $settings.theme) {
                     ForEach(ThemeChoice.scenes) { Text($0.title).tag($0) }
                     Divider()
                     Text(ThemeChoice.random.title).tag(ThemeChoice.random)
                 }
-                LabeledContent(L("预览休息界面")) {
-                    Button(L("预览"), action: onPreview)
+                LabeledContent(L("appearance.previewBreak")) {
+                    Button(L("common.preview"), action: onPreview)
                 }
             } header: {
-                Text(L("外观"))
+                Text(L("appearance.title"))
             }
     }
 }
@@ -786,7 +786,7 @@ struct AboutPage: View {
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
             } footer: {
-                Text(L(HealthNote.key))
+                Text(L("about.medical"))   // wording pending medical review
                     .font(.system(size: 11))
                     // Not .secondary: measured below 4.5:1 on the window background.
                     .foregroundStyle(scheme == .dark ? Color(white: 0.68) : Color(white: 0.36))
@@ -827,10 +827,10 @@ struct AboutCard: View {
             Text(appName).font(.system(size: 28, weight: .semibold, design: .serif))
                 .foregroundStyle(dark ? Self.cream : Self.titleLight)
                 .padding(.bottom, 4)
-            Text(L("名字来自西班牙语中的“暂停”。")).lineSpacing(2)
-            Text(L("图标的灵感来自泰国寺庙里的莲花。")).lineSpacing(2)
+            Text(L("about.name")).lineSpacing(2)
+            Text(L("about.icon")).lineSpacing(2)
             Link(destination: URL(string: "https://github.com/debidong")!) {
-                Text(L("由 Bowen（debidong）开发"))
+                Text(L("about.developer"))
                     .foregroundStyle(dark ? Self.cream : Self.linkLight)
                     .underline(dark || linkHover)
                     .multilineTextAlignment(.leading)
@@ -873,7 +873,7 @@ struct IconChooser: View {
     @Environment(\.pausaAccent) private var accent
     var body: some View {
         HStack(alignment: .top) {
-            Text(L("图标"))
+            Text(L("appearance.icon"))
             Spacer()
             HStack(spacing: 14) {
                 ForEach(IconChoice.allCases) { c in
@@ -1014,7 +1014,7 @@ enum MenuSnapshot {
         paused.held = true; paused.status = PauseReason.meeting.pausedText; paused.can5 = false; paused.can15 = false
         paused.autoPaused = true
         var manual = normal              // 暂停提醒 1 小时 pressed: the same button reads 恢复提醒
-        manual.held = true; manual.status = L("已暂停，%@ 后恢复", "58:00"); manual.can5 = false; manual.can15 = false
+        manual.held = true; manual.status = L("status.pausedUntil", "58:00"); manual.can5 = false; manual.can15 = false
         manual.manualPaused = true
         var out = [("1-normal", normal), ("2-used", used), ("3-long", long), ("3b-long-free", longFree), ("4-limit", limit), ("5-paused", paused), ("6-manual-paused", manual)]
         // PauseSource: one paused state per kind with that app's icon (Safari when the app isn't installed),
@@ -1133,7 +1133,7 @@ enum IntervalMenuSnapshot {
         // SwiftUI builds the pop-up's NSMenu only when it opens, so draw the items from the exact
         // options and predicate the 休息间隔 menu uses.
         let cur = Settings.shared.shortEveryMin
-        let items = Settings.shortEveryOptions.map { (title: L("%d 分钟", $0), enabled: !BreaksPage.intervalDisabled($0), on: $0 == cur) }
+        let items = Settings.shortEveryOptions.map { (title: L("unit.minutes", $0), enabled: !BreaksPage.intervalDisabled($0), on: $0 == cur) }
         for it in items { print(it.enabled ? "  enabled " : "  GREYED  ", it.on ? "✓" : " ", it.title) }
         for (name, ap) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
             let view = VStack(alignment: .leading, spacing: 0) {

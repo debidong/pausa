@@ -337,20 +337,20 @@ final class AppController {
 
     var statusLine: String {
         if let until = manualPauseUntil {
-            return L("已暂停，%@ 后恢复", Self.clock(until - Self.now()))
+            return L("status.pausedUntil", Self.clock(until - Self.now()))
         }
-        if awaySince != nil { return L("你离开了电脑") }
+        if awaySince != nil { return L("status.away") }
         if case .paused(.outsideHours) = scheduler.phase {
-            guard let next = nextWindowStart else { return L("时段外") }
-            return L("下次开始 %@", Self.whenText(next, cal: cal))
+            guard let next = nextWindowStart else { return L("status.outsideHours") }
+            return L("status.nextStart", Self.whenText(next, cal: cal))
         }
         var reasonText: String?
         if case .paused(let top) = scheduler.phase { reasonText = reasons[top] }
         if let t = StatusPick.line(source: currentPauseSource?.statusText,
                                    autoStatus: autoPauseStatus?.title, reason: reasonText) { return t }
-        if case .onBreak(let k, _) = scheduler.phase { return k == .long ? L("长休息中") : L("短休息中") }
+        if case .onBreak(let k, _) = scheduler.phase { return k == .long ? L("status.onLongBreak") : L("status.onShortBreak") }
         let n = scheduler.next
-        return L(n.kind == .long ? "长休息：%@ 后" : "短休息：%@ 后", Self.clock(n.remaining))
+        return L(n.kind == .long ? "status.longIn" : "status.shortIn", Self.clock(n.remaining))
     }
 
     /// Source holding the current pause (Mitchell: icon from `bundleID`). nil = not auto-paused.
@@ -378,7 +378,7 @@ final class AppController {
         f.setLocalizedDateFormatFromTemplate("Hmm")
         let time = f.string(from: d)
         if cal.isDateInToday(d) { return time }
-        if cal.isDateInTomorrow(d) { return L("明天 %@", time) }
+        if cal.isDateInTomorrow(d) { return L("status.tomorrow", time) }
         f.setLocalizedDateFormatFromTemplate("EEE Hmm")
         return f.string(from: d)
     }

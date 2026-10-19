@@ -25,7 +25,7 @@ struct CustomPauseApp: Codable, Hashable, Identifiable {
 enum IconChoice: String, CaseIterable, Identifiable {
     case ink, glass
     var id: String { rawValue }
-    var title: String { self == .ink ? L("水墨") : L("玻璃") }
+    var title: String { self == .ink ? L("icon.ink") : L("icon.glass") }
     /// PNGs copied into Contents/Resources by App/build-app.sh; nil when run outside the .app.
     var image: NSImage? {
         guard let url = Bundle.main.url(forResource: "icon-\(rawValue)", withExtension: "png") else { return nil }
@@ -46,7 +46,7 @@ enum FocusModeScope: String, CaseIterable, Identifiable {
 enum MenuBarDisplay: String, CaseIterable, Identifiable {
     case progressRing, timeLeft
     var id: String { rawValue }
-    var title: String { self == .timeLeft ? L("剩余时间") : L("进度圆环") }
+    var title: String { self == .timeLeft ? L("menuBarStyle.timeLeft") : L("menuBarStyle.ring") }
 }
 
 enum ThemeChoice: String, CaseIterable, Identifiable {
@@ -61,11 +61,11 @@ enum ThemeChoice: String, CaseIterable, Identifiable {
     }
     var title: String {
         switch self {
-        case .forest: return L("森林")
-        case .ocean: return L("大海")
-        case .sunset: return L("晚霞")
-        case .night: return L("夜空")
-        case .random: return L("随机")
+        case .forest: return L("theme.forest")
+        case .ocean: return L("theme.ocean")
+        case .sunset: return L("theme.sunset")
+        case .night: return L("theme.night")
+        case .random: return L("theme.random")
         }
     }
 }
@@ -75,7 +75,7 @@ enum AppearanceMode: String, CaseIterable, Identifiable {
     case system, light, dark
     var id: String { rawValue }
     var title: String {
-        switch self { case .system: return L("appearance.system"); case .light: return L("浅色"); case .dark: return L("深色") }
+        switch self { case .system: return L("appearance.system"); case .light: return L("appearance.light"); case .dark: return L("appearance.dark") }
     }
     func apply() {
         NSApplication.shared.appearance = switch self {
@@ -114,7 +114,7 @@ final class Settings: ObservableObject {
         case eyes, standard, gentle, custom
         var id: String { rawValue }
         var title: String {
-            switch self { case .eyes: return L("护眼优先"); case .standard: return L("标准"); case .gentle: return L("低频提醒"); case .custom: return L("自定义") }
+            switch self { case .eyes: return L("preset.eyes"); case .standard: return L("preset.standard"); case .gentle: return L("preset.gentle"); case .custom: return L("preset.custom") }
         }
         /// (break every min, short length s, short breaks before a long one, long length min); nil = custom.
         var values: (shortEvery: Int, shortLength: Int, count: Int, longLength: Int)? {

@@ -1,7 +1,7 @@
 import Foundation
 
 /// App language. `.system` follows macOS preferred languages.
-/// Strings are keyed by their Simplified Chinese source text; the text itself is in App/strings.json.
+/// Strings are looked up by semantic key (`L("menu.quit")`); the text itself is in App/strings.json.
 enum AppLanguage: String, CaseIterable, Identifiable {
     case system, zhHans = "zh-Hans", zhHant = "zh-Hant", en, es, ru, fr, vi, th
     var id: String { rawValue }
@@ -9,7 +9,7 @@ enum AppLanguage: String, CaseIterable, Identifiable {
     /// Shown in the picker in its own language (system row is translated).
     var nativeName: String {
         switch self {
-        case .system: return L("跟随系统")
+        case .system: return L("language.system")
         case .zhHans: return "简体中文"
         case .zhHant: return "繁體中文"
         case .en: return "English"
@@ -55,9 +55,13 @@ let appName = "Pausa Dev"
 let appName = "Pausa"
 #endif
 
-/// Translate a Simplified Chinese source string. Missing key -> the source itself.
+/// The text for `key` (e.g. "stats.footnote") in the current language. Missing language -> zh-Hans,
+/// missing key -> the key itself (logged in debug builds; scripts/check-strings.py catches it first).
 func L(_ key: String, _ args: CVarArg...) -> String {
     let lang = AppLanguage.current
+    #if DEBUG
+    if L10nTables.zhHans[key] == nil { NSLog("Pausa: no string for key %@", key) }
+    #endif
     let fmt = L10nTables.all[lang]?[key] ?? L10nTables.zhHans[key] ?? key
     return args.isEmpty ? fmt : String(format: fmt, locale: lang.locale, arguments: args)
 }
@@ -85,15 +89,11 @@ enum Plural {
     }
 }
 
-/// Health footnote (wording pending medical review). Change the source here; translations key off it.
-enum HealthNote {
-    static let key = "若眼部持续不适，请及时就医。Pausa 不能替代专业的治疗。"
-}
-
 /// Every UI string lives in App/strings.json (copied into Resources by App/build-app.sh):
-/// `{ "<Simplified Chinese source>": { "zh-Hans": "...", "en": "...", ... } }`.
-/// Code calls L("<source>"); edit the copy in the JSON, not here. A missing language falls
-/// back to zh-Hans, then to the source text itself.
+/// `{ "<page>.<name>": { "zh-Hans": "...", "zh-Hant": "...", "en": "...", ... } }`, keys sorted, so a
+/// page's strings sit together. Code calls L("<key>"); edit the copy in the JSON, not here.
+/// Plurals: "<key>.one" / ".few" / ".many" / ".other" (see `Plural`). scripts/check-strings.py checks
+/// that every key has all 8 languages, format specifiers match, and no key is unused or missing.
 enum L10nTables {
     static let all: [AppLanguage: [String: String]] = {
         let urls = [Bundle.main.url(forResource: "strings", withExtension: "json"),

@@ -13,7 +13,7 @@ public final class BreakOverlayController {
         public static var shortTitle: String { L("break.short.hint") }
         /// 「休息延后 5 分钟」: postpone buttons in the popover and on the long-break screen.
         public static var ending: String { L("break.short.ending") }
-        public static func snooze(_ minutes: Int) -> String { L("休息延后 %d 分钟", minutes) }
+        public static func snooze(_ minutes: Int) -> String { L("menu.postpone", minutes) }
         public static var holdToSkip: String { L("break.holdToSkip") }
         public static var spaceKey: String { L("key.space") }
     }

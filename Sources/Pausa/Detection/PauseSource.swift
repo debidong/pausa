@@ -41,10 +41,10 @@ public struct PauseSource: Hashable {
     public var statusText: String {
         let base: String
         switch kind {
-        case .meeting: base = "暂停中：正在开会"
-        case .screenSharing: base = "暂停中：正在共享屏幕"
-        case .video: base = "暂停中：正在看视频"
-        case .fullscreen: base = "暂停中：全屏中"
+        case .meeting: base = "pause.source.meeting"
+        case .screenSharing: base = "pause.source.sharing"
+        case .video: base = "pause.source.video"
+        case .fullscreen: base = "pause.source.fullscreen"
         }
         return L(base)
     }

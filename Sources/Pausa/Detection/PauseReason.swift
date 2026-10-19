@@ -17,11 +17,11 @@ public enum PauseReason: Hashable, CustomStringConvertible {
     /// (English: "Paused: in a meeting").
     public var pausedText: String {
         switch self {
-        case .meeting: return L("已暂停：正在开会")
-        case .fullscreen(let name): return L("已暂停：%@ 全屏中", name)
-        case .browserVideo(let name): return L("已暂停：%@ 正在播放视频", name)
-        case .screenSharing(let name): return L("已暂停：正在共享屏幕（%@）", name)
-        case .recording(let name): return L("已暂停：正在录屏（%@）", name)
+        case .meeting: return L("pause.meeting")
+        case .fullscreen(let name): return L("pause.fullscreenApp", name)
+        case .browserVideo(let name): return L("pause.videoApp", name)
+        case .screenSharing(let name): return L("pause.sharingApp", name)
+        case .recording(let name): return L("pause.recordingApp", name)
         }
     }
 

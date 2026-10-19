@@ -10,36 +10,36 @@ struct AutoPauseSection: View {
     var body: some View {
         // Steve (round 6): four separate Sections; only the first has a header; no footer.
         Section {
-            SettingItem(title: L("会议进行时"), detail: L("麦克风或摄像头正在使用"), isOn: $settings.pauseForMeetings)
-            SettingItem(title: L("播放视频时"), detail: L("视频播放器和网页里的视频"), isOn: $settings.pauseForBrowserVideo)
-            SettingItem(title: L("共享或录制屏幕时"), isOn: $settings.pauseForScreenSharing)
-            SettingItem(title: L("输入或拖移时延迟"), detail: L("最长 2 分钟"), isOn: $settings.pauseWhileTyping)
+            SettingItem(title: L("autoPause.meetings"), detail: L("autoPause.meetings.detail"), isOn: $settings.pauseForMeetings)
+            SettingItem(title: L("autoPause.video"), detail: L("autoPause.video.detail"), isOn: $settings.pauseForBrowserVideo)
+            SettingItem(title: L("autoPause.sharing"), isOn: $settings.pauseForScreenSharing)
+            SettingItem(title: L("autoPause.typing"), detail: L("autoPause.typing.detail"), isOn: $settings.pauseWhileTyping)
         } header: {
             // Steve (round 7): renamed 暂停提醒; one caption line under the header, above the rows.
             VStack(alignment: .leading, spacing: 4) {
-                Text(L("暂停提醒"))
-                Text(L("在以下情况下，暂时不提醒休息。"))
+                Text(L("autoPause.title"))
+                Text(L("autoPause.intro"))
                     .font(.footnote).fontWeight(.regular).foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
         Section {
-            SettingItem(title: L("使用指定应用时"), isOn: $settings.pauseForCustomApps)
+            SettingItem(title: L("autoPause.apps"), isOn: $settings.pauseForCustomApps)
             if settings.pauseForCustomApps {
                 ForEach(settings.customPauseApps) { app in AppRows(settings: settings, app: app) }
-                LabeledContent(L("添加应用")) { Button(L("添加"), action: addApp) }
+                LabeledContent(L("autoPause.apps.add")) { Button(L("common.add"), action: addApp) }
             }
         }
         Section {
-            SettingItem(title: L("专注模式开启时"), isOn: $settings.pauseForFocusMode)
+            SettingItem(title: L("autoPause.focus"), isOn: $settings.pauseForFocusMode)
             if !focus.configured {
-                LabeledContent(L("尚未在系统设置中添加 Pausa 专注过滤器")) {
-                    Button(L("打开系统设置…")) { FocusFilterStatus.openSystemSettings() }
+                LabeledContent(L("autoPause.focus.missing")) {
+                    Button(L("autoPause.focus.openSettings")) { FocusFilterStatus.openSystemSettings() }
                 }
             }
         }
         Section {
-            Picker(L("暂停范围"), selection: $settings.focusModeScope) {
+            Picker(L("autoPause.scope"), selection: $settings.focusModeScope) {
                 ForEach(FocusModeScope.allCases) { Text($0.title).tag($0) }
             }
             .disabled(!settings.pauseForFocusMode)
@@ -71,9 +71,9 @@ private struct AppRows: View {
     }
     var body: some View {
         LabeledContent(name) {
-            Button(L("移除")) { settings.customPauseApps.removeAll { $0.bundleID == app.bundleID } }
+            Button(L("common.remove")) { settings.customPauseApps.removeAll { $0.bundleID == app.bundleID } }
         }
-        Picker(L("生效条件"), selection: Binding(
+        Picker(L("autoPause.condition"), selection: Binding(
             get: { app.mode },
             set: { m in
                 if let i = settings.customPauseApps.firstIndex(where: { $0.bundleID == app.bundleID }) {
@@ -86,14 +86,14 @@ private struct AppRows: View {
 }
 
 extension FocusModeScope {
-    var title: String { self == .shortOnly ? L("仅短休息") : L("所有休息") }
+    var title: String { self == .shortOnly ? L("autoPause.scope.short") : L("autoPause.scope.all") }
 }
 extension CustomPauseMode {
     var title: String {
         switch self {
-        case .foregroundFullscreen: return L("位于前台且全屏")
-        case .foreground: return L("位于前台")
-        case .running: return L("运行时")
+        case .foregroundFullscreen: return L("autoPause.condition.frontFullscreen")
+        case .foreground: return L("autoPause.condition.front")
+        case .running: return L("autoPause.condition.running")
         }
     }
 }
@@ -127,23 +127,23 @@ final class FocusFilterStatus: ObservableObject {
     /// First line (status row).
     var title: String {
         switch self {
-        case .browserVideo(let a): return L("已暂停：%@ 正在播放视频", a)
-        case .screenSharing(let a): return a.map { L("已暂停：正在共享屏幕（%@）", $0) } ?? L("已暂停：正在共享屏幕")
-        case .screenRecording(let a): return a.map { L("已暂停：正在录屏（%@）", $0) } ?? L("已暂停：正在录屏")
-        case .customApp(let a, _): return L("已推迟：%@ 在前台", a)
-        case .typing: return L("等你打完这句…")
+        case .browserVideo(let a): return L("pause.videoApp", a)
+        case .screenSharing(let a): return a.map { L("pause.sharingApp", $0) } ?? L("pause.sharing")
+        case .screenRecording(let a): return a.map { L("pause.recordingApp", $0) } ?? L("pause.recording")
+        case .customApp(let a, _): return L("pause.frontmostApp", a)
+        case .typing: return L("pause.typing")
         case .focus(let n, let sc):
-            let what = sc == .shortOnly ? L("短休息已暂停") : L("休息已推迟")
-            return n.map { L("专注模式「%@」：%@", $0, what) } ?? L("专注模式：%@", what)
+            let what = sc == .shortOnly ? L("pause.scope.shortPaused") : L("pause.scope.postponed")
+            return n.map { L("pause.focusNamed", $0, what) } ?? L("pause.focus", what)
         }
     }
     /// Optional second, secondary line.
     var detail: String? {
         switch self {
-        case .browserVideo: return L("视频结束 2 分钟后继续")
-        case .screenSharing, .screenRecording: return L("结束后补一次长休息")
-        case .customApp(_, let m): return L("还可推迟 %lld 分钟", m)
-        case .typing(let s): return L("最多再等 %@", AppController.clock(s))
+        case .browserVideo: return L("pause.videoResume")
+        case .screenSharing, .screenRecording: return L("pause.longAfter")
+        case .customApp(_, let m): return L("pause.canPostpone", m)
+        case .typing(let s): return L("pause.waitUpTo", AppController.clock(s))
         case .focus: return nil
         }
     }
