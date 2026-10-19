@@ -19,6 +19,7 @@ public struct DayStats: Equatable {
   public var taken = 0, skipped = 0
   public var seconds: Double = 0   // planned length of completed breaks only
   public var work: Double = 0      // seconds of work that fell on this day
+  public var gaps: [Double] = []   // per completed break, this day's work before it started (chart §8)
   public init(day: Date) { self.day = day }
 }
 
@@ -35,18 +36,26 @@ public enum Stats {
     for r in records {
       guard let i = index[calendar.startOfDay(for: r.start)] else { continue }
       switch r.result {
-      case .completed: out[i].taken += 1; out[i].seconds += r.planned
+      case .completed:
+        out[i].taken += 1; out[i].seconds += r.planned
+        out[i].gaps.append(worked(work, from: days[i], to: r.start))
       case .skipped: out[i].skipped += 1
       }
     }
     for (i, day) in days.enumerated() {
       guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { continue }
-      for w in work {
-        let s = max(w.start, day), e = min(w.end, next)
-        if e > s { out[i].work += e.timeIntervalSince(s) }
-      }
+      out[i].work = worked(work, from: day, to: next)
     }
+    for i in out.indices { out[i].gaps.sort() }
     return out
+  }
+
+  /// Seconds of `work` inside [from, to).
+  static func worked(_ work: [WorkSpan], from: Date, to: Date) -> Double {
+    work.reduce(0) { sum, w in
+      let s = max(w.start, from), e = min(w.end, to)
+      return e > s ? sum + e.timeIntervalSince(s) : sum
+    }
   }
 }
 
@@ -113,15 +122,17 @@ public enum DurationParts: Equatable {
   }
 }
 
-/// The 7-day chart (spec §8): bar height is work time, the scale never below 8 hours.
+/// The 7-day chart (spec §8): bar height is work time, the axis top is the longest day in
+/// 8...24 hours. A 1 pt gap at `barHeight(work: gap, ...)` marks each completed break.
 public enum StatsChart {
-  public static let plotHeight: Double = 150
-  public static let minScale: Double = 8 * 3600
+  public static let plotHeight: Double = 240
+  public static let scale: ClosedRange<Double> = 8 * 3600 ... 24 * 3600
   public static let barWidthRatio: Double = 0.72
 
-  /// Points of bar for `work` seconds when the longest day in view had `longest`.
+  /// Points from the bar's base for `work` seconds when the longest day in view had `longest`.
   public static func barHeight(work: Double, longest: Double) -> Double {
-    work <= 0 ? 0 : plotHeight * work / max(longest, minScale)
+    let top = min(max(longest, scale.lowerBound), scale.upperBound)
+    return work <= 0 ? 0 : plotHeight * min(work, top) / top
   }
 
   public enum Label: Equatable { case hours(String), minutes(Int) }   // 「6.3 小时」 / 「45 分钟」
