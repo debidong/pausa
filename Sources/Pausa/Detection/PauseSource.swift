@@ -88,14 +88,35 @@ enum MicUserMonitor {
         return inputMethodBundleIDs().contains(id)
     }
 
+    /// Text Input Sources must be read on the main thread: macOS 27.2 asserts the main queue inside
+    /// TISCreateInputSourceList and kills the process. Read there, at start and whenever the enabled
+    /// input sources change; the detector queue only reads this copy.
+    private final class IMCache: @unchecked Sendable { let lock = NSLock(); var ids: Set<String> = [] }
+    private static let imCache = IMCache()
+
     static func inputMethodBundleIDs() -> Set<String> {
-        guard let list = TISCreateInputSourceList(nil, true)?.takeRetainedValue() as? [TISInputSource] else { return [] }
+        imCache.lock.lock(); defer { imCache.lock.unlock() }
+        return imCache.ids
+    }
+
+    static func watchInputMethods() {
+        DispatchQueue.main.async {
+            reloadInputMethods()
+            DistributedNotificationCenter.default().addObserver(
+                forName: Notification.Name(kTISNotifyEnabledKeyboardInputSourcesChanged as String),
+                object: nil, queue: .main) { _ in reloadInputMethods() }
+        }
+    }
+
+    private static func reloadInputMethods() {
+        dispatchPrecondition(condition: .onQueue(.main))
+        guard let list = TISCreateInputSourceList(nil, true)?.takeRetainedValue() as? [TISInputSource] else { return }
         var out = Set<String>()
         for src in list {
             guard let raw = TISGetInputSourceProperty(src, kTISPropertyBundleID) else { continue }
             out.insert(Unmanaged<CFString>.fromOpaque(raw).takeUnretainedValue() as String)
         }
-        return out
+        imCache.lock.lock(); imCache.ids = out; imCache.lock.unlock()
     }
 
     /// Is anything other than an input method recording? nil = can't tell (fall back to device state).

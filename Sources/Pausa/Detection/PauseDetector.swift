@@ -44,6 +44,7 @@ public final class PauseDetector: ObservableObject {
     public func start() {
         guard timer == nil else { return }
         observeAway()
+        MicUserMonitor.watchInputMethods()
         let t = DispatchSource.makeTimerSource(queue: queue)
         t.schedule(deadline: .now(), repeating: pollInterval, leeway: .milliseconds(250))
         t.setEventHandler { [weak self] in self?.tick() }
