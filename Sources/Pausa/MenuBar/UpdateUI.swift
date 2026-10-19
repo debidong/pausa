@@ -86,7 +86,7 @@ struct UpdateRow: View {
     }
     private var line: String {
         if model.readyVersion != nil, !model.canInstall { return L("%@ 已就绪，重启后生效", model.readyVersion!) + " · " + L("休息结束后安装") }
-        return model.statusText ?? L("自动检查更新")
+        return model.statusText ?? L("已开启自动更新")
     }
 }
 
