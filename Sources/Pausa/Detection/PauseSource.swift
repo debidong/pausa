@@ -79,10 +79,11 @@ enum MicUserMonitor {
 
     /// Input methods (e.g. WeChat IME voice typing) are typing, not a meeting. Identified by type,
     /// not a list: installed input sources from Text Input Sources (public HIToolbox), plus any
-    /// bundle living in an "Input Methods" folder.
+    /// bundle living in an "Input Methods" folder. macOS's own speech service (Siri, Dictation:
+    /// corespeechd) is voice input too; it can hold the mic for long stretches.
     static func isInputMethod(_ pid: pid_t) -> Bool {
         guard let path = ProcessLineage.path(of: pid) else { return false }
-        if path.contains("/Input Methods/") { return true }
+        if path.contains("/Input Methods/") || path.hasPrefix("/System/Library/PrivateFrameworks/CoreSpeech.framework/") { return true }
         let outer = ProcessLineage.outerAppBundle(path) ?? path
         guard let id = Bundle(path: outer)?.bundleIdentifier else { return false }
         return inputMethodBundleIDs().contains(id)

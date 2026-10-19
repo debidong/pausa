@@ -30,11 +30,15 @@ public final class PauseDetector: ObservableObject {
 
     /// Keep `.meeting` this long after mic/camera stop (PRD: 2 minutes).
     public var meetingGrace: TimeInterval = 120
+    /// The mic alone counts as a meeting only after this long without a gap. Dictation apps
+    /// (Typeless etc.) record in bursts of seconds; a call keeps the mic open. Camera counts at once.
+    public var micMinRun: TimeInterval = 60
     public var pollInterval: TimeInterval = 1
 
     private let queue = DispatchQueue(label: "pausa.detector", qos: .utility)
     private var timer: DispatchSourceTimer?
     private var lastMeetingSignal: TimeInterval?   // monotonic (systemUptime)
+    private var micSince: TimeInterval?            // start of the current unbroken mic run
     private var awayKinds: Set<AwayKind> = []
     private var observers: [(NotificationCenter, NSObjectProtocol)] = []
 
@@ -72,7 +76,9 @@ public final class PauseDetector: ObservableObject {
 
     private func tick() {
         let now = ProcessInfo.processInfo.systemUptime
-        let mic = AudioInputMonitor.anyPhysicalInputRunning() && (MicUserMonitor.nonInputMethodInUse() ?? true)   // input-method voice typing isn't a meeting
+        let micOn = AudioInputMonitor.anyPhysicalInputRunning() && (MicUserMonitor.nonInputMethodInUse() ?? true)   // input-method voice typing isn't a meeting
+        if !micOn { micSince = nil } else if micSince == nil { micSince = now }
+        let mic = micSince.map { now - $0 >= micMinRun } ?? false
         let micOrCam = mic || CameraMonitor.anyRunning()
         if micOrCam { lastMeetingSignal = now; meetingApp = MicUserMonitor.meetingApp() ?? meetingApp }
         let inMeeting = lastMeetingSignal.map { now - $0 < meetingGrace } ?? false
