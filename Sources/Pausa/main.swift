@@ -51,6 +51,11 @@ if let i = args.firstIndex(of: "--render-theme-picker"), i + 1 < args.count {
     exit(0)
 }
 
+if let i = args.firstIndex(of: "--render-stats"), i + 1 < args.count {
+    let ok = MainActor.assumeIsolated { StatsSnapshot.write(to: args[i + 1]) }
+    exit(ok ? 0 : 1)
+}
+
 if let i = args.firstIndex(of: "--render-update-ui"), i + 1 < args.count {
     MainActor.assumeIsolated { UpdateUISnapshot.write(to: args[i + 1]) }
     exit(0)
@@ -79,6 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Settings.shared.icon.apply()
         Settings.shared.appearance.apply()
         controller = AppController()
+        StatsModel.shared.bind(controller)
         // Sparkle hooks: never relaunch mid-break; persist the scheduler right before relaunching.
         updater.canInstallNow = { [weak self] in !(self?.controller.isOnBreak ?? false) }
         updater.willRelaunch = { [weak self] in self?.controller.endWork(); self?.controller.saveState() }

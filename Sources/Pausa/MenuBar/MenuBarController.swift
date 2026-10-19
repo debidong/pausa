@@ -350,6 +350,8 @@ final class MenuBarController: NSObject {
             settingsTabs = tabs
         }
         if let p = page { settingsTabs?.select(p) }
+        StatsModel.shared.showToday()   // 统计 always opens on today, with fresh numbers
+        if SettingsNav.shared.page == .stats { settingsTabs?.growToFitStats() }
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
         settingsTabs?.logFrame("open")
@@ -358,7 +360,7 @@ final class MenuBarController: NSObject {
 }
 
 enum SettingsPage: String, CaseIterable, Identifiable, Hashable {
-    case breaks, general, about
+    case breaks, general, stats, about
     var id: String { rawValue }
     /// Saved tab id -> page; the removed 外观 tab (round 7) now lives on 通用.
     init?(saved: String) {
@@ -367,13 +369,13 @@ enum SettingsPage: String, CaseIterable, Identifiable, Hashable {
     var title: String {
         switch self {
         case .breaks: return L("休息"); case .general: return L("通用")
-        case .about: return L("关于")
+        case .stats: return L("统计"); case .about: return L("关于")
         }
     }
     var symbol: String {
         switch self {
         case .breaks: return "cup.and.saucer"; case .general: return "gearshape"
-        case .about: return "info.circle"
+        case .stats: return "chart.bar"; case .about: return "info.circle"
         }
     }
 }
@@ -416,6 +418,7 @@ struct SettingsView: View {
             switch page {
             case .breaks: BreaksPage(settings: settings)
             case .general: GeneralPage(settings: settings, onPreview: onPreview)
+            case .stats: StatsPage()
             case .about: AboutPage(settings: settings)
             }
             }
@@ -536,6 +539,22 @@ final class SettingsTabsController: NSTabViewController {
         w.frameRect(forContentRect: NSRect(origin: .zero, size: w.contentMinSize)).size
     }
 
+    /// Stats spec item 33: the 统计 page never scrolls, so the window GROWS (never shrinks) to fit it,
+    /// keeping its top edge and capped to the screen's visible frame. The other tabs keep the shared size
+    /// (item 28); once grown, the window stays that size for them too, like a user drag would.
+    func growToFitStats() {
+        guard let w = view.window else { return }
+        let content = SettingsView.contentHeight(settings, .stats) + 1
+        let need = w.frame.height - w.contentLayoutRect.height + content   // title bar + toolbar + page
+        guard need > w.frame.height + 0.5 else { return }
+        var f = w.frame
+        let cap = (w.screen ?? NSScreen.main)?.visibleFrame
+        f.size.height = cap.map { min(need, $0.height) } ?? need
+        f.origin.y = w.frame.maxY - f.height
+        if let cap, f.minY < cap.minY { f.origin.y = cap.minY }
+        w.setFrame(f, display: true, animate: w.isVisible)
+    }
+
     private var frameBeforeSwitch: NSRect?
     override func tabView(_ tabView: NSTabView, willSelect tabViewItem: NSTabViewItem?) {
         adoptWindowSize()
@@ -549,6 +568,7 @@ final class SettingsTabsController: NSTabViewController {
         guard let w = view.window, let vc = tabViewItem?.viewController else { return }
         if let f = frameBeforeSwitch, f != w.frame { w.setFrame(f, display: true) }   // size never changes
         frameBeforeSwitch = nil
+        if SettingsNav.shared.page == .stats { growToFitStats() }
         w.title = "Pausa"
         Self.scrollToTop(vc.view)
         // Only the new page's content fades in (0.25 s).

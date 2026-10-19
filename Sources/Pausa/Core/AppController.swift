@@ -173,6 +173,9 @@ final class AppController {
         onStatsChanged?()
     }
 
+    /// The span running now, up to this moment (not in the log until it closes). For today's numbers.
+    var openWorkSpan: WorkSpan? { work.openedAt.map { span(($0, Self.now())) } }
+
     /// Lock, quit.
     func endWork() { endWork(at: Self.now()) }
 
