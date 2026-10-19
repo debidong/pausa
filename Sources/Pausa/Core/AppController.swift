@@ -150,7 +150,7 @@ final class AppController {
     private var lastWorkCheckpoint: Double = 0
     private static let workCheckpointEvery: Double = 300
 
-    private static let holds: Set<PausaCore.PauseReason> = [.meeting, .screenSharing, .video, .fullscreen]
+    private static let holds: Set<PausaCore.PauseReason> = [.meeting, .micInUse, .screenSharing, .video, .fullscreen]
 
     /// After the scheduler has moved, so a break that just started ends the span at its start.
     /// Hours come from `isActive` directly, not from the phase: a meeting outside hours shows as .paused(.meeting).
@@ -253,9 +253,9 @@ final class AppController {
     private func updateReasons(_ r: Set<PauseReason>) {
         var m: [PausaCore.PauseReason: String] = [:]
         for x in r {
-            if case .meeting = x, !settings.pauseForMeetings { continue }   // 自动暂停 → 开会时 off
+            if x.core == .meeting || x.core == .micInUse, !settings.pauseForMeetings { continue }   // 自动暂停 → 开会时 off
             switch x {
-            case .meeting, .fullscreen: m[x.core] = x.pausedText
+            case .meeting, .micInUse, .fullscreen: m[x.core] = x.pausedText
             default: if m[x.core] == nil { m[x.core] = x.pausedText }   // Linus: video / share / recording
             }
         }
@@ -362,7 +362,7 @@ final class AppController {
     private func pauseSource(for r: PausaCore.PauseReason) -> PauseSource? {
         if let s = detector.sources[r] { return s }
         switch r {   // reason without detector data (e.g. debug simulate): text only
-        case .meeting: return PauseSource(kind: .meeting)
+        case .meeting, .micInUse: return PauseSource(kind: .meeting)
         default: return nil
         }
     }

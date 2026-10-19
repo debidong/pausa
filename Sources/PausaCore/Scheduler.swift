@@ -9,6 +9,7 @@ public enum BreakKind: String, Codable, Equatable { case short, long }
 public enum PauseReason: Hashable, Comparable {
   // order = display priority
   case meeting, screenSharing   // "holds": person still at the screen, never interrupted on screen
+  case micInUse                 // hold: mic alone, no camera / meeting app (2-hour recheck applies)
   case video                    // hold, but bounded by the deferral budget and the 90-minute rule
   case fullscreen
   case outsideHours          // outside the user's Pausa 时段 (lowest priority)
@@ -125,7 +126,7 @@ public struct Scheduler {
   private var deferBySource: [DeferralKind: Double] = [:]
   private var noDeferNextLong = false            // set by skipping past the 90-minute line
   public private(set) var deferring: DeferralKind?   // for the menu bar, nil when not deferring
-  static let holds: Set<PauseReason> = [.meeting, .screenSharing, .video, .fullscreen]
+  static let holds: Set<PauseReason> = [.meeting, .micInUse, .screenSharing, .video, .fullscreen]
   static let boundedHolds: Set<PauseReason> = [.video, .fullscreen]
 
   public init(config: Config = Config()) { self.config = config }

@@ -148,8 +148,7 @@ enum MicUserMonitor {
     }
 
     /// Best app to name for a meeting: a known meeting app, then a browser, then anything.
-    static func meetingApp() -> NSRunningApplication? {
-        let users = appsUsingInput()
+    static func meetingApp(_ users: [NSRunningApplication] = appsUsingInput()) -> NSRunningApplication? {
         return users.first { ScreenShareMonitor.meetingBundleIDs.contains($0.bundleIdentifier ?? "") }
             ?? users.first { BrowserVideoMonitor.browserBundleIDs.contains($0.bundleIdentifier ?? "") }
             ?? users.first

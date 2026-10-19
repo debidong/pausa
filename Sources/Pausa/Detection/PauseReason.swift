@@ -4,6 +4,9 @@ import Foundation
 public enum PauseReason: Hashable, CustomStringConvertible {
     /// A non-virtual microphone or a camera is in use somewhere (plus grace period).
     case meeting
+    /// The mic alone held a minute or more (no camera, no listed meeting app). Same copy as a meeting;
+    /// goes through the 2-hour recheck (PausaCore.CallHold).
+    case micInUse
     /// An allowlisted app (video player, game, presentation) covers its display.
     case fullscreen(appName: String)
     /// §1: the frontmost browser holds a display-sleep assertion (video playing).
@@ -17,7 +20,7 @@ public enum PauseReason: Hashable, CustomStringConvertible {
     /// (English: "Paused: in a meeting").
     public var pausedText: String {
         switch self {
-        case .meeting: return L("pause.meeting")
+        case .meeting, .micInUse: return L("pause.meeting")
         case .fullscreen(let name): return L("pause.fullscreenApp", name)
         case .browserVideo(let name): return L("pause.videoApp", name)
         case .screenSharing(let name): return L("pause.sharingApp", name)
@@ -29,6 +32,7 @@ public enum PauseReason: Hashable, CustomStringConvertible {
     var core: PausaCoreReason {
         switch self {
         case .meeting: return .meeting
+        case .micInUse: return .micInUse
         case .fullscreen: return .fullscreen
         case .browserVideo: return .video
         case .screenSharing, .recording: return .screenSharing
@@ -38,6 +42,7 @@ public enum PauseReason: Hashable, CustomStringConvertible {
     public var description: String {
         switch self {
         case .meeting: return "meeting"
+        case .micInUse: return "micInUse"
         case .fullscreen(let n): return "fullscreen(\(n))"
         case .browserVideo(let n): return "browserVideo(\(n))"
         case .screenSharing(let n): return "screenSharing(\(n))"

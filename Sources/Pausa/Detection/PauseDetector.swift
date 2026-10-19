@@ -28,17 +28,14 @@ public final class PauseDetector: ObservableObject {
 
     public var onAway: ((AwayEvent) -> Void)?
 
-    /// Keep `.meeting` this long after mic/camera stop (PRD: 2 minutes).
-    public var meetingGrace: TimeInterval = 120
-    /// The mic alone counts as a meeting only after this long without a gap. Dictation apps
-    /// (Typeless etc.) record in bursts of seconds; a call keeps the mic open. Camera counts at once.
-    public var micMinRun: TimeInterval = Deferral.microphone.cap
+    /// Keep browser video / screen sharing this long after the signal stops (PRD: 2 minutes).
+    /// Mic / camera rules and their grace: PausaCore.CallHold.
+    public var meetingGrace: TimeInterval = CallHold.grace
     public var pollInterval: TimeInterval = 1
 
     private let queue = DispatchQueue(label: "pausa.detector", qos: .utility)
     private var timer: DispatchSourceTimer?
-    private var lastMeetingSignal: TimeInterval?   // monotonic (systemUptime)
-    private var micSince: TimeInterval?            // start of the current unbroken mic run
+    private var call = CallHold()                  // mic / camera, monotonic (systemUptime)
     private var awayKinds: Set<AwayKind> = []
     private var observers: [(NotificationCenter, NSObjectProtocol)] = []
 
@@ -77,21 +74,23 @@ public final class PauseDetector: ObservableObject {
     private func tick() {
         let now = ProcessInfo.processInfo.systemUptime
         let micOn = AudioInputMonitor.anyPhysicalInputRunning() && (MicUserMonitor.nonInputMethodInUse() ?? true)   // input-method voice typing isn't a meeting
-        if !micOn { micSince = nil } else if micSince == nil { micSince = now }
-        let mic = micSince.map { now - $0 >= micMinRun } ?? false
         let cam = CameraMonitor.anyRunning()
-        let micOrCam = mic || cam
-        if micOrCam { lastMeetingSignal = now }
+        let users = micOn ? MicUserMonitor.appsUsingInput() : []
+        let meetingAppMic = users.contains { ScreenShareMonitor.meetingBundleIDs.contains($0.bundleIdentifier ?? "") }
+        let callState = call.update(micOn: micOn, meetingAppMic: meetingAppMic, camera: cam, now: now)
+        let inMeeting = callState.reason != nil
+        let micOrCam = cam || (micOn && !callState.micPending)
         // The app line names whoever holds the mic right now, every tick. nil (no line) when that is a
         // system process with no app (replayd …) or only the camera is on. In the grace after the
         // signal stops nobody holds it: keep the last app seen.
-        if micOn || cam { meetingApp = MicUserMonitor.meetingApp() }
-        let inMeeting = lastMeetingSignal.map { now - $0 < meetingGrace } ?? false
+        if micOn || cam { meetingApp = MicUserMonitor.meetingApp(users) }
 
         if !inMeeting { meetingApp = nil }
         var next: Set<PauseReason> = []
         var src: [PausaCoreReason: PauseSource] = [:]
-        if inMeeting { next.insert(.meeting); src[.meeting] = PauseSource(kind: .meeting, app: meetingApp) }
+        if let r = callState.reason {
+            next.insert(r == .meeting ? .meeting : .micInUse); src[r] = PauseSource(kind: .meeting, app: meetingApp)
+        }
         if let fs = FullscreenMonitor.check() {
             next.insert(.fullscreen(appName: fs.appName))
             src[.fullscreen] = PauseSource(kind: .fullscreen, appName: fs.appName, bundleID: fs.bundleID)
@@ -123,7 +122,7 @@ public final class PauseDetector: ObservableObject {
         var defs: [Deferral] = []
         if flag("pauseWhileTyping", default: true), InputActivityMonitor.isBusy() { defs.append(.typing) }
         // Mic on, not yet a meeting (dictation, or a call's first minute): a due break waits for it.
-        if micOn, !mic, !inMeeting, flag("pauseForMeetings", default: true) { defs.append(.microphone) }
+        if callState.micPending, flag("pauseForMeetings", default: true) { defs.append(.microphone) }
         // §3 custom apps (15 min cap, shared budget).
         let custom = CustomPauseAppMonitor.check()
         if custom != nil { defs.append(.focusApp()) }

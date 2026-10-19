@@ -1014,38 +1014,30 @@ func testDurationParts() {   // spec §5.4
   XCTAssertEqual(DurationParts(4 * 3600 + 12 * 60), .hours(4, minutes: 12)); XCTAssertEqual(DurationParts(7200), .hours(2, minutes: 0))
 }
 
-/// Mic -> scheduler. `Mic` mirrors PauseDetector.tick(): mic on for micMinRun (60 s) unbroken is a
-/// meeting (plus 2 min grace); shorter, the due break waits (Deferral.microphone).
+/// Mic / camera -> CallHold -> PauseCap -> Scheduler, wired the way PauseDetector + AppController do.
 final class MicTests {
-  struct Mic {
-    var since: Double?, last: Double?
-    mutating func step(_ on: Bool, _ t: Double) -> (Set<PauseReason>, [Deferral]) {
-      since = on ? (since ?? t) : nil
-      let long = since.map { t - $0 >= Deferral.microphone.cap } ?? false
-      if long { last = t }
-      let meeting = last.map { t - $0 < 120 } ?? false
-      return (meeting ? [.meeting] : [], on && !long && !meeting ? [.microphone] : [])
-    }
-  }
-  struct Run { var starts: [Double] = []; var startsWithMicOn = 0; var meetingTicks = 0 }
-  func run(_ s: inout Scheduler, from: Double, to: Double, mic on: (Double) -> Bool) -> Run {
-    var m = Mic(), r = Run(), t = from
+  struct Run { var starts: [Double] = []; var startsWithMicOn = 0; var holdTicks = 0; var reasons: Set<PauseReason> = [] }
+  func run(_ s: inout Scheduler, from: Double, to: Double, mic on: (Double) -> Bool,
+           app: (Double) -> Bool = { _ in false }, cam: (Double) -> Bool = { _ in false }) -> Run {
+    var h = CallHold(), cap = PauseCap(), r = Run(), t = from
     while t <= to {
-      let (rs, ds) = m.step(on(t), t)
-      for c in s.tick(now: t, reasons: rs, deferrals: ds, inputIdle: 10) {
-        if case .startBreak = c { r.starts.append(t); if on(t) { r.startsWithMicOn += 1 } }
+      let st = h.update(micOn: on(t) || app(t), meetingAppMic: app(t), camera: cam(t), now: t)
+      let rs = cap.filter(st.reason.map { [$0] } ?? [], now: t)
+      for c in s.tick(now: t, reasons: rs, deferrals: st.micPending ? [.microphone] : [], inputIdle: 10) {
+        if case .startBreak = c { r.starts.append(t); if on(t) || app(t) { r.startsWithMicOn += 1 } }
       }
-      if s.phase == .paused(.meeting) { r.meetingTicks += 1 }
+      if s.phase == .paused(.meeting) || s.phase == .paused(.micInUse) { r.holdTicks += 1 }
+      if let x = st.reason { r.reasons.insert(x) }
       t += 1
     }
     return r
   }
-  /// Typeless-style 20 s bursts every minute for 2 h: never a meeting, breaks keep coming, none while
+  /// Typeless-style 20 s bursts every minute for 2 h: never a hold, breaks keep coming, none while
   /// the mic is on, each at most one burst late.
   func testDictationBurstsStillGetBreaks() {
     var s = Scheduler()
     let r = run(&s, from: 0, to: 7200, mic: { $0.truncatingRemainder(dividingBy: 60) < 20 })
-    XCTAssertEqual(r.meetingTicks, 0); XCTAssertEqual(r.startsWithMicOn, 0)
+    XCTAssertEqual(r.holdTicks, 0); XCTAssertEqual(r.reasons, []); XCTAssertEqual(r.startsWithMicOn, 0)
     XCTAssertTrue(r.starts.count >= 5)
     XCTAssertEqual(r.starts.first ?? -1, 1220, accuracy: 1)   // due at 1200, burst 1200-1219
   }
@@ -1053,7 +1045,7 @@ final class MicTests {
   func testBreakDueDuringBurstFiresAfter() {
     var s = Scheduler()
     let r = run(&s, from: 0, to: 1300, mic: { $0 >= 1190 && $0 < 1210 })
-    XCTAssertEqual(r.starts, [1210]); XCTAssertEqual(r.meetingTicks, 0)
+    XCTAssertEqual(r.starts, [1210]); XCTAssertEqual(r.holdTicks, 0)
   }
   /// Past the 90-minute line nothing defers the long break except the mic's one-minute question: a
   /// call starting just then gets no break on screen; a 20 s burst there delays it to the burst's end.
@@ -1061,7 +1053,7 @@ final class MicTests {
     var cf = Config(); cf.breakEvery = 95 * 60; cf.longEveryNth = 1
     var s = Scheduler(config: cf)
     let r = run(&s, from: 0, to: 5800, mic: { $0 >= 5690 })
-    XCTAssertEqual(r.starts, []); XCTAssertTrue(r.meetingTicks > 0)
+    XCTAssertEqual(r.starts, []); XCTAssertTrue(r.holdTicks > 0)
     var s2 = Scheduler(config: cf)
     XCTAssertEqual(run(&s2, from: 0, to: 5800, mic: { $0 >= 5690 && $0 < 5710 }).starts, [5710])
   }
@@ -1070,9 +1062,44 @@ final class MicTests {
   func testNinetyLineFiresRightAfterMeeting() {
     var s = Scheduler()
     let r = run(&s, from: 0, to: 6778, mic: { $0 >= 600 && $0 < 6660 })   // last mic tick 6659, grace to 6778
-    XCTAssertEqual(r.starts, []); XCTAssertEqual(s.phase, .paused(.meeting))
+    XCTAssertEqual(r.starts, []); XCTAssertEqual(s.phase, .paused(.micInUse))
     XCTAssertTrue(s.sinceLastLongBreak >= 6600)
     XCTAssertEqual(s.tick(now: 6779, reasons: [], deferrals: [], inputIdle: 10), [.startBreak(.long, length: 300)])
+  }
+  /// Mic alone: pending until 60 s unbroken, then .micInUse, 2 min grace; dictation leaves no tail.
+  func testMicAloneAfter60s() {
+    var h = CallHold()
+    var st: [CallHold.State] = []
+    for t in 0...61 { st.append(h.update(micOn: true, meetingAppMic: false, camera: false, now: Double(t))) }
+    XCTAssertEqual(st[59], CallHold.State(reason: nil, micPending: true))
+    XCTAssertEqual(st[60].reason, .micInUse); XCTAssertTrue(!st[60].micPending)
+    XCTAssertEqual(h.update(micOn: false, meetingAppMic: false, camera: false, now: 61 + 119).reason, .micInUse)
+    XCTAssertEqual(h.update(micOn: false, meetingAppMic: false, camera: false, now: 61 + 120).reason, nil)
+    var d = CallHold()
+    for t in 0..<20 { _ = d.update(micOn: true, meetingAppMic: false, camera: false, now: Double(t)) }
+    XCTAssertEqual(d.update(micOn: false, meetingAppMic: false, camera: false, now: 20), CallHold.State(reason: nil, micPending: false))
+  }
+  /// Camera, or a listed meeting app on the mic: .meeting at once.
+  func testCameraAndMeetingAppImmediate() {
+    var h = CallHold()
+    XCTAssertEqual(h.update(micOn: false, meetingAppMic: false, camera: true, now: 0).reason, .meeting)
+    var z = CallHold()
+    XCTAssertEqual(z.update(micOn: true, meetingAppMic: true, camera: false, now: 0), CallHold.State(reason: .meeting, micPending: false))
+    var s = Scheduler()   // break due at 1200, Zoom joins at 1195: held, no break
+    let r = run(&s, from: 0, to: 1300, mic: { _ in false }, app: { $0 >= 1195 })
+    XCTAssertEqual(r.starts, []); XCTAssertEqual(s.phase, .paused(.meeting))
+  }
+  /// Backstop: a background process holding the mic for 3 h gets the 2-hour recheck, so breaks come
+  /// back; a camera or meeting-app call is exempt and never gets one.
+  func testBackgroundMicThreeHoursGetsBreak() {
+    var s = Scheduler()
+    let r = run(&s, from: 0, to: 3 * 3600, mic: { _ in true })
+    XCTAssertTrue(r.starts.count >= 1)
+    XCTAssertTrue(r.starts.allSatisfy { $0 >= 60 + PauseCap.defaultCap })   // only after the recheck
+    var z = Scheduler()
+    XCTAssertEqual(run(&z, from: 0, to: 3 * 3600, mic: { _ in false }, app: { _ in true }).starts, [])
+    var c = Scheduler()
+    XCTAssertEqual(run(&c, from: 0, to: 3 * 3600, mic: { _ in true }, cam: { _ in true }).starts, [])
   }
 }
 let mt = MicTests()
@@ -1104,6 +1131,6 @@ let cases: [(String, () -> Void)] = [
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
  ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle), ("accept.1", testAccept1MidnightSplit), ("accept.2", testAccept2IdleEndsAtLastInput), ("accept.3", testAccept3BreakNotWork), ("accept.4", testAccept4MeetingIgnoresIdle), ("accept.5", testAccept5LockNotWork), ("accept.6", testAccept6ActiveAndQuietHours), ("accept.7", testAccept7MeetingAfterHours), ("accept.8", testAccept8ManualPauseIsWork), ("accept.10", testAccept10ShortCompletes), ("accept.11", testAccept11LockThroughLong), ("accept.12", testAccept12SkipAddsNoTime), ("accept.13", testAccept13SnoozeThenComplete), ("accept.14", testAccept14MeetingNoBreakRows), ("accept.15", testAccept15BreakBelongsToStartDay), ("accept.16", testAccept16BarProportional), ("accept.17", testAccept17ScaleFloor), ("accept.18", testAccept18FullDay), ("accept.19", testAccept19ScaleCeiling), ("accept.20", testAccept20TypicalGapSpacing), ("accept.21", testAccept21GapPerBreak), ("accept.22", testAccept22GapPosition), ("accept.23", testAccept23SkipNoGap), ("accept.24", testAccept24BarLabels), ("accept.27", testAccept27EmptyDay), ("accept.30", testAccept30KeepThirtyDays), ("stats.durationParts", testDurationParts),
- ("mic.dictationStillGetsBreaks", mt.testDictationBurstsStillGetBreaks), ("mic.breakAfterBurst", mt.testBreakDueDuringBurstFiresAfter), ("mic.firmPastNinety", mt.testMicFirmPastNinetyLine), ("meeting.ninetyFiresAfter", mt.testNinetyLineFiresRightAfterMeeting)]
+ ("mic.dictationStillGetsBreaks", mt.testDictationBurstsStillGetBreaks), ("mic.breakAfterBurst", mt.testBreakDueDuringBurstFiresAfter), ("mic.firmPastNinety", mt.testMicFirmPastNinetyLine), ("meeting.ninetyFiresAfter", mt.testNinetyLineFiresRightAfterMeeting), ("mic.aloneAfter60s", mt.testMicAloneAfter60s), ("mic.cameraAndMeetingAppImmediate", mt.testCameraAndMeetingAppImmediate), ("mic.backgroundThreeHoursGetsBreak", mt.testBackgroundMicThreeHoursGetsBreak)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)
