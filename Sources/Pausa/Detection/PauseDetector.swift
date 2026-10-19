@@ -32,7 +32,7 @@ public final class PauseDetector: ObservableObject {
     public var meetingGrace: TimeInterval = 120
     /// The mic alone counts as a meeting only after this long without a gap. Dictation apps
     /// (Typeless etc.) record in bursts of seconds; a call keeps the mic open. Camera counts at once.
-    public var micMinRun: TimeInterval = 60
+    public var micMinRun: TimeInterval = Deferral.microphone.cap
     public var pollInterval: TimeInterval = 1
 
     private let queue = DispatchQueue(label: "pausa.detector", qos: .utility)
@@ -122,6 +122,8 @@ public final class PauseDetector: ObservableObject {
         // §4 typing / dragging: report only kind + cap; the scheduler decides when it matters.
         var defs: [Deferral] = []
         if flag("pauseWhileTyping", default: true), InputActivityMonitor.isBusy() { defs.append(.typing) }
+        // Mic on, not yet a meeting (dictation, or a call's first minute): a due break waits for it.
+        if micOn, !mic, !inMeeting, flag("pauseForMeetings", default: true) { defs.append(.microphone) }
         // §3 custom apps (15 min cap, shared budget).
         let custom = CustomPauseAppMonitor.check()
         if custom != nil { defs.append(.focusApp()) }

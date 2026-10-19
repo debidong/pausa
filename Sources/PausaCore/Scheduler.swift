@@ -16,7 +16,13 @@ public enum PauseReason: Hashable, Comparable {
 
 /// A soft reason to push a due break back a little (design §0 R1). Sources only say what they
 /// are and how long they may defer one break; the scheduler owns all timing (one shared budget).
-public enum DeferralKind: Hashable { case typing, focusApp, focusMode }
+public enum DeferralKind: Hashable {
+  case typing, focusApp, focusMode
+  case microphone   // mic on, not yet long enough to count as a meeting
+  /// Firm: holds even past the shared budget and the 90-minute line, for at most its own cap. Only
+  /// the mic, so a call's first minute never gets a break on screen.
+  var firm: Bool { self == .microphone }
+}
 
 public struct Deferral: Hashable {
   public var kind: DeferralKind
@@ -26,6 +32,9 @@ public struct Deferral: Hashable {
     self.kind = kind; self.cap = cap; self.kinds = kinds
   }
   public static let typing = Deferral(.typing, cap: 30)
+  /// Mic on but not yet a meeting: a due break waits for the dictation burst to end, at most this
+  /// long; the detector counts the mic alone as a meeting after the same time (micMinRun).
+  public static let microphone = Deferral(.microphone, cap: 60)
   public static func focusApp() -> Deferral { Deferral(.focusApp, cap: 15 * 60) }
   public static func focusMode(shortOnly: Bool) -> Deferral {
     Deferral(.focusMode, cap: 15 * 60, kinds: shortOnly ? [.short] : [.short, .long])
@@ -146,7 +155,8 @@ public struct Scheduler {
 
   /// Seconds `kind` may still defer the due break: its own cap and the shared budget, whichever is less.
   public func deferralLeft(for kind: DeferralKind, cap: Double) -> Double {
-    min(deferralLeft, max(0, cap - (deferBySource[kind] ?? 0)))
+    let own = max(0, cap - (deferBySource[kind] ?? 0))
+    return kind.firm ? own : min(deferralLeft, own)
   }
 
   /// 90-minute line reached, or the user already skipped past it: the long break may not wait.
@@ -218,9 +228,11 @@ public struct Scheduler {
     let hard = mustNotDefer(kind)
     let usable = deferrals.filter { d in
       d.kinds.contains(kind) && (deferBySource[d.kind] ?? 0) < d.cap
-        && !hard   // R20: past the 90-minute line nothing defers the long break, not even typing
+        // R20: past the 90-minute line nothing defers the long break, not even typing. A firm
+        // deferral (the mic, at most a minute) waits to learn whether it is a meeting.
+        && (d.kind.firm || (!hard && deferUsed < budget))
     }
-    if !usable.isEmpty && deferUsed < budget {
+    if !usable.isEmpty {
       deferUsed += dt
       for d in usable { deferBySource[d.kind, default: 0] += dt }
       deferring = usable.contains { $0.kind == .typing } ? .typing : usable[0].kind
@@ -418,12 +430,15 @@ public struct Scheduler {
   /// Rule: a long break is owed after a meeting if the meeting lasted >= meetingLongMin, or if the
   /// long break is within meetingNearLong of due (or overdue). It is then due afterMeetingDelay
   /// after the meeting ends (normal heads-up first), and the short break is held so it can't
-  /// fire in between. Otherwise both counters resume where they were.
+  /// fire in between; past the 90-minute line it starts the tick the hold ends. Otherwise both
+  /// counters resume where they were.
   mutating func meetingEnded(lasted: Double) {
     let longNear = next.kind == .long && next.remaining <= config.meetingNearLong
     guard lasted >= config.meetingLongMin || longNear || mustNotDefer(.long) else { return }
     breaksSinceLong = max(0, config.longEveryNth - 1)   // the next break is the long one
-    sinceBreak = config.breakEvery - config.afterMeetingDelay
+    // Past the 90-minute line (reached before or during the hold) it is owed now: no 3-minute
+    // wait and no heads-up, and the 90-minute clock is not restarted (Steve, 2026-10-19).
+    sinceBreak = mustNotDefer(.long) ? config.breakEvery : config.breakEvery - config.afterMeetingDelay
   }
 
   private mutating func reset(_ kind: BreakKind) {

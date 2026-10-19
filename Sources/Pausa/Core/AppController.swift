@@ -327,6 +327,7 @@ final class AppController {
         }
         switch scheduler.deferring {
         case .typing?: return .typing(secondsLeft: scheduler.deferralLeft(for: .typing, cap: Deferral.typing.cap))
+        case .microphone?: return .typing(secondsLeft: scheduler.deferralLeft(for: .microphone, cap: Deferral.microphone.cap))   // dictation reads as typing
         case .focusApp?:
             let m = Int((scheduler.deferralLeft(for: .focusApp, cap: Deferral.focusApp().cap) / 60).rounded(.up))
             return .customApp(app: detector.customAppName ?? "", minutesLeft: m)

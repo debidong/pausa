@@ -575,7 +575,7 @@ final class DeferralTests {
     var s = longOnly()
     XCTAssertTrue(startAt(&s, from: 0, to: 7000, reasons: [.screenSharing]) == nil)   // past 90 min, still held
     XCTAssertEqual(s.phase, .paused(.screenSharing))
-    XCTAssertEqual((startAt(&s, from: 7001, to: 9000) ?? -1) - 7001, 180, accuracy: 2)
+    XCTAssertEqual((startAt(&s, from: 7001, to: 9000) ?? -1) - 7001, 0, accuracy: 1)   // past the line: right away (was 180 s)
   }
   func testVideoEndMakeUpLongBreak() {
     var s = longOnly()
@@ -1014,6 +1014,69 @@ func testDurationParts() {   // spec §5.4
   XCTAssertEqual(DurationParts(4 * 3600 + 12 * 60), .hours(4, minutes: 12)); XCTAssertEqual(DurationParts(7200), .hours(2, minutes: 0))
 }
 
+/// Mic -> scheduler. `Mic` mirrors PauseDetector.tick(): mic on for micMinRun (60 s) unbroken is a
+/// meeting (plus 2 min grace); shorter, the due break waits (Deferral.microphone).
+final class MicTests {
+  struct Mic {
+    var since: Double?, last: Double?
+    mutating func step(_ on: Bool, _ t: Double) -> (Set<PauseReason>, [Deferral]) {
+      since = on ? (since ?? t) : nil
+      let long = since.map { t - $0 >= Deferral.microphone.cap } ?? false
+      if long { last = t }
+      let meeting = last.map { t - $0 < 120 } ?? false
+      return (meeting ? [.meeting] : [], on && !long && !meeting ? [.microphone] : [])
+    }
+  }
+  struct Run { var starts: [Double] = []; var startsWithMicOn = 0; var meetingTicks = 0 }
+  func run(_ s: inout Scheduler, from: Double, to: Double, mic on: (Double) -> Bool) -> Run {
+    var m = Mic(), r = Run(), t = from
+    while t <= to {
+      let (rs, ds) = m.step(on(t), t)
+      for c in s.tick(now: t, reasons: rs, deferrals: ds, inputIdle: 10) {
+        if case .startBreak = c { r.starts.append(t); if on(t) { r.startsWithMicOn += 1 } }
+      }
+      if s.phase == .paused(.meeting) { r.meetingTicks += 1 }
+      t += 1
+    }
+    return r
+  }
+  /// Typeless-style 20 s bursts every minute for 2 h: never a meeting, breaks keep coming, none while
+  /// the mic is on, each at most one burst late.
+  func testDictationBurstsStillGetBreaks() {
+    var s = Scheduler()
+    let r = run(&s, from: 0, to: 7200, mic: { $0.truncatingRemainder(dividingBy: 60) < 20 })
+    XCTAssertEqual(r.meetingTicks, 0); XCTAssertEqual(r.startsWithMicOn, 0)
+    XCTAssertTrue(r.starts.count >= 5)
+    XCTAssertEqual(r.starts.first ?? -1, 1220, accuracy: 1)   // due at 1200, burst 1200-1219
+  }
+  /// Break due 10 s into a 20 s burst starts the tick the mic stops; no 「正在使用麦克风」.
+  func testBreakDueDuringBurstFiresAfter() {
+    var s = Scheduler()
+    let r = run(&s, from: 0, to: 1300, mic: { $0 >= 1190 && $0 < 1210 })
+    XCTAssertEqual(r.starts, [1210]); XCTAssertEqual(r.meetingTicks, 0)
+  }
+  /// Past the 90-minute line nothing defers the long break except the mic's one-minute question: a
+  /// call starting just then gets no break on screen; a 20 s burst there delays it to the burst's end.
+  func testMicFirmPastNinetyLine() {
+    var cf = Config(); cf.breakEvery = 95 * 60; cf.longEveryNth = 1
+    var s = Scheduler(config: cf)
+    let r = run(&s, from: 0, to: 5800, mic: { $0 >= 5690 })
+    XCTAssertEqual(r.starts, []); XCTAssertTrue(r.meetingTicks > 0)
+    var s2 = Scheduler(config: cf)
+    XCTAssertEqual(run(&s2, from: 0, to: 5800, mic: { $0 >= 5690 && $0 < 5710 }).starts, [5710])
+  }
+  /// 100-minute meeting crossing the 90-minute line: no break during it or its grace; the long break
+  /// the tick the hold ends, no heads-up wait, the 90-minute clock not restarted.
+  func testNinetyLineFiresRightAfterMeeting() {
+    var s = Scheduler()
+    let r = run(&s, from: 0, to: 6778, mic: { $0 >= 600 && $0 < 6660 })   // last mic tick 6659, grace to 6778
+    XCTAssertEqual(r.starts, []); XCTAssertEqual(s.phase, .paused(.meeting))
+    XCTAssertTrue(s.sinceLastLongBreak >= 6600)
+    XCTAssertEqual(s.tick(now: 6779, reasons: [], deferrals: [], inputIdle: 10), [.startBreak(.long, length: 300)])
+  }
+}
+let mt = MicTests()
+
 let cases: [(String, () -> Void)] = [
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
@@ -1040,6 +1103,7 @@ let cases: [(String, () -> Void)] = [
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle), ("accept.1", testAccept1MidnightSplit), ("accept.2", testAccept2IdleEndsAtLastInput), ("accept.3", testAccept3BreakNotWork), ("accept.4", testAccept4MeetingIgnoresIdle), ("accept.5", testAccept5LockNotWork), ("accept.6", testAccept6ActiveAndQuietHours), ("accept.7", testAccept7MeetingAfterHours), ("accept.8", testAccept8ManualPauseIsWork), ("accept.10", testAccept10ShortCompletes), ("accept.11", testAccept11LockThroughLong), ("accept.12", testAccept12SkipAddsNoTime), ("accept.13", testAccept13SnoozeThenComplete), ("accept.14", testAccept14MeetingNoBreakRows), ("accept.15", testAccept15BreakBelongsToStartDay), ("accept.16", testAccept16BarProportional), ("accept.17", testAccept17ScaleFloor), ("accept.18", testAccept18FullDay), ("accept.19", testAccept19ScaleCeiling), ("accept.20", testAccept20TypicalGapSpacing), ("accept.21", testAccept21GapPerBreak), ("accept.22", testAccept22GapPosition), ("accept.23", testAccept23SkipNoGap), ("accept.24", testAccept24BarLabels), ("accept.27", testAccept27EmptyDay), ("accept.30", testAccept30KeepThirtyDays), ("stats.durationParts", testDurationParts)]
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle), ("accept.1", testAccept1MidnightSplit), ("accept.2", testAccept2IdleEndsAtLastInput), ("accept.3", testAccept3BreakNotWork), ("accept.4", testAccept4MeetingIgnoresIdle), ("accept.5", testAccept5LockNotWork), ("accept.6", testAccept6ActiveAndQuietHours), ("accept.7", testAccept7MeetingAfterHours), ("accept.8", testAccept8ManualPauseIsWork), ("accept.10", testAccept10ShortCompletes), ("accept.11", testAccept11LockThroughLong), ("accept.12", testAccept12SkipAddsNoTime), ("accept.13", testAccept13SnoozeThenComplete), ("accept.14", testAccept14MeetingNoBreakRows), ("accept.15", testAccept15BreakBelongsToStartDay), ("accept.16", testAccept16BarProportional), ("accept.17", testAccept17ScaleFloor), ("accept.18", testAccept18FullDay), ("accept.19", testAccept19ScaleCeiling), ("accept.20", testAccept20TypicalGapSpacing), ("accept.21", testAccept21GapPerBreak), ("accept.22", testAccept22GapPosition), ("accept.23", testAccept23SkipNoGap), ("accept.24", testAccept24BarLabels), ("accept.27", testAccept27EmptyDay), ("accept.30", testAccept30KeepThirtyDays), ("stats.durationParts", testDurationParts),
+ ("mic.dictationStillGetsBreaks", mt.testDictationBurstsStillGetBreaks), ("mic.breakAfterBurst", mt.testBreakDueDuringBurstFiresAfter), ("mic.firmPastNinety", mt.testMicFirmPastNinetyLine), ("meeting.ninetyFiresAfter", mt.testNinetyLineFiresRightAfterMeeting)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)
