@@ -1504,34 +1504,34 @@
     "th": "ยังไม่มีการพัก"
   },
   "stats.footnote": {
-    "zh-Hans": "只统计 Pausa 提醒您的休息。开会、共享屏幕、播放视频、全屏、不在提醒时段内或处于免打扰时段时，Pausa 会自动暂停，不会提醒，这段时间也不算跳过。",
-    "zh-Hant": "只統計 Pausa 提醒您的休息。開會、分享螢幕、播放影片、全螢幕、不在提醒時段內或處於勿擾時段時，Pausa 會自動暫停，不會提醒，這段時間也不算跳過。",
-    "en": "Only breaks Pausa reminds you about are counted. Pausa pauses automatically during meetings, screen sharing, videos, full-screen apps, and quiet hours, and outside your active hours. It doesn't remind you then, so nothing counts as skipped.",
-    "es": "Solo se cuentan los descansos que Pausa te recuerda. Pausa se detiene automáticamente durante reuniones, al compartir pantalla, con vídeos, con apps a pantalla completa, en el horario de silencio y fuera del horario activo. En esos momentos no te avisa, así que nada cuenta como omitido.",
-    "ru": "Учитываются только перерывы, о которых напоминает Pausa. Во время встреч, демонстрации экрана, видео, полноэкранных приложений, в тихие часы и вне активных часов Pausa автоматически приостанавливается и не напоминает, поэтому ничего не считается пропущенным.",
-    "fr": "Seules les pauses que Pausa vous rappelle sont comptées. Pausa se met en pause automatiquement pendant les réunions, le partage d’écran, les vidéos, les apps en plein écran et les heures calmes, ainsi qu’en dehors des heures actives. Pausa ne vous rappelle rien à ces moments-là, donc rien n’est compté comme ignoré.",
-    "vi": "Chỉ tính những lần nghỉ mà Pausa nhắc bạn. Pausa tự tạm dừng khi bạn đang họp, chia sẻ màn hình, xem video, dùng ứng dụng toàn màn hình, trong khung giờ yên lặng hoặc ngoài khung giờ nhắc. Lúc đó Pausa không nhắc, nên không có lần nào bị tính là bỏ qua.",
-    "th": "นับเฉพาะการพักที่ Pausa เตือนคุณ Pausa จะหยุดชั่วคราวอัตโนมัติระหว่างการประชุม การแชร์หน้าจอ การดูวิดีโอ การใช้แอปเต็มหน้าจอ ในช่วงเวลาห้ามรบกวน และนอกช่วงเวลาเตือน ช่วงนั้น Pausa จะไม่เตือน จึงไม่นับเป็นการข้าม"
+    "zh-Hans": "自动暂停期间不提醒，也不算跳过。",
+    "zh-Hant": "自動暫停期間不提醒，也不算跳過。",
+    "en": "Breaks paused automatically don't count as skipped.",
+    "es": "Durante la pausa automática no hay recordatorios y nada cuenta como omitido.",
+    "ru": "Во время автоматической приостановки напоминаний нет, и ничего не считается пропущенным.",
+    "fr": "Pendant la pause automatique, aucun rappel n’est affiché et rien n’est compté comme ignoré.",
+    "vi": "Trong lúc tự tạm dừng, Pausa không nhắc và cũng không tính là bỏ qua.",
+    "th": "ระหว่างหยุดชั่วคราวอัตโนมัติ จะไม่มีการเตือน และไม่นับเป็นการข้าม"
   },
   "stats.legend.break": {
     "zh-Hans": "休息",
     "zh-Hant": "休息",
-    "en": "Breaks",
-    "es": "Descansos",
-    "ru": "Перерывы",
-    "fr": "Pauses",
+    "en": "Break",
+    "es": "Descanso",
+    "ru": "Перерыв",
+    "fr": "Pause",
     "vi": "Nghỉ",
-    "th": "การพัก"
+    "th": "พัก"
   },
   "stats.legend.work": {
-    "zh-Hans": "工作时长",
-    "zh-Hant": "工作時長",
-    "en": "Work time",
-    "es": "Tiempo de trabajo",
-    "ru": "Время работы",
-    "fr": "Temps de travail",
-    "vi": "Thời gian làm việc",
-    "th": "เวลาทำงาน"
+    "zh-Hans": "工作",
+    "zh-Hant": "工作",
+    "en": "Work",
+    "es": "Trabajo",
+    "ru": "Работа",
+    "fr": "Travail",
+    "vi": "Làm việc",
+    "th": "ทำงาน"
   },
   "stats.skipped": {
     "zh-Hans": "跳过休息",

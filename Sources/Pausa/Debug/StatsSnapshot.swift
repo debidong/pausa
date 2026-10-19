@@ -182,8 +182,8 @@ enum StatsSnapshot {
                 check("zh: wording unchanged", tip1 == "今天：工作 1\u{00A0}小时，完成 1\u{00A0}次休息，休息 20\u{00A0}秒，跳过 1\u{00A0}次"
                       && tip2.contains("完成 2\u{00A0}次休息"))
                 let fn = StatsText.keepWords(L(StatsText.footnote))
-                check("zh footnote: 免打扰 glued with word joiners, text otherwise identical",
-                      fn.contains("免\u{2060}打\u{2060}扰") && fn.replacingOccurrences(of: "\u{2060}", with: "") == L(StatsText.footnote))
+                check("zh footnote: 跳过 glued with word joiners, text otherwise identical",
+                      fn.contains("跳\u{2060}过") && fn.replacingOccurrences(of: "\u{2060}", with: "") == L(StatsText.footnote))
             }
         }
         // The 清除 confirmation (its content view; the alert's own window frame is real-Mac only).
