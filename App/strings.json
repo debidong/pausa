@@ -721,13 +721,13 @@
   },
   "pause.meeting": {
     "zh-Hans": "已暂停：正在使用麦克风",
-    "zh-Hant": "已暫停：正在開會",
+    "zh-Hant": "已暫停：正在使用麥克風",
     "en": "Paused: Microphone in use",
-    "es": "En pausa: en una reunión",
-    "ru": "Пауза: идёт встреча",
-    "fr": "En pause : en réunion",
-    "vi": "Tạm dừng: đang họp",
-    "th": "หยุดชั่วคราว: กำลังประชุม"
+    "es": "En pausa: micrófono en uso",
+    "ru": "Пауза: используется микрофон",
+    "fr": "En pause : microphone utilisé",
+    "vi": "Tạm dừng: đang dùng micrô",
+    "th": "หยุดชั่วคราว: กำลังใช้ไมโครโฟน"
   },
   "pause.recording": {
     "zh-Hans": "已暂停：正在录屏",
@@ -801,13 +801,13 @@
   },
   "pause.source.meeting": {
     "zh-Hans": "暂停中：正在使用麦克风",
-    "zh-Hant": "暫停中：正在開會",
+    "zh-Hant": "暫停中：正在使用麥克風",
     "en": "Paused: Microphone in use",
-    "es": "En pausa: en una reunión",
-    "ru": "Пауза: идёт встреча",
-    "fr": "En pause : en réunion",
-    "vi": "Đã tạm dừng: đang họp",
-    "th": "หยุดชั่วคราว: กำลังประชุม"
+    "es": "En pausa: micrófono en uso",
+    "ru": "Пауза: используется микрофон",
+    "fr": "En pause : microphone utilisé",
+    "vi": "Đã tạm dừng: đang dùng micrô",
+    "th": "หยุดชั่วคราว: กำลังใช้ไมโครโฟน"
   },
   "pause.source.sharing": {
     "zh-Hans": "暂停中：正在共享屏幕",
