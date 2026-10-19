@@ -227,20 +227,15 @@ struct StatsPage: View {
     var body: some View {
         Form {
             if model.hasData {
-                Section {
-                    StatsNumbers(day: model.selected).padding(-10).listRowInsets(EdgeInsets())
-                } header: { titleRow }
+                // One card: the week first, then the picked day's four numbers under it.
                 Section {
                     VStack(spacing: 0) {
                         StatsWeekChart(days: model.days, selected: model.selectedIndex, today: model.todayIndex,
                                        accent: accent, onSelect: model.select)
                             .padding(.top, 14).padding(.horizontal, 16)
                         Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 1).padding(.horizontal, 16)
-                        Text(StatsText.summary(model.days))
-                            .font(.system(size: 12)).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 12)
+                        titleRow.padding(.horizontal, 16).padding(.top, 8)
+                        StatsNumbers(day: model.selected)
                     }
                     .padding(-10).listRowInsets(EdgeInsets())
                 } header: {
@@ -300,11 +295,11 @@ struct StatsPage: View {
         .frame(minHeight: 28)
     }
 
-    /// 「柱高：工作时长」 (solid swatch) 「缝隙：一次休息」 (swatch with a cut): the cut can't be guessed.
+    /// Solid swatch 「工作时长」, swatch with a cut 「休息」: the picture says which part is which.
     private var legend: some View {
         HStack(spacing: 12) {
-            HStack(spacing: 5) { GappedBar(cuts: [], radius: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("柱高：工作时长")) }
-            HStack(spacing: 5) { GappedBar(cuts: [5.5], radius: 1.5, cut: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("缝隙：一次休息")) }
+            HStack(spacing: 5) { GappedBar(cuts: [], radius: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("工作时长")) }
+            HStack(spacing: 5) { GappedBar(cuts: [5.5], radius: 1.5, cut: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("休息")) }
         }
         .font(.system(size: 12)).foregroundStyle(.secondary)
         .accessibilityElement(children: .combine)
@@ -435,6 +430,7 @@ struct StatsWeekChart: View {
         }
         .focusable()
         .focused($focused)
+        .noFocusRing()   // the darker picked bar already shows where arrow keys act
         .onMoveCommand { d in
             switch d {
             case .left: onSelect(max(0, selected - 1))
@@ -576,5 +572,12 @@ extension View {
         #else
         self
         #endif
+    }
+}
+
+extension View {
+    /// Hide the system focus ring (macOS 14+; macOS 13 keeps it).
+    @ViewBuilder func noFocusRing() -> some View {
+        if #available(macOS 14, *) { focusEffectDisabled() } else { self }
     }
 }
