@@ -351,7 +351,7 @@ final class MenuBarController: NSObject {
         }
         if let p = page { settingsTabs?.select(p) }
         StatsModel.shared.showToday()   // 统计 always opens on today, with fresh numbers
-        if SettingsNav.shared.page == .stats { settingsTabs?.growToFitStats() }
+        settingsTabs?.fitHeight(to: SettingsNav.shared.page)
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
         settingsTabs?.logFrame("open")
@@ -434,16 +434,18 @@ struct SettingsView: View {
     }
 
     /// Height of the whole page content (Form without scrolling), measured offscreen.
-    @MainActor static func contentHeight(_ settings: Settings, _ page: SettingsPage) -> CGFloat {
-        let v = NSHostingView(rootView: SettingsView(settings: settings, page: page).scrollDisabled(true).fixedSize(horizontal: false, vertical: true))
+    @MainActor static func contentHeight(_ settings: Settings, _ page: SettingsPage, width: CGFloat = width) -> CGFloat {
+        let v = NSHostingView(rootView: SettingsView(settings: settings, page: page).scrollDisabled(true)
+            .frame(width: max(width, Self.width)).fixedSize(horizontal: false, vertical: true))
         return ceil(v.fittingSize.height)
     }
 }
 
 /// Native preferences window (like Safari's settings): toolbar tabs with the label under each icon.
 /// Round 7c rev 2: first open 500 x 809 pt (whole frame, capped at the visible height), centred. Resizable, minimum 500 x 420, no maximum.
-/// All tabs share the window's size; a tab switch never changes it. Position and size are kept under
-/// a new autosave key (the old one is never read). Pages scroll inside. Title always "Pausa".
+/// Stats items 28/33 (Steve, 2026-10-19): each tab sets the window height to its content (grow and shrink,
+/// animated, top edge fixed, width kept); pages scroll only when the screen is shorter. Position and width
+/// are kept under the autosave key (the old one is never read). Title always "Pausa".
 @MainActor
 final class SettingsTabsController: NSTabViewController {
     /// Round 7c (j, rev 2): portrait golden ratio 500 × 809, capped at the screen's visible height.
@@ -471,11 +473,13 @@ final class SettingsTabsController: NSTabViewController {
         w.isReleasedWhenClosed = false
         pinMinimum(w)
         w.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
-        if !w.setFrameUsingName(autosave) {
+        let restored = w.setFrameUsingName(autosave)
+        if !restored {
             w.setFrame(NSRect(origin: w.frame.origin, size: initialSize(for: w.screen ?? NSScreen.main)), display: false)
-            w.center()
         }
         tabs.adoptWindowSize()
+        tabs.fitHeight(to: SettingsNav.shared.page)   // the selected tab's height (saved position: top edge kept)
+        if !restored { w.center() }
         w.setFrameAutosaveName(autosave)
         tabs.liveResizeObserver = NotificationCenter.default.addObserver(forName: NSWindow.didEndLiveResizeNotification,
                                                                          object: w, queue: .main) { [weak tabs] _ in
@@ -539,20 +543,29 @@ final class SettingsTabsController: NSTabViewController {
         w.frameRect(forContentRect: NSRect(origin: .zero, size: w.contentMinSize)).size
     }
 
-    /// Stats spec item 33: the 统计 page never scrolls, so the window GROWS (never shrinks) to fit it,
-    /// keeping its top edge and capped to the screen's visible frame. The other tabs keep the shared size
-    /// (item 28); once grown, the window stays that size for them too, like a user drag would.
-    func growToFitStats() {
+    #if DEBUG
+    /// Self-test only: pretend the screen's visible frame is this tall (the short-screen case).
+    static var visibleHeightOverride: CGFloat?
+    #endif
+    /// Stats spec items 28 / 33 (Steve): like macOS's own Settings windows, every tab sets the window's
+    /// height to its content, growing AND shrinking, animated with the system default. Width is kept and
+    /// the top edge stays put. Only a screen whose visible frame is shorter than the content caps the
+    /// height; that page then scrolls.
+    func fitHeight(to page: SettingsPage) {
         guard let w = view.window else { return }
-        let content = SettingsView.contentHeight(settings, .stats) + 1
-        let need = w.frame.height - w.contentLayoutRect.height + content   // title bar + toolbar + page
-        guard need > w.frame.height + 0.5 else { return }
+        let content = SettingsView.contentHeight(settings, page, width: w.contentLayoutRect.width) + 1
+        let chrome = w.frame.height - w.contentLayoutRect.height   // title bar + toolbar
+        let screen = (w.screen ?? NSScreen.main)?.visibleFrame
+        var capH = screen?.height ?? .greatestFiniteMagnitude, faked = false
+        #if DEBUG
+        if let o = Self.visibleHeightOverride { capH = o; faked = true }
+        #endif
         var f = w.frame
-        let cap = (w.screen ?? NSScreen.main)?.visibleFrame
-        f.size.height = cap.map { min(need, $0.height) } ?? need
+        f.size.height = max(Self.minimumFrame(w).height, min(chrome + content, capH))
         f.origin.y = w.frame.maxY - f.height
-        if let cap, f.minY < cap.minY { f.origin.y = cap.minY }
-        w.setFrame(f, display: true, animate: w.isVisible)
+        if let screen, !faked, f.minY < screen.minY { f.origin.y = screen.minY }   // only when the top can't stay
+        guard abs(f.height - w.frame.height) > 0.5 || f.origin != w.frame.origin else { return }
+        w.setFrame(f, display: true, animate: w.isVisible)   // a never-shown window resizes at once
     }
 
     private var frameBeforeSwitch: NSRect?
@@ -566,9 +579,9 @@ final class SettingsTabsController: NSTabViewController {
         super.tabView(tabView, didSelect: tabViewItem)
         if let id = tabViewItem?.identifier as? String, let p = SettingsPage(rawValue: id) { SettingsNav.shared.page = p }
         guard let w = view.window, let vc = tabViewItem?.viewController else { return }
-        if let f = frameBeforeSwitch, f != w.frame { w.setFrame(f, display: true) }   // size never changes
+        if let f = frameBeforeSwitch, f != w.frame { w.setFrame(f, display: true) }   // undo any AppKit resize first
         frameBeforeSwitch = nil
-        if SettingsNav.shared.page == .stats { growToFitStats() }
+        fitHeight(to: SettingsNav.shared.page)
         w.title = "Pausa"
         Self.scrollToTop(vc.view)
         // Only the new page's content fades in (0.25 s).

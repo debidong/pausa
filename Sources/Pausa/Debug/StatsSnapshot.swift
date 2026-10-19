@@ -103,26 +103,66 @@ enum StatsSnapshot {
             }
         }
         StatsProbe.on = false
-        // Item 33: switching to 统计 grows a small window to the page (worst week loaded), top edge kept.
-        // The window is never ordered in and uses a throwaway autosave key, removed afterwards.
+        // Items 28/33 (Steve): each tab sets the window height to its content, growing and shrinking, top
+        // edge and width kept; a short screen caps it and the page scrolls. The window is never ordered in
+        // (so it resizes without animation) and uses a throwaway autosave key, removed afterwards.
         do {
             let key = "PausaStatsRenderCheck"
             NSWindow.removeFrame(usingName: key)
             let (w, tabs) = SettingsTabsController.makeWindow(settings: .shared, onPreview: {}, autosave: key)
             let wasPage = SettingsNav.shared.page
+            let chrome = w.frame.height - w.contentLayoutRect.height
+            func wantRaw(_ p: SettingsPage) -> CGFloat { chrome + SettingsView.contentHeight(.shared, p, width: w.contentLayoutRect.width) + 1 }
             tabs.select(.general)
-            let top = w.frame.maxY
-            w.setFrame(NSRect(x: 100, y: top - 420, width: 500, height: 420), display: false)
+            // Top 40 pt under the menu bar, so every page here fits below it on this screen.
+            let vis = (w.screen ?? NSScreen.main)!.visibleFrame
+            w.setFrame(NSRect(x: vis.minX + 100, y: vis.maxY - 40 - 420, width: 560, height: 420), display: false)
+            var top = w.frame.maxY
+            func want(_ p: SettingsPage) -> CGFloat { min(vis.height, max(SettingsTabsController.minimumFrame(w).height, wantRaw(p))) }
             tabs.select(.stats)
-            let need = SettingsView.contentHeight(.shared, .stats)
-            let cap = (w.screen ?? NSScreen.main)?.visibleFrame.height ?? .infinity
-            let fits = w.contentLayoutRect.height >= need || w.frame.height >= cap - 0.5
-            check("window grows to 统计 (page \(fmt(need)) pt, area \(fmt(w.contentLayoutRect.height)) pt, frame \(fmt(w.frame.height)), top kept)",
-                  fits && abs(w.frame.maxY - top) <= 0.5)
-            let grown = w.frame
+            let statsH = w.frame.height
+            check("统计 sets height \(fmt(statsH)) = content \(fmt(want(.stats))), top kept, width 560",
+                  abs(statsH - want(.stats)) <= 0.5 && abs(w.frame.maxY - top) <= 0.5 && w.frame.width == 560)
+            for p in [SettingsPage.breaks, .stats] {   // 休息 is taller than 统计 here; then back down
+                tabs.select(p)
+                let capped = wantRaw(p) > vis.height, topOK = capped ? w.frame.maxY <= vis.maxY + 0.5 : abs(w.frame.maxY - top) <= 0.5
+                check("\(p.rawValue): height \(fmt(w.frame.height)) = \(capped ? "screen" : "content") \(fmt(want(p))), \(capped ? "on screen" : "top kept")",
+                      abs(w.frame.height - want(p)) <= 0.5 && topOK)
+                top = w.frame.maxY   // capped: the window moved up to stay on screen; later switches keep this top
+            }
             tabs.select(.about)
-            check("other tabs keep the (grown) size", w.frame.size == grown.size)
+            check("统计 → 关于 shrinks to \(fmt(w.frame.height)) = content \(fmt(want(.about))), top kept",
+                  abs(w.frame.height - want(.about)) <= 0.5 && w.frame.height < statsH && abs(w.frame.maxY - top) <= 0.5)
+            for p in [SettingsPage.general, .about] {
+                tabs.select(p)
+                check("\(p.rawValue) height \(fmt(w.frame.height)) = content \(fmt(max(want(p), SettingsTabsController.minimumFrame(w).height)))",
+                      abs(w.frame.height - max(want(p), SettingsTabsController.minimumFrame(w).height)) <= 0.5 && abs(w.frame.maxY - top) <= 0.5)
+            }
+            SettingsTabsController.visibleHeightOverride = 520
+            tabs.select(.stats)
+            let area = w.contentLayoutRect.height, page = SettingsView.contentHeight(.shared, .stats, width: w.contentLayoutRect.width)
+            check("short screen (520 pt): capped at \(fmt(w.frame.height)), page \(fmt(page)) > area \(fmt(area)) scrolls, top kept",
+                  abs(w.frame.height - 520) <= 0.5 && page > area && abs(w.frame.maxY - top) <= 0.5)
+            SettingsTabsController.visibleHeightOverride = nil
             tabs.select(wasPage); w.setFrameAutosaveName(""); NSWindow.removeFrame(usingName: key); w.close()
+        }
+        // English plurals in the summary and tooltip; Chinese unchanged.
+        do {
+            var d = DayStats(day: now); d.taken = 1; d.skipped = 1; d.work = 3600; d.seconds = 20
+            var d2 = d; d2.taken = 2; d2.skipped = 0
+            let tip1 = StatsText.tip(d, isToday: true), sum1 = StatsText.summary([d]), tip2 = StatsText.tip(d2, isToday: true)
+            print("     tip(1): \(tip1)\n     summary(1): \(sum1)\n     tip(2): \(tip2)")
+            if lang == "en" {
+                check("en: 1 → \"1 break taken\", \"1 skipped\"; 2 → \"2 breaks taken\"",
+                      tip1.contains("1\u{00A0}break taken") && sum1.contains("1\u{00A0}break taken") && tip1.contains("1\u{00A0}skipped")
+                      && tip2.contains("2\u{00A0}breaks taken"))
+            } else if lang == "zh-Hans" {
+                check("zh: wording unchanged", tip1 == "今天：工作 1\u{00A0}小时，完成 1\u{00A0}次休息，休息 20\u{00A0}秒，跳过 1\u{00A0}次"
+                      && tip2.contains("完成 2\u{00A0}次休息"))
+                let fn = StatsText.keepWords(L(StatsText.footnote))
+                check("zh footnote: 免打扰 glued with word joiners, text otherwise identical",
+                      fn.contains("免\u{2060}打\u{2060}扰") && fn.replacingOccurrences(of: "\u{2060}", with: "") == L(StatsText.footnote))
+            }
         }
         // The 清除 confirmation (its content view; the alert's own window frame is real-Mac only).
         for (name, ap) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {

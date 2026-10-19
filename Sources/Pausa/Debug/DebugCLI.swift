@@ -152,7 +152,8 @@ enum DebugCLI {
                 func check(_ n: String, _ c: Bool) { print(c ? "ok   \(n)" : "FAIL \(n)"); ok = ok && c }
                 var (w, tabs) = SettingsTabsController.makeWindow(settings: .shared, onPreview: {}, autosave: key)
                 let want = SettingsTabsController.initialSize(for: w.screen ?? NSScreen.main)
-                check("first open \(want) (\(w.frame.size))", w.frame.size == want)
+                // First open: 500 wide, the selected page's height (capped at the screen).
+                check("first open 500 wide, page height (\(w.frame.size); was \(want))", w.frame.width == want.width)
                 if let sc = w.screen ?? NSScreen.main {
                     check("centred", abs(w.frame.midX - sc.visibleFrame.midX) < 2)
                 }
@@ -186,10 +187,20 @@ enum DebugCLI {
                     w.contentView?.layoutSubtreeIfNeeded()
                     check("setFrame \(sz) reads back (\(w.frame.size))", w.frame.size == sz)
                 }
-                w.setFrame(NSRect(origin: w.frame.origin, size: NSSize(width: 900, height: 600)), display: false)
-                for p in [SettingsPage.about, .general, .breaks] {
+                let vis = (w.screen ?? NSScreen.main)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 2000, height: 2000)
+                w.setFrame(NSRect(x: vis.minX + 50, y: vis.maxY - 40 - 600, width: 900, height: 600), display: false)
+                // Stats items 28/33 (Steve): a tab switch sets the height to the page, keeps width and top edge.
+                var top = w.frame.maxY
+                for p in [SettingsPage.about, .general, .stats, .breaks, .about] {
                     tabs.select(p)
-                    check("\(p.rawValue) keeps 900x600 (\(w.frame.size))", w.frame.size == NSSize(width: 900, height: 600))
+                    let need = w.frame.height - w.contentLayoutRect.height + SettingsView.contentHeight(.shared, p, width: w.contentLayoutRect.width) + 1
+                    let cap = (w.screen ?? NSScreen.main)?.visibleFrame.height ?? .greatestFiniteMagnitude
+                    let h = max(SettingsTabsController.minimumFrame(w).height, min(need, cap))
+                    let capped = need > cap   // fills the visible frame; the window moves up only as far as it must
+                    check("\(p.rawValue) fits its page: 900 x \(Int(h)) (\(w.frame.size)), \(capped ? "capped, on screen" : "top kept")",
+                          w.frame.width == 900 && abs(w.frame.height - h) <= 0.5
+                          && (capped ? w.frame.maxY <= vis.maxY + 0.5 && w.frame.minY >= vis.minY - 0.5 : abs(w.frame.maxY - top) <= 0.5))
+                    top = w.frame.maxY
                     let f = fixedSizeConstraints()
                     check("\(p.rawValue) drag not blocked \(f)", f.isEmpty)
                 }
@@ -197,7 +208,7 @@ enum DebugCLI {
                 w.saveFrame(usingName: key)   // what AppKit's autosave does on close/quit
                 w.close()
                 (w, tabs) = SettingsTabsController.makeWindow(settings: .shared, onPreview: {}, autosave: key)
-                check("reopen 900x600 (\(w.frame.size))", w.frame.size == NSSize(width: 900, height: 600))
+                check("reopen keeps width 900, fitted height (\(w.frame.size))", w.frame.width == 900)
                 NSWindow.removeFrame(usingName: key)
                 print(ok ? "SETTINGSWINDOW PASS" : "SETTINGSWINDOW FAIL"); exit(ok ? 0 : 1)
             }

@@ -154,8 +154,9 @@ enum StatsText {
     static func countPieces(_ n: Int) -> [ValuePiece] { [pieces("%d 次", n)] }
 
     /// A sentence template with each "%d" glued to the word after it, then filled in.
-    static func sentence(_ key: String, _ args: CVarArg...) -> String {
-        let t = L(key).replacingOccurrences(of: "%d ", with: "%d\u{00A0}")
+    /// `template` is already localized (a `Plural.pick` result).
+    static func sentence(_ template: String, _ args: CVarArg...) -> String {
+        let t = template.replacingOccurrences(of: "%d ", with: "%d\u{00A0}")
         return String(format: t, locale: AppLanguage.current.locale, arguments: args)
     }
 
@@ -170,11 +171,11 @@ enum StatsText {
 
     /// Hover tip and VoiceOver: 「10月15日 周四：工作 6 小时 20 分钟，完成 13 次休息，休息 23 分钟，跳过 4 次」.
     static func tip(_ s: DayStats, isToday: Bool) -> String {
-        sentence("%@：工作 %@，完成 %d 次休息，休息 %@，跳过 %d 次", isToday ? L("今天") : date(s.day),
+        sentence(Plural.pick("stats.tip", s.taken), isToday ? L("今天") : date(s.day),
                  duration(s.work), s.taken, duration(s.seconds), s.skipped)
     }
     static func summary(_ days: [DayStats]) -> String {
-        sentence("7 天共工作 %@，完成 %d 次休息，休息 %@，跳过 %d 次。",
+        sentence(Plural.pick("stats.summary", days.reduce(0) { $0 + $1.taken }),
                  duration(days.reduce(0) { $0 + $1.work }), days.reduce(0) { $0 + $1.taken },
                  duration(days.reduce(0) { $0 + $1.seconds }), days.reduce(0) { $0 + $1.skipped })
     }
@@ -189,6 +190,26 @@ enum StatsText {
     }
     /// Under a bar: 「18 次」 / "18 breaks", "1 break".
     static func breaks(_ n: Int) -> String { glue(String(format: Plural.pick("stats.breaks", n), locale: AppLanguage.current.locale, n)) }
+
+    /// Chinese has no spaces, so CoreText may break inside a word (免/打扰). Glue each word's characters
+    /// with WORD JOINER (U+2060), using Foundation's own word segmentation plus a few compounds it splits;
+    /// other languages unchanged.
+    static func keepWords(_ text: String) -> String {
+        guard [.zhHans, .zhHant].contains(AppLanguage.current) else { return text }
+        var out = "", last = text.startIndex
+        text.enumerateSubstrings(in: text.startIndex..., options: .byWords) { word, r, _, _ in
+            guard let word, word.count > 1 else { return }
+            out += text[last..<r.lowerBound] + word.map(String.init).joined(separator: "\u{2060}")
+            last = r.upperBound
+        }
+        out += text[last...]
+        // Words the system segmenter splits (it gives 免|打扰 and 跳|过).
+        for term in ["免打扰", "跳过"] {
+            let pattern = term.map { NSRegularExpression.escapedPattern(for: String($0)) }.joined(separator: "\u{2060}?")
+            out = out.replacingOccurrences(of: pattern, with: term.map(String.init).joined(separator: "\u{2060}"), options: .regularExpression)
+        }
+        return out
+    }
 
     static let footnote = "只统计 Pausa 提醒您的休息。开会、共享屏幕、播放视频、全屏、不在提醒时段内或处于免打扰时段时，Pausa 会自动暂停，不会提醒，这段时间也不算跳过。"
 }
@@ -287,7 +308,7 @@ struct StatsPage: View {
 
     private var footnote: some View {
         // Grouped-form footers are trailing by default; this one reads as a paragraph.
-        Text(L(StatsText.footnote)).font(.system(size: 11)).foregroundStyle(.secondary)
+        Text(StatsText.keepWords(L(StatsText.footnote))).font(.system(size: 11)).foregroundStyle(.secondary)
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
