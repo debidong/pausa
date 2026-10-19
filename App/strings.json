@@ -83,21 +83,21 @@
     "zh-Hans": "外观",
     "zh-Hant": "外觀",
     "en": "Appearance",
-    "es": "Appearance",
-    "ru": "Appearance",
-    "fr": "Appearance",
-    "vi": "Appearance",
-    "th": "Appearance"
+    "es": "Apariencia",
+    "ru": "Оформление",
+    "fr": "Apparence",
+    "vi": "Giao diện",
+    "th": "ลักษณะที่ปรากฏ"
   },
   "appearance.previewBreak": {
     "zh-Hans": "休息界面",
     "zh-Hant": "休息畫面",
     "en": "Break Screen",
-    "es": "Break Screen",
-    "ru": "Break Screen",
-    "fr": "Break Screen",
-    "vi": "Break Screen",
-    "th": "Break Screen"
+    "es": "Pantalla de descanso",
+    "ru": "Экран перерыва",
+    "fr": "Écran de pause",
+    "vi": "Màn hình nghỉ",
+    "th": "หน้าจอพัก"
   },
   "appearance.system": {
     "zh-Hans": "跟随系统",
@@ -203,11 +203,11 @@
     "zh-Hans": "设置专注模式…",
     "en": "Set Up Focus…",
     "zh-Hant": "設定專注模式…",
-    "es": "Set Up Focus…",
-    "ru": "Set Up Focus…",
-    "fr": "Set Up Focus…",
-    "vi": "Set Up Focus…",
-    "th": "Set Up Focus…"
+    "es": "Configurar concentración…",
+    "ru": "Настроить фокусирование…",
+    "fr": "Configurer la concentration…",
+    "vi": "Thiết lập Tập trung…",
+    "th": "ตั้งค่าโฟกัส…"
   },
   "autoPause.meetings": {
     "zh-Hans": "会议进行时",
@@ -533,11 +533,11 @@
     "zh-Hans": "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用。",
     "zh-Hant": "選單列空間不足，Pausa 的圖示被擋住了。您可以結束一些選單列應用程式。",
     "en": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
-    "es": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
-    "ru": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
-    "fr": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
-    "vi": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps.",
-    "th": "Your menu bar is full, so the Pausa icon is hidden. Quit a few menu bar apps."
+    "es": "La barra de menús está llena y el icono de Pausa queda oculto. Cierra algunas apps de la barra de menús.",
+    "ru": "Строка меню заполнена, поэтому значок Pausa скрыт. Закройте несколько приложений в строке меню.",
+    "fr": "La barre des menus est pleine, l’icône de Pausa est donc masquée. Quittez quelques apps de la barre des menus.",
+    "vi": "Thanh menu đã đầy nên biểu tượng Pausa bị ẩn. Hãy thoát bớt vài ứng dụng trên thanh menu.",
+    "th": "แถบเมนูเต็ม ไอคอน Pausa จึงถูกซ่อน ลองปิดแอปบนแถบเมนูบางตัว"
   },
   "menu.kind.long": {
     "zh-Hans": "长休息",
@@ -833,11 +833,11 @@
     "zh-Hans": "输入结束后休息",
     "zh-Hant": "輸入結束後休息",
     "en": "Break After Typing",
-    "es": "Break After Typing",
-    "ru": "Break After Typing",
-    "fr": "Break After Typing",
-    "vi": "Break After Typing",
-    "th": "Break After Typing"
+    "es": "Descanso al dejar de escribir",
+    "ru": "Перерыв после ввода",
+    "fr": "Pause après la saisie",
+    "vi": "Nghỉ sau khi gõ xong",
+    "th": "พักเมื่อพิมพ์เสร็จ"
   },
   "pause.videoApp": {
     "zh-Hans": "已暂停：%@ 正在播放视频",
@@ -883,11 +883,11 @@
     "zh-Hans": "输入结束后休息",
     "zh-Hant": "輸入結束後休息",
     "en": "Break After Typing",
-    "es": "Break After Typing",
-    "ru": "Break After Typing",
-    "fr": "Break After Typing",
-    "vi": "Break After Typing",
-    "th": "Break After Typing"
+    "es": "Descanso al dejar de escribir",
+    "ru": "Перерыв после ввода",
+    "fr": "Pause après la saisie",
+    "vi": "Nghỉ sau khi gõ xong",
+    "th": "พักเมื่อพิมพ์เสร็จ"
   },
   "prebreak.hide": {
     "zh-Hans": "收起",
@@ -963,11 +963,11 @@
     "zh-Hans": "跳过休息",
     "zh-Hant": "跳過休息",
     "en": "Skip Break",
-    "es": "Saltar este",
-    "ru": "Пропустить",
-    "fr": "Passer celle-ci",
-    "vi": "Bỏ qua lần này",
-    "th": "ข้ามครั้งนี้"
+    "es": "Saltar descanso",
+    "ru": "Пропустить перерыв",
+    "fr": "Passer la pause",
+    "vi": "Bỏ qua lần nghỉ",
+    "th": "ข้ามการพัก"
   },
   "prebreak.title.long": {
     "zh-Hans": "长休息即将开始",
@@ -1013,21 +1013,21 @@
     "zh-Hans": "频繁休息",
     "zh-Hant": "頻繁休息",
     "en": "Frequent Breaks",
-    "es": "Frequent Breaks",
-    "ru": "Frequent Breaks",
-    "fr": "Frequent Breaks",
-    "vi": "Frequent Breaks",
-    "th": "Frequent Breaks"
+    "es": "Descansos frecuentes",
+    "ru": "Частые перерывы",
+    "fr": "Pauses fréquentes",
+    "vi": "Nghỉ thường xuyên",
+    "th": "พักบ่อย"
   },
   "preset.gentle": {
     "zh-Hans": "较少休息",
     "zh-Hant": "較少休息",
     "en": "Fewer Breaks",
-    "es": "Fewer Breaks",
-    "ru": "Fewer Breaks",
-    "fr": "Fewer Breaks",
-    "vi": "Fewer Breaks",
-    "th": "Fewer Breaks"
+    "es": "Menos descansos",
+    "ru": "Меньше перерывов",
+    "fr": "Moins de pauses",
+    "vi": "Nghỉ ít hơn",
+    "th": "พักน้อยลง"
   },
   "preset.standard": {
     "zh-Hans": "标准",
@@ -1155,11 +1155,11 @@
     "zh-Hans": "特定日期优先于每周设置。",
     "zh-Hant": "特定日期優先於每週設定。",
     "en": "Specific dates override your weekly settings.",
-    "es": "Specific dates override your weekly settings.",
-    "ru": "Specific dates override your weekly settings.",
-    "fr": "Specific dates override your weekly settings.",
-    "vi": "Specific dates override your weekly settings.",
-    "th": "Specific dates override your weekly settings."
+    "es": "Las fechas concretas tienen prioridad sobre el horario semanal.",
+    "ru": "Отдельные даты важнее недельного расписания.",
+    "fr": "Les dates précises priment sur les réglages hebdomadaires.",
+    "vi": "Ngày cụ thể được ưu tiên hơn cài đặt hằng tuần.",
+    "th": "วันที่เฉพาะมีผลเหนือการตั้งค่ารายสัปดาห์"
   },
   "schedule.day.off": {
     "zh-Hans": "休息",
@@ -1205,11 +1205,11 @@
     "zh-Hans": "添加时段…",
     "en": "Add Hours…",
     "zh-Hant": "加入時段…",
-    "es": "Add Hours…",
-    "ru": "Add Hours…",
-    "fr": "Add Hours…",
-    "vi": "Add Hours…",
-    "th": "Add Hours…"
+    "es": "Añadir horario…",
+    "ru": "Добавить часы…",
+    "fr": "Ajouter des heures…",
+    "vi": "Thêm khung giờ…",
+    "th": "เพิ่มช่วงเวลา…"
   },
   "schedule.hours.delete": {
     "zh-Hans": "删除时段",
