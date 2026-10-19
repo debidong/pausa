@@ -104,6 +104,19 @@ final class StatsModel: ObservableObject {
         return (a, cancel)
     }
 
+    /// The alert answered. Take it down first, then clear on the next turn of the run loop: clearing
+    /// shrinks the page and the window animates to fit, which must not run while the sheet is attached.
+    func finishClear(_ r: NSApplication.ModalResponse, dismiss: () -> Void) {
+        dismiss()
+        guard r == .alertSecondButtonReturn else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.clearAll()
+            self.selectedDay = nil
+            self.reload()
+        }
+    }
+
     func confirmClear(in window: NSWindow?) {
         let (alert, cancel) = makeClearAlert()
         // NSAlert gives Esc only to a button literally titled "Cancel"; 取消 / Annuler etc. get it here.
@@ -114,16 +127,7 @@ final class StatsModel: ObservableObject {
         }
         let done: (NSApplication.ModalResponse) -> Void = { [weak self] r in
             if let esc { NSEvent.removeMonitor(esc) }
-            // Take the sheet down first; clearing shrinks the page and re-fits the window, which must not
-            // happen while the sheet is still attached.
-            alert.window.orderOut(nil)
-            guard r == .alertSecondButtonReturn else { return }
-            DispatchQueue.main.async {
-                guard let self else { return }
-                self.clearAll()
-                self.selectedDay = nil
-                self.reload()
-            }
+            self?.finishClear(r) { alert.window.orderOut(nil) }
         }
         if let w = window { alert.beginSheetModal(for: w, completionHandler: done) } else { done(alert.runModal()) }
     }
@@ -238,11 +242,7 @@ struct StatsPage: View {
                     VStack(spacing: 0) {
                         titleRow.padding(.horizontal, 16).padding(.top, 8)
                         StatsNumbers(day: model.selected)
-                    }
-                    .padding(-10).listRowInsets(EdgeInsets())
-                }
-                Section {
-                    VStack(spacing: 0) {
+                        Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 1).padding(.horizontal, 16)
                         HStack {
                             Text(L("过去 7 天")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
                             Spacer()

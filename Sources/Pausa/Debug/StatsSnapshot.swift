@@ -201,6 +201,21 @@ enum StatsSnapshot {
                 check("alert: 清除 destructive, no key", clear.hasDestructiveAction && clear.keyEquivalent.isEmpty)
             }
         }
+        // 清除 / 取消: the alert goes away first, and only 清除 clears, after the alert is gone.
+        do {
+            var log: [String] = []
+            let (keepClear, keepLoad) = (m.clearAll, m.load)
+            m.clearAll = { log.append("clear") }
+            m.finishClear(.alertSecondButtonReturn) { log.append("dismiss") }
+            check("清除: alert closed before anything else (\(log))", log == ["dismiss"])
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+            check("清除: then data cleared (\(log))", log == ["dismiss", "clear"])
+            log = []
+            m.finishClear(.alertFirstButtonReturn) { log.append("dismiss") }
+            RunLoop.main.run(until: Date().addingTimeInterval(0.05))
+            check("取消: alert closed, data kept (\(log))", log == ["dismiss"])
+            m.clearAll = keepClear; m.load = keepLoad; m.reload()
+        }
         print(ok ? "STATSRENDER PASS" : "STATSRENDER FAIL")
         return ok
     }
