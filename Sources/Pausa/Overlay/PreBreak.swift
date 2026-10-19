@@ -47,7 +47,7 @@ enum PreBreakCopy {
     static var breakNow: String { L("menu.breakNow") }
     static var skip: String { L("prebreak.skip") }
     static func plus(_ m: Int) -> String { L("prebreak.postpone", m) }
-    static func deferLeft(_ m: Int) -> String { m > 0 ? L("prebreak.postponeLeft", m) : L("prebreak.postponeUsedUp") }
+    static func deferLeft(_ m: Int) -> String { m > 0 ? L("pause.canPostpone", m) : L("prebreak.postponeUsedUp") }
     static var hardLine: String { L("break.hardLine") }
     static func pill(_ s: Int) -> String { L("pill.countdown", s) }
     static var typing: String { L("pill.typing") }
