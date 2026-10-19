@@ -777,6 +777,34 @@ func testStatsDays() {
   XCTAssertEqual(days[0].day, cal.startOfDay(for: d("2026-03-03T12:00:00-05:00")))
 }
 
+func testWorkIdleEndsAtLastInput() {
+  var w = WorkClock()
+  XCTAssertTrue(w.update(now: 0, counting: true, inputIdle: 0, idleLimit: 300) == nil)
+  XCTAssertTrue(w.update(now: 1000, counting: true, inputIdle: 299, idleLimit: 300) == nil)   // under the line: still work
+  let s = w.update(now: 1001, counting: true, inputIdle: 300, idleLimit: 300)
+  XCTAssertEqual(s?.start ?? -1, 0, accuracy: 0.01); XCTAssertEqual(s?.end ?? -1, 701, accuracy: 0.01)   // ends at last input
+  XCTAssertTrue(w.update(now: 1500, counting: true, inputIdle: 800, idleLimit: 300) == nil)   // still away: nothing open
+  XCTAssertTrue(w.openedAt == nil)
+  _ = w.update(now: 1501, counting: true, inputIdle: 0, idleLimit: 300)
+  XCTAssertEqual(w.openedAt ?? -1, 1501, accuracy: 0.01)
+}
+func testWorkStopsDuringBreak() {
+  var w = WorkClock()
+  _ = w.update(now: 0, counting: true, inputIdle: 0, idleLimit: 300)
+  let s = w.update(now: 1200, counting: false, inputIdle: 1, idleLimit: 300)   // break screen up
+  XCTAssertEqual(s?.end ?? -1, 1200, accuracy: 0.01)
+  XCTAssertTrue(w.update(now: 1220, counting: false, inputIdle: 0, idleLimit: 300) == nil)
+  _ = w.update(now: 1221, counting: true, inputIdle: 0, idleLimit: 300)
+  XCTAssertEqual(w.openedAt ?? -1, 1221, accuracy: 0.01)
+}
+func testWorkSplitsAtMidnight() {
+  var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "Asia/Taipei")!
+  let f = ISO8601DateFormatter()
+  let w = WorkSpan(start: f.date(from: "2026-10-18T23:30:00+08:00")!, end: f.date(from: "2026-10-19T00:45:00+08:00")!)
+  let days = Stats.days([], work: [w], endingAt: f.date(from: "2026-10-19T12:00:00+08:00")!, count: 2, calendar: cal)
+  XCTAssertEqual(days[0].work, 30 * 60, accuracy: 0.1); XCTAssertEqual(days[1].work, 45 * 60, accuracy: 0.1)
+}
+
 let cases: [(String, () -> Void)] = [
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
@@ -803,6 +831,6 @@ let cases: [(String, () -> Void)] = [
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays)]
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)

@@ -81,7 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         controller = AppController()
         // Sparkle hooks: never relaunch mid-break; persist the scheduler right before relaunching.
         updater.canInstallNow = { [weak self] in !(self?.controller.isOnBreak ?? false) }
-        updater.willRelaunch = { [weak self] in self?.controller.saveState() }
+        updater.willRelaunch = { [weak self] in self?.controller.endWork(); self?.controller.saveState() }
         controller.onBreakEnded = { [weak self] in self?.updater.breakEnded() }
         UpdateModel.shared.bind(updater)
         menuBar = MenuBarController(app: controller)
@@ -131,6 +131,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
     #endif
     func applicationWillTerminate(_ n: Notification) {
+        controller?.endWork()
         controller?.saveState()
     }
 }

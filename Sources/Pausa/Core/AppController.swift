@@ -118,7 +118,7 @@ final class AppController {
         let now = Self.now()
         if now - lastSave >= 60 { saveState() }
         if let until = manualPauseUntil {
-            if now < until { scheduler.manualPauseTick(now: now, inputIdle: Self.inputIdle()); return }
+            if now < until { endWork(at: now); scheduler.manualPauseTick(now: now, inputIdle: Self.inputIdle()); return }
             resume()
             return
         }
@@ -133,7 +133,41 @@ final class AppController {
         // No input is not rest: keep counting. A long stretch only offsets the long break.
         scheduler.away(.idle, seconds: idle, now: now)
         apply(scheduler.tick(now: now, reasons: rs, deferrals: detector.allDeferrals, inputIdle: idle))
+        trackWork(now: now, idle: idle, active: active)
         onChange?()
+    }
+
+    // MARK: work time (stats)
+
+    private var work = WorkClock()
+    private var lastWorkCheckpoint: Double = 0
+    private static let workCheckpointEvery: Double = 300
+
+    /// After the scheduler has moved: a break that just started or hours that just closed end the span.
+    /// `active`: inside active hours and outside quiet hours. Checked directly, not through the phase:
+    /// a meeting outranks outsideHours there, so the phase alone would count meetings after hours.
+    private func trackWork(now: Double, idle: Double, active: Bool) {
+        var counting = active   // meetings, sharing, video, full screen: still at the Mac
+        if case .onBreak = scheduler.phase { counting = false }
+        if let s = work.update(now: now, counting: counting, inputIdle: idle, idleLimit: scheduler.config.longLength) {
+            BreakLog.shared.append(span(s))
+        } else if let open = work.openedAt, now - lastWorkCheckpoint >= Self.workCheckpointEvery {
+            BreakLog.shared.checkpoint(span((open, now)))
+            lastWorkCheckpoint = now
+        }
+    }
+
+    /// Lock, manual pause, quit.
+    func endWork() { endWork(at: Self.now()) }
+
+    private func endWork(at now: Double) {
+        if let s = work.close(at: now) { BreakLog.shared.append(span(s)) }
+    }
+
+    /// Monotonic seconds to dates, through the current offset between the two clocks.
+    private func span(_ s: (start: Double, end: Double)) -> WorkSpan {
+        let now = Self.now(), wall = Date()
+        return WorkSpan(start: wall.addingTimeInterval(s.start - now), end: wall.addingTimeInterval(s.end - now))
     }
 
     private func apply(_ cmds: [PausaCore.Command]) {
@@ -213,6 +247,7 @@ final class AppController {
         let now = Self.now()
         switch e {
         case .start:
+            endWork(at: now)
             awaySince = now
             overlay.dismiss(animated: false)
         case .end:
@@ -239,7 +274,9 @@ final class AppController {
     func pauseForAnHour() {
         if case .onBreak = scheduler.phase {
             // Past the 90-minute line the long break can't be skipped, so it can't be paused away.
-            if scheduler.finish(.skipped, now: Self.now()).isEmpty { return }
+            let cmds = scheduler.finish(.skipped, now: Self.now())
+            if cmds.isEmpty { return }
+            apply(cmds)   // records the skip
         }
         overlay.dismiss()
         manualPauseUntil = Self.now() + 3600
