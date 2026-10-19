@@ -185,7 +185,7 @@ final class SchedulerTests {
   func testBreakEndsOnItsOwn() {
     var s = Scheduler()
     _ = s.breakNow(.short, now: 0)
-    XCTAssertEqual(s.tick(now: 20, reasons: [], inputIdle: 10), [.endBreak])
+    XCTAssertEqual(s.tick(now: 20, reasons: [], inputIdle: 10), [.recorded(.short, planned: 20, .completed), .endBreak])
     XCTAssertEqual(s.phase, .working)
   }
 }
@@ -517,13 +517,13 @@ final class DeferralTests {
     XCTAssertEqual(s.finish(.skipped, now: t0), [])      // core refuses, not just the UI
     XCTAssertEqual(s.finish(.snoozed, now: t0), [])
     if case .onBreak(.long, _) = s.phase {} else { XCTAssertTrue(false) }
-    XCTAssertEqual(s.finish(.completed, now: t0 + 300), [.endBreak])
+    XCTAssertEqual(s.finish(.completed, now: t0 + 300), [.recorded(.long, planned: 300, .completed), .endBreak])
     XCTAssertEqual(s.sinceLastLongBreak, 0)
   }
   func testSkipBeforeLineStillWorks() {
     var s = longOnly()
     let t0 = startAt(&s, from: 0, to: 9000) ?? -1
-    XCTAssertEqual(s.finish(.skipped, now: t0), [.endBreak])
+    XCTAssertEqual(s.finish(.skipped, now: t0), [.recorded(.long, planned: 300, .skipped), .endBreak])
     XCTAssertEqual(s.phase, .working)
   }
   // Locking mid-break (Steve's spec, round v0.2): locked time counts toward the break.
@@ -533,13 +533,13 @@ final class DeferralTests {
     let cmds = s.away(.locked, seconds: 10, now: 1010)
     XCTAssertEqual(cmds, [.resumeBreak(.long, remaining: 290)])
     if case .onBreak(.long, let e) = s.phase { XCTAssertEqual(e, 1300, accuracy: 0.001) } else { XCTAssertTrue(false) }
-    XCTAssertEqual(s.tick(now: 1300, reasons: [], inputIdle: 10), [.endBreak])
+    XCTAssertEqual(s.tick(now: 1300, reasons: [], inputIdle: 10), [.recorded(.long, planned: 300, .completed), .endBreak])
     XCTAssertEqual(s.sinceLastLongBreak, 0)
   }
   func testLockThroughLongBreakCompletesIt() {
     var s = Scheduler()
     _ = s.breakNow(.long, now: 1000)
-    XCTAssertEqual(s.away(.locked, seconds: 400, now: 1400), [.endBreak])
+    XCTAssertEqual(s.away(.locked, seconds: 400, now: 1400), [.recorded(.long, planned: 300, .completed), .endBreak])
     XCTAssertEqual(s.phase, .working)
     XCTAssertEqual(s.sinceLastLongBreak, 0)
   }
@@ -556,7 +556,7 @@ final class DeferralTests {
     var s = Scheduler()
     _ = s.breakNow(.short, now: 0)                         // 20 s
     XCTAssertEqual(s.away(.locked, seconds: 5, now: 5), [.resumeBreak(.short, remaining: 15)])
-    XCTAssertEqual(s.away(.locked, seconds: 30, now: 35), [.endBreak])
+    XCTAssertEqual(s.away(.locked, seconds: 30, now: 35), [.recorded(.short, planned: 20, .completed), .endBreak])
   }
   func testVideoBoundedByBudget() {
     var s = longOnly()
@@ -748,6 +748,35 @@ func testStatusPrefersSource() {
   XCTAssertEqual(StatusPick.line(source: nil, autoStatus: "已推迟：Xcode 在前台", reason: "x"), "已推迟：Xcode 在前台")
   XCTAssertEqual(StatusPick.line(source: nil, autoStatus: nil, reason: "已暂停：正在开会"), "已暂停：正在开会")
 }
+
+// Break stats: one row per break, decided in the scheduler so every way a break ends is covered.
+func recs(_ c: [Command]) -> [Command] { c.filter { if case .recorded = $0 { return true }; return false } }
+func testStatsSnoozeRecordsOnce() {
+  var s = Scheduler()
+  _ = s.breakNow(.long, now: 0)
+  XCTAssertEqual(recs(s.finish(.snoozed, now: 1)), [])
+  _ = s.breakNow(.long, now: 2); XCTAssertEqual(recs(s.finish(.snoozed, now: 3)), [])
+  _ = s.breakNow(.long, now: 4)
+  XCTAssertEqual(recs(s.finish(.snoozed, now: 5)), [.recorded(.long, planned: 300, .skipped)])
+}
+func testStatsDays() {
+  var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "America/New_York")!
+  func d(_ s: String) -> Date { let f = ISO8601DateFormatter(); f.timeZone = cal.timeZone; f.formatOptions = [.withInternetDateTime]; return f.date(from: s)! }
+  let rows = [
+    BreakRecord(start: d("2026-03-07T23:58:00-05:00"), kind: .short, planned: 20, result: .completed),   // ends after midnight
+    BreakRecord(start: d("2026-03-08T10:00:00-04:00"), kind: .long, planned: 300, result: .completed),
+    BreakRecord(start: d("2026-03-08T11:00:00-04:00"), kind: .short, planned: 20, result: .skipped),
+    BreakRecord(start: d("2026-02-01T10:00:00-05:00"), kind: .short, planned: 20, result: .completed),   // outside the window
+  ]
+  let days = Stats.days(rows, endingAt: d("2026-03-09T09:00:00-04:00"), count: 7, calendar: cal)
+  XCTAssertEqual(days.count, 7)
+  XCTAssertEqual(Set(days.map(\.day)).count, 7)   // DST day (Mar 8) is one row
+  XCTAssertEqual(days[4].taken, 1); XCTAssertEqual(days[4].seconds, 20, accuracy: 0.1)   // Mar 7
+  XCTAssertEqual(days[5].taken, 1); XCTAssertEqual(days[5].skipped, 1); XCTAssertEqual(days[5].seconds, 300, accuracy: 0.1)
+  XCTAssertEqual(days[6].taken + days[6].skipped, 0)   // today, nothing yet
+  XCTAssertEqual(days[0].day, cal.startOfDay(for: d("2026-03-03T12:00:00-05:00")))
+}
+
 let cases: [(String, () -> Void)] = [
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
@@ -774,6 +803,6 @@ let cases: [(String, () -> Void)] = [
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource)]
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)

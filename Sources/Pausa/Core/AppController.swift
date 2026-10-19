@@ -141,12 +141,16 @@ final class AppController {
             switch c {
             case .showWarning:
                 break   // menu bar icon reflects .warning on the next refresh
+            case .recorded(let kind, let planned, let result):
+                BreakLog.shared.append(BreakRecord(start: breakStart ?? Date(), kind: kind, planned: planned, result: result))
+                breakStart = nil
             case .startBreak(.short, let len):
-                today.record(done: false)
+                breakStart = Date()
                 overlay.showShort(duration: len,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
-                                  onFinish: { [weak self] in self?.today.record(done: true); self?.finish(.completed) })
+                                  onFinish: { [weak self] in self?.finish(.completed) })
             case .startBreak(.long, let len):
+                breakStart = Date()
                 overlay.showLong(duration: len,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },
                                  onSkip: { [weak self] in self?.finish(.skipped) },
@@ -157,7 +161,7 @@ final class AppController {
             case .resumeBreak(.short, let left):
                 overlay.showShort(duration: left,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
-                                  onFinish: { [weak self] in self?.today.record(done: true); self?.finish(.completed) })
+                                  onFinish: { [weak self] in self?.finish(.completed) })
             case .resumeBreak(.long, let left):
                 overlay.showLong(duration: left,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },
@@ -174,7 +178,8 @@ final class AppController {
         onChange?()
     }
 
-    let today = DailyCount()
+    /// Wall-clock start of the break on screen, for its stats row (the scheduler runs on a monotonic clock).
+    private var breakStart: Date?
 
     private func finish(_ o: BreakOutcome) { apply(scheduler.finish(o, now: Self.now())) }
 
@@ -213,11 +218,7 @@ final class AppController {
         case .end:
             let secs = awaySince.map { now - $0 } ?? 0
             awaySince = nil
-            let wasShortBreak: Bool
-            if case .onBreak(.short, _) = scheduler.phase { wasShortBreak = true } else { wasShortBreak = false }
-            let cmds = scheduler.away(.locked, seconds: secs, now: now)
-            if wasShortBreak && cmds.contains(.endBreak) { today.record(done: true) }
-            apply(cmds)
+            apply(scheduler.away(.locked, seconds: secs, now: now))
         }
         onChange?()
     }
@@ -338,20 +339,3 @@ final class AppController {
 }
 
 
-/// Today's short breaks: shown vs. completed. Local only, resets at midnight.
-final class DailyCount {
-    private let ud = UserDefaults.standard
-    private func key() -> String {
-        let c = Calendar.current.dateComponents([.year, .month, .day], from: Date())
-        return "shortCount.\(c.year!)-\(c.month!)-\(c.day!)"
-    }
-    var counts: (done: Int, shown: Int) {
-        let a = ud.array(forKey: key()) as? [Int] ?? [0, 0]
-        return (a[0], a[1])
-    }
-    func record(done: Bool) {
-        var (d, s) = counts
-        if done { d += 1 } else { s += 1 }
-        ud.set([d, s], forKey: key())
-    }
-}

@@ -75,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     var menuBar: MenuBarController!
     let updater = Updater()
     func applicationDidFinishLaunching(_ n: Notification) {
+        BreakLog.removeLegacyKeys(); _ = BreakLog.shared   // prune old rows once at launch
         Settings.shared.icon.apply()
         Settings.shared.appearance.apply()
         controller = AppController()

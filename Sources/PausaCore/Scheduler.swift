@@ -4,7 +4,7 @@ import Foundation
 // monotonic time (seconds, including sleep) and current signals. Everything
 // that can go wrong with timing lives here, so it is all unit-testable.
 
-public enum BreakKind: Equatable { case short, long }
+public enum BreakKind: String, Codable, Equatable { case short, long }
 
 public enum PauseReason: Hashable, Comparable {
   // order = display priority
@@ -95,6 +95,7 @@ public enum Command: Equatable {
   case showWarning(BreakKind, secondsLeft: Double)
   case startBreak(BreakKind, length: Double)
   case resumeBreak(BreakKind, remaining: Double)   // back from a lock mid-break: show the rest
+  case recorded(BreakKind, planned: Double, BreakResult)   // a break ended for good: one stats row
   case endBreak
 }
 
@@ -108,6 +109,7 @@ public struct Scheduler {
   private var lastTick: Double?
   private var dueSince: Double?
   private var snoozes = 0
+  private var breakLength: Double?             // set length of the break on screen, for stats
   private var meetingSince: Double?            // any hold (meeting / screen share / video) started
   private var sinceLongDone: Double = 0          // active time since last *completed* long break
   private var deferUsed: Double = 0              // shared budget used for the current due break
@@ -240,6 +242,7 @@ public struct Scheduler {
   private mutating func startBreak(_ kind: BreakKind, now: Double) -> [Command] {
     let length = config.length(kind)
     phase = .onBreak(kind, endsAt: now + length)
+    breakLength = length
     return [.startBreak(kind, length: length)]
   }
 
@@ -252,20 +255,28 @@ public struct Scheduler {
     if kind == .long && outcome != .completed && mustNotDefer(.long) { return [] }
     phase = .working
     clearDeferral()
+    // A snooze inside the limit is not a result yet: the same break comes back and ends once.
+    // Past the limit it is reset like a skip, so it counts as one.
+    var result: BreakResult?
     switch outcome {
     case .completed:
+      result = .completed
       if kind == .long { sinceLongDone = 0; noDeferNextLong = false }
       reset(kind)   // counts toward the cycle
     case .skipped:
+      result = .skipped
       reset(kind)   // a skip is not a completed long break: sinceLongDone keeps counting
     case .snoozed where snoozes < config.maxSnoozes:
       snoozes += 1
       let back = config.snoozeLength
       sinceBreak = config.breakEvery - back   // same break comes back; the cycle count is unchanged
     case .snoozed:
+      result = .skipped
       reset(kind)
     }
-    return [.endBreak]
+    let planned = breakLength ?? config.length(kind)
+    breakLength = nil
+    return (result.map { [.recorded(kind, planned: planned, $0)] } ?? []) + [.endBreak]
   }
 
   /// The machine was away (locked, lid closed, or idle) for `seconds`.
