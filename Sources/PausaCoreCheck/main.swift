@@ -38,9 +38,13 @@ final class SchedulerTests {
   func testPausedTimeDoesNotCount() {
     var s = Scheduler()
     _ = run(&s, from: 0, to: 600)
-    _ = run(&s, from: 601, to: 4000, reasons: [.fullscreen])
+    _ = run(&s, from: 601, to: 2900, reasons: [.fullscreen])
     XCTAssertEqual(s.phase, .paused(.fullscreen))
-    XCTAssertEqual(s.next.remaining, 600, accuracy: 2)
+    XCTAssertEqual(s.next.kind, .short)
+    XCTAssertEqual(s.next.remaining, 600, accuracy: 2)   // the short clock is frozen
+    // Still sitting: at interval × N since the last long break the next one is long (Steve, 2026-10-20).
+    _ = run(&s, from: 2901, to: 3100, reasons: [.fullscreen])
+    XCTAssertEqual(s.next.kind, .long)
   }
 
   func longStartAfter(_ s: inout Scheduler, from: Double) -> (Double?, Bool, BreakKind?) {
@@ -104,12 +108,67 @@ final class SchedulerTests {
     XCTAssertEqual(s.next.remaining, 1190, accuracy: 2)
   }
 
-  func testIdleOnlyOffsetsLongBreak() {
+  /// No input for 10 minutes without a lock is not getting up: neither clock moves (Steve, 2026-10-20).
+  func testIdleIsNotALongBreak() {
     var s = Scheduler()
-    _ = run(&s, from: 0, to: 1000)
-    s.away(.idle, seconds: 600, now: 1600)
+    _ = run(&s, from: 0, to: 1000, idle: 600)
     XCTAssertEqual(s.next.kind, .short)
     XCTAssertEqual(s.next.remaining, 200, accuracy: 2)
+    XCTAssertEqual(s.sinceLastLongBreak, 1000, accuracy: 2)
+    XCTAssertEqual(s.remaining.long, 200 + 2 * 1200, accuracy: 3)
+  }
+
+  /// Ticks until the next break starts; returns its kind and start time.
+  func nextBreak(_ s: inout Scheduler, from t0: Double) -> (BreakKind, Double)? {
+    var t = t0
+    while t < t0 + 3 * 3600 {
+      for c in s.tick(now: t, reasons: [], inputIdle: 10) { if case .startBreak(let k, _) = c { return (k, t) } }
+      t += 1
+    }
+    return nil
+  }
+
+  /// Bowen 2026-10-20: a skipped long break comes back as the very next break (min 80), not min 120.
+  func testSkippedLongComesBackNext() {
+    var s = Scheduler()
+    var t = 0.0
+    var kinds: [BreakKind] = []
+    for _ in 0..<3 { let (k, at) = nextBreak(&s, from: t)!; kinds.append(k); t = at; _ = s.finish(k == .long ? .skipped : .completed, now: t) }
+    XCTAssertEqual(kinds, [.short, .short, .long])
+    let (k4, at4) = nextBreak(&s, from: t)!
+    XCTAssertEqual(k4, .long)
+    XCTAssertEqual(at4, 4 * 1200, accuracy: 70)
+    XCTAssertEqual(s.finish(.completed, now: at4 + 300).last, .endBreak)
+    let (k5, _) = nextBreak(&s, from: at4 + 300)!
+    XCTAssertEqual(k5, .short)                       // completed: a new cycle starts
+  }
+
+  /// Skipping again and again never gets past the 90-minute line: there the skip is refused.
+  func testRepeatedSkipsStopAtNinety() {
+    var s = Scheduler()
+    var t = 0.0
+    var skipped = 0
+    while t < 3 * 3600 {
+      guard let (k, at) = nextBreak(&s, from: t) else { break }
+      t = at
+      if k == .short { _ = s.finish(.completed, now: t); continue }
+      if s.finish(.skipped, now: t).isEmpty { break }   // refused
+      skipped += 1
+    }
+    XCTAssertEqual(skipped, 2)                       // min 60 and 80; the one at min 100 can't be skipped
+    XCTAssertTrue(s.longMustNotDefer)
+    XCTAssertTrue(t < 105 * 60)
+  }
+
+  /// Snoozing past the limit counts as a skip: the long break is still owed.
+  func testSnoozedOutLongStillOwed() {
+    var s = Scheduler()
+    var t = 0.0
+    for _ in 0..<2 { let (_, at) = nextBreak(&s, from: t)!; t = at; _ = s.finish(.completed, now: t) }
+    var (k, at) = nextBreak(&s, from: t)!
+    XCTAssertEqual(k, .long)
+    for _ in 0...s.config.maxSnoozes { _ = s.finish(.snoozed, now: at); (k, at) = nextBreak(&s, from: at)! }
+    XCTAssertEqual(k, .long)
   }
 
   func testReadingWithoutInputStillGetsShortBreak() {
@@ -117,7 +176,6 @@ final class SchedulerTests {
     var started: [BreakKind] = []
     var t = 0.0
     while t <= 1300 {
-      if t > 100 { s.away(.idle, seconds: t - 100, now: t) }   // no input since t=100
       for c in s.tick(now: t, reasons: [], inputIdle: max(0, t - 100)) {
         if case .startBreak(let k, _) = c { started.append(k) }
       }
@@ -604,7 +662,7 @@ final class ManualPauseTests {
       if case .onBreak = s.phase { _ = s.finish(.completed, now: t) }
       t += 1
     }
-    while t < 7200 { s.manualPauseTick(now: t, inputIdle: 10); t += 1 }
+    while t < 7200 { s.manualPauseTick(now: t); t += 1 }
     return s
   }
   func testPauseExpiryForcesLongBreak() {
@@ -622,10 +680,11 @@ final class ManualPauseTests {
   }
   func testNoRemindersDuringPause() {
     var s = Scheduler()
-    for t in stride(from: 0.0, to: 7200, by: 1) { s.manualPauseTick(now: t, inputIdle: 10) }
+    for t in stride(from: 0.0, to: 7200, by: 1) { s.manualPauseTick(now: t) }
     XCTAssertEqual(s.phase, .working)
   }
-  func testIdleDuringPauseCountsAsLongBreak() {
+  /// Idle during 暂停提醒 1 小时 is not a long break either; only a lock is (Steve, 2026-10-20).
+  func testIdleDuringPauseIsNotALongBreak() {
     var s = Scheduler()
     s.config.longEveryNth = 99
     var t = 0.0
@@ -634,14 +693,13 @@ final class ManualPauseTests {
       if case .onBreak = s.phase { _ = s.finish(.completed, now: t) }
       t += 1
     }
-    var idle = 0.0
-    while t < 7200 { if t > 4000 { idle += 1 }; s.manualPauseTick(now: t, inputIdle: idle); t += 1 }
-    XCTAssertTrue(s.sinceLastLongBreak < 90 * 60)
-    XCTAssertEqual(s.manualPauseEnded(now: 7200), [])
+    while t < 7200 { s.manualPauseTick(now: t); t += 1 }
+    XCTAssertTrue(s.sinceLastLongBreak >= 90 * 60)
+    XCTAssertEqual(s.manualPauseEnded(now: 7200), [.startBreak(.long, length: 300)])
   }
   func testPauseDoesNotUseDeferBudget() {
     var s = Scheduler()
-    for t in stride(from: 0.0, to: 600, by: 1) { s.manualPauseTick(now: t, inputIdle: 10) }
+    for t in stride(from: 0.0, to: 600, by: 1) { s.manualPauseTick(now: t) }
     _ = s.manualPauseEnded(now: 600)
     XCTAssertEqual(s.deferralLeft, s.config.shortDeferBudget)
   }
@@ -700,7 +758,7 @@ final class PersistenceTests {
     r.restore(s.saved(wallClock: 500), wallClock: 560, now: 0)
     XCTAssertTrue(r.longMustNotDefer)
     XCTAssertEqual(r.postponeLeft, 0)
-    // Skipped past the line (noDeferNextLong set): still binding after a restart.
+    // Skip refused past the line, and still binding after a restart.
     _ = s.manualPauseEnded(now: 7200)
     XCTAssertEqual(s.finish(.skipped, now: 7210), [])   // refused past the line
     var q = Scheduler()
@@ -897,7 +955,7 @@ func testAccept7MeetingAfterHours() {
 func testAccept8ManualPauseIsWork() {
   // 暂停 1 小时: AppController passes counting = in hours, holding = false.
   var s = Scheduler()
-  let total = Accept.workSeconds(from: 0, to: 3600) { t in s.manualPauseTick(now: t, inputIdle: 1); return (true, false, 1) }
+  let total = Accept.workSeconds(from: 0, to: 3600) { t in s.manualPauseTick(now: t); return (true, false, 1) }
   XCTAssertEqual(total, 3600, accuracy: 1)
 }
 func testAccept10ShortCompletes() {
@@ -1117,7 +1175,7 @@ let cases: [(String, () -> Void)] = [
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
  ("meeting.longEarns", t.testLongMeetingEarnsLongBreak), ("meeting.nearLong", t.testShortMeetingNearLongEarnsLongBreak), ("meeting.resumes", t.testShortMeetingResumes),
  ("waitsForTypingButNotForever", t.testWaitsForTypingButNotForever), ("lidClosedHourDoesNotFireStaleBreak", t.testLidClosedHourDoesNotFireStaleBreak),
- ("idleOnlyOffsetsLongBreak", t.testIdleOnlyOffsetsLongBreak), ("readingWithoutInputStillGetsShortBreak", t.testReadingWithoutInputStillGetsShortBreak), ("snoozeLimit", t.testSnoozeLimit), ("breakEndsOnItsOwn", t.testBreakEndsOnItsOwn),
+ ("idle.notALongBreak", t.testIdleIsNotALongBreak), ("skip.longComesBackNext", t.testSkippedLongComesBackNext), ("skip.stopsAtNinety", t.testRepeatedSkipsStopAtNinety), ("skip.snoozedOutStillOwed", t.testSnoozedOutLongStillOwed), ("readingWithoutInputStillGetsShortBreak", t.testReadingWithoutInputStillGetsShortBreak), ("snoozeLimit", t.testSnoozeLimit), ("breakEndsOnItsOwn", t.testBreakEndsOnItsOwn),
  ("schedule.crossMidnight", st.testCrossMidnight), ("schedule.timeZoneSwitch", st.testTimeZoneSwitch),
  ("schedule.dstStart", st.testDSTStart), ("schedule.dstEnd", st.testDSTEnd), ("schedule.overrideOff", st.testOverrideOff),
  ("schedule.overrideWindows", st.testOverrideWindows), ("schedule.disabledRule", st.testDisabledRule),
@@ -1137,7 +1195,7 @@ let cases: [(String, () -> Void)] = [
  ("defer.shareMakeUp", dt.testScreenShareKeepsWaitingThenMakeUp), ("defer.videoMakeUp", dt.testVideoEndMakeUpLongBreak),
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
- ("pause.idleIsLongBreak", mp.testIdleDuringPauseCountsAsLongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
+ ("pause.idleNotLongBreak", mp.testIdleDuringPauseIsNotALongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
  ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("video.onlyPlayback", testVideoSignalOnlyPlayback), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle), ("accept.1", testAccept1MidnightSplit), ("accept.2", testAccept2IdleEndsAtLastInput), ("accept.3", testAccept3BreakNotWork), ("accept.4", testAccept4MeetingIgnoresIdle), ("accept.5", testAccept5LockNotWork), ("accept.6", testAccept6ActiveAndQuietHours), ("accept.7", testAccept7MeetingAfterHours), ("accept.8", testAccept8ManualPauseIsWork), ("accept.10", testAccept10ShortCompletes), ("accept.11", testAccept11LockThroughLong), ("accept.12", testAccept12SkipAddsNoTime), ("accept.13", testAccept13SnoozeThenComplete), ("accept.14", testAccept14MeetingNoBreakRows), ("accept.15", testAccept15BreakBelongsToStartDay), ("accept.16", testAccept16BarProportional), ("accept.17", testAccept17ScaleFloor), ("accept.18", testAccept18FullDay), ("accept.19", testAccept19ScaleCeiling), ("accept.20", testAccept20TypicalGapSpacing), ("accept.21", testAccept21GapPerBreak), ("accept.22", testAccept22GapPosition), ("accept.23", testAccept23SkipNoGap), ("accept.24", testAccept24BarLabels), ("accept.27", testAccept27EmptyDay), ("accept.30", testAccept30KeepThirtyDays), ("stats.durationParts", testDurationParts),
  ("mic.dictationStillGetsBreaks", mt.testDictationBurstsStillGetBreaks), ("mic.breakAfterBurst", mt.testBreakDueDuringBurstFiresAfter), ("mic.firmPastNinety", mt.testMicFirmPastNinetyLine), ("meeting.ninetyFiresAfter", mt.testNinetyLineFiresRightAfterMeeting), ("mic.aloneAfter60s", mt.testMicAloneAfter60s), ("mic.cameraAndMeetingAppImmediate", mt.testCameraAndMeetingAppImmediate), ("mic.backgroundThreeHoursGetsBreak", mt.testBackgroundMicThreeHoursGetsBreak)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }

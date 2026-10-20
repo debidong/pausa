@@ -42,7 +42,7 @@ public struct Deferral: Hashable {
   }
 }
 
-public enum AwayKind { case locked, idle }   // locked covers lid-close/sleep/screen lock
+public enum AwayKind { case locked }   // lid-close, sleep, screen lock. Input idle is not away (Steve, 2026-10-20)
 
 public enum BreakOutcome { case completed, skipped, snoozed }
 
@@ -124,7 +124,6 @@ public struct Scheduler {
   private var sinceLongDone: Double = 0          // active time since last *completed* long break
   private var deferUsed: Double = 0              // shared budget used for the current due break
   private var deferBySource: [DeferralKind: Double] = [:]
-  private var noDeferNextLong = false            // set by skipping past the 90-minute line
   public private(set) var deferring: DeferralKind?   // for the menu bar, nil when not deferring
   static let holds: Set<PauseReason> = [.meeting, .micInUse, .screenSharing, .video, .fullscreen]
   static let boundedHolds: Set<PauseReason> = [.video, .fullscreen]
@@ -133,18 +132,33 @@ public struct Scheduler {
 
   /// Seconds until the next break and which one, for the menu bar.
   public var next: (kind: BreakKind, remaining: Double, fraction: Double) {
-    let kind: BreakKind = breaksSinceLong + 1 >= max(1, config.longEveryNth) ? .long : .short
-    return (kind, max(0, config.breakEvery - sinceBreak), min(1, max(0, sinceBreak) / config.breakEvery))
+    let remaining = max(0, config.breakEvery - sinceBreak)
+    return (isLong(afterBreaks: 0, at: remaining) ? .long : .short, remaining, min(1, max(0, sinceBreak) / config.breakEvery))
+  }
+
+  /// A long break is owed until one is completed (Steve, 2026-10-20). Two ways it comes due:
+  /// the Nth break of the cycle, or interval × N of active time since the last *completed* long
+  /// break (default 60 min). Skips don't reset either, so a skipped long break comes back as the
+  /// next break, and nothing slips past the 90-minute line (interval × N <= hardLine, Config.allows).
+  /// The cycle count stays because meetingEnded uses it to owe a long break early.
+  /// `k` breaks from now, `left` seconds of work away.
+  private func isLong(afterBreaks k: Int, at left: Double) -> Bool {
+    let n = max(1, config.longEveryNth)
+    return breaksSinceLong + 1 + k >= n || sinceLongDone + left >= config.breakEvery * Double(n)
   }
 
   /// Which break in the cycle comes next, 1-based (「第 2 次 / 共 3 次」).
-  public var cycle: (index: Int, of: Int) { (min(breaksSinceLong + 1, max(1, config.longEveryNth)), max(1, config.longEveryNth)) }
+  public var cycle: (index: Int, of: Int) {
+    let n = max(1, config.longEveryNth)
+    return (next.kind == .long ? n : min(breaksSinceLong + 1, n), n)
+  }
 
   /// Seconds until each kind of break is due, for the menu's two countdown rows.
   public var remaining: (short: Double, long: Double) {
     let r = next.remaining
-    let toLong = max(0, config.longEveryNth - 1 - breaksSinceLong)
-    return (next.kind == .short ? r : r + config.breakEvery, r + Double(toLong) * config.breakEvery)
+    var k = 0
+    while !isLong(afterBreaks: k, at: r + Double(k) * config.breakEvery) { k += 1 }
+    return (next.kind == .short ? r : r + config.breakEvery, r + Double(k) * config.breakEvery)
   }
 
   /// Seconds the current due break may still be deferred (shared budget), for 「还可推迟 12 分钟」.
@@ -160,9 +174,9 @@ public struct Scheduler {
     return kind.firm ? own : min(deferralLeft, own)
   }
 
-  /// 90-minute line reached, or the user already skipped past it: the long break may not wait.
+  /// 90-minute line reached: the long break may not wait.
   private func mustNotDefer(_ kind: BreakKind) -> Bool {
-    kind == .long && (sinceLongDone >= config.hardLine || noDeferNextLong)
+    kind == .long && sinceLongDone >= config.hardLine
   }
 
   /// Call about once a second.
@@ -274,25 +288,25 @@ public struct Scheduler {
     switch outcome {
     case .completed:
       result = .completed
-      if kind == .long { sinceLongDone = 0; noDeferNextLong = false }
-      reset(kind)   // counts toward the cycle
+      if kind == .long { sinceLongDone = 0 }
+      reset(kind, done: true)
     case .skipped:
       result = .skipped
-      reset(kind)   // a skip is not a completed long break: sinceLongDone keeps counting
+      reset(kind, done: false)   // a skipped long break is still owed: it comes back next
     case .snoozed where snoozes < config.maxSnoozes:
       snoozes += 1
       let back = config.snoozeLength
       sinceBreak = config.breakEvery - back   // same break comes back; the cycle count is unchanged
     case .snoozed:
       result = .skipped
-      reset(kind)
+      reset(kind, done: false)
     }
     let planned = breakLength ?? config.length(kind)
     breakLength = nil
     return (result.map { [.recorded(kind, planned: planned, $0)] } ?? []) + [.endBreak]
   }
 
-  /// The machine was away (locked, lid closed, or idle) for `seconds`.
+  /// The machine was away (locked or lid closed) for `seconds`.
   /// Call on return; time spent away is never counted as work.
   /// Locked during a break: the locked time counts toward that break (endsAt is on the same
   /// clock, which includes sleep). Back before it ends: the break resumes with what is left.
@@ -307,27 +321,20 @@ public struct Scheduler {
         if now >= endsAt { return finish(.completed, now: now) }
         return [.resumeBreak(k, remaining: endsAt - now)]
       }
-      if seconds >= config.longLength { reset(.long); sinceLongDone = 0; noDeferNextLong = false; clearDeferral() }
+      if seconds >= config.longLength { reset(.long, done: true); sinceLongDone = 0; clearDeferral() }
       else if seconds >= config.shortLength { snoozes = 0; sinceBreak = 0 }   // eyes rested, cycle unchanged
-    case .idle:
-      // Not touching input != eyes rested (reading code, watching). The short-break
-      // clock keeps running; only the long break ("get up") is offset.
-      if seconds >= config.longLength { breaksSinceLong = 0 }
     }
     return []
   }
 
   /// 暂停提醒 1 小时 (Steve, round 7b): no reminders at all, but the time since the last long break
-  /// keeps counting. Idle for at least a long break counts as a long break taken. The short clock and
-  /// the postpone budget (deferUsed) are untouched.
-  public mutating func manualPauseTick(now: Double, inputIdle: Double) {
+  /// keeps counting. Only a locked screen counts as a long break taken (away), not input idle
+  /// (Steve, 2026-10-20). The short clock and the postpone budget (deferUsed) are untouched.
+  public mutating func manualPauseTick(now: Double) {
     let dt = lastTick.map { max(0, now - $0) } ?? 0
     lastTick = now
     if case .onBreak = phase { return }
     sinceLongDone += dt
-    if inputIdle >= config.longLength {
-      breaksSinceLong = 0; sinceLongDone = 0; noDeferNextLong = false
-    }
   }
 
   /// The manual pause ended (expired or 恢复提醒). Past the 90-minute line the long break starts now
@@ -345,7 +352,6 @@ public struct Scheduler {
   public struct Saved: Codable, Equatable {
     public var sinceLongDone: Double
     public var deferUsed: Double
-    public var noDeferNextLong: Bool
     public var sinceBreak: Double
     public var breaksSinceLong: Int
     public var savedAt: Double              // wall clock, seconds since 1970
@@ -353,7 +359,7 @@ public struct Scheduler {
 
   /// Snapshot for UserDefaults. A running break is saved as not taken (it never completed).
   public func saved(wallClock: Double) -> Saved {
-    Saved(sinceLongDone: sinceLongDone, deferUsed: deferUsed, noDeferNextLong: noDeferNextLong,
+    Saved(sinceLongDone: sinceLongDone, deferUsed: deferUsed,
           sinceBreak: sinceBreak, breaksSinceLong: breaksSinceLong, savedAt: wallClock)
   }
 
@@ -366,7 +372,6 @@ public struct Scheduler {
     sinceLongDone = max(0, s.sinceLongDone)
     deferUsed = max(0, s.deferUsed)
     deferBySource = [:]
-    noDeferNextLong = s.noDeferNextLong
     sinceBreak = s.sinceBreak
     breaksSinceLong = max(0, s.breaksSinceLong)
     dueSince = nil
@@ -382,7 +387,7 @@ public struct Scheduler {
   public mutating func startFresh(now: Double) {
     if case .onBreak = phase { return }
     sinceBreak = 0; breaksSinceLong = 0; snoozes = 0; dueSince = nil
-    sinceLongDone = 0; noDeferNextLong = false; clearDeferral()
+    sinceLongDone = 0; clearDeferral()
     lastTick = now
     phase = .working
   }
@@ -442,10 +447,12 @@ public struct Scheduler {
     sinceBreak = mustNotDefer(.long) ? config.breakEvery : config.breakEvery - config.afterMeetingDelay
   }
 
-  private mutating func reset(_ kind: BreakKind) {
+  /// A break ended. Short ones count toward the cycle whether taken or skipped; only a completed
+  /// long break starts a new cycle, a skipped one stays owed.
+  private mutating func reset(_ kind: BreakKind, done: Bool) {
     snoozes = 0
     sinceBreak = 0
-    breaksSinceLong = kind == .long ? 0 : breaksSinceLong + 1   // skipped breaks count too
+    if kind == .long { if done { breaksSinceLong = 0 } } else { breaksSinceLong += 1 }
   }
 }
 

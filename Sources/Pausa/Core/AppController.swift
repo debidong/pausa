@@ -120,7 +120,7 @@ final class AppController {
         if let until = manualPauseUntil {
             if now < until {
                 let idle = Self.inputIdle()
-                scheduler.manualPauseTick(now: now, inputIdle: idle)
+                scheduler.manualPauseTick(now: now)
                 trackWork(now: now, idle: idle, inHours: awaySince == nil && !outsideHours, holding: false)   // 暂停 1 小时 is still work; a lock is not
                 return
             }
@@ -135,8 +135,7 @@ final class AppController {
         if !active { rs.insert(.outsideHours) }
 
         let idle = Self.inputIdle()
-        // No input is not rest: keep counting. A long stretch only offsets the long break.
-        scheduler.away(.idle, seconds: idle, now: now)
+        // No input is not rest, and not getting up either: only a locked screen counts (away).
         apply(scheduler.tick(now: now, reasons: rs, deferrals: detector.allDeferrals, inputIdle: idle))
         trackWork(now: now, idle: idle, inHours: active, holding: !rs.isDisjoint(with: Self.holds))
         onChange?()
