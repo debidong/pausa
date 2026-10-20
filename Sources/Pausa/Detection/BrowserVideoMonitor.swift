@@ -1,5 +1,6 @@
 import AppKit
 import IOKit.pwr_mgt
+import PausaCore
 
 /// §1 browser video. A playing <video> makes the browser (really one of its helper processes)
 /// hold a PreventUserIdleDisplaySleep power assertion. We read assertions with the public
@@ -15,9 +16,7 @@ enum BrowserVideoMonitor {
         "org.mozilla.firefox", "org.mozilla.firefoxdeveloperedition",
         "com.brave.Browser", "com.vivaldi.Vivaldi", "com.operasoftware.Opera",
     ]
-    static let assertionTypes: Set<String> = ["PreventUserIdleDisplaySleep", "NoDisplaySleepAssertion"]
-
-    /// Pids currently holding a display-sleep assertion.
+    /// Pids currently holding a video-playback assertion (VideoSignal: by type and name).
     static func assertingPIDs() -> [pid_t] {
         var dictRef: Unmanaged<CFDictionary>?
         guard IOPMCopyAssertionsByProcess(&dictRef) == kIOReturnSuccess,
@@ -26,7 +25,8 @@ enum BrowserVideoMonitor {
         for (k, v) in dict {
             let pid: pid_t? = (k as? NSNumber).map { pid_t($0.int32Value) } ?? (k as? Int).map { pid_t($0) }
             guard let pid, let list = v as? [[String: Any]] else { continue }
-            if list.contains(where: { assertionTypes.contains(($0[kIOPMAssertionTypeKey as String] as? String) ?? "") }) {
+            if list.contains(where: { VideoSignal.isPlayback(type: $0[kIOPMAssertionTypeKey as String] as? String,
+                                                           name: $0[kIOPMAssertionNameKey as String] as? String) }) {
                 out.append(pid)
             }
         }
