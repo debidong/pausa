@@ -1,6 +1,7 @@
 import AppKit
 import Combine
 import PausaCore
+import os
 
 typealias PausaCoreReason = PausaCore.PauseReason
 
@@ -68,6 +69,9 @@ public final class PauseDetector: ObservableObject {
     }
 
     private var lastVideo: (app: NSRunningApplication, at: TimeInterval)?
+    #if PAUSA_DEV
+    private var devVideoPlaying = false
+    #endif
     private var lastShare: (reason: PauseReason, app: NSRunningApplication, at: TimeInterval)?
     private var meetingApp: NSRunningApplication?
 
@@ -98,7 +102,18 @@ public final class PauseDetector: ObservableObject {
 
         // §1 browser video, 2-min grace after the assertion drops (R5, reuses meetingGrace).
         if flag("pauseForBrowserVideo", default: true) {
-            if let b = BrowserVideoMonitor.check() { lastVideo = (b, now) }
+            let videoFront = BrowserVideoMonitor.check()
+            if let b = videoFront { lastVideo = (b, now) }
+            #if PAUSA_DEV   // DEV only: log the video verdict whenever it changes, with what the front app holds
+            let vFront = NSWorkspace.shared.frontmostApplication
+            let vNow = vFront.map { "\($0.bundleIdentifier ?? "?")" } ?? "-"
+            let vPlaying = videoFront != nil
+            if vPlaying != devVideoPlaying {
+                devVideoPlaying = vPlaying
+                let held = BrowserVideoMonitor.holders().filter { $0.name != nil }.map { "\($0.pid):\($0.name ?? "")" }.joined(separator: ", ")
+                Logger(subsystem: "app.pausa", category: "dev").info("video \(vPlaying ? "ON" : "OFF", privacy: .public) front \(vNow, privacy: .public) assertions [\(held, privacy: .public)]")
+            }
+            #endif
             if let v = lastVideo, now - v.at < meetingGrace {
                 next.insert(.browserVideo(appName: v.app.localizedName ?? "Browser"))
                 src[.video] = PauseSource(kind: .video, app: v.app)
