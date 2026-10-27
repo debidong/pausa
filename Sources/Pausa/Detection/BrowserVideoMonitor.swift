@@ -3,11 +3,12 @@ import IOKit.pwr_mgt
 import PausaCore
 
 /// §1 browser video. A playing <video> makes the browser (really one of its helper processes)
-/// hold a PreventUserIdleDisplaySleep power assertion. We read assertions with the public
+/// hold a "Video Wake Lock" power assertion. We read assertions with the public
 /// IOPMCopyAssertionsByProcess (same data as `pmset -g assertions`, no permission), map each
-/// holder back to its browser, and require that browser to be frontmost.
+/// holder back to its app, and require that app to be frontmost.
 /// Unverified on macOS 27: which helper holds it per browser; whether every <video> asserts.
 enum BrowserVideoMonitor {
+    /// Only used to prefer a browser when naming a meeting app (PauseSource.meetingApp); not a video gate.
     static let browserBundleIDs: Set<String> = [
         "com.apple.Safari", "com.apple.SafariTechnologyPreview",
         "com.google.Chrome", "com.google.Chrome.beta", "com.google.Chrome.canary",
@@ -34,33 +35,20 @@ enum BrowserVideoMonitor {
         return out
     }
 
-    /// Browser whose helper holds the assertion, by pid of the browser app.
-    static func browserOwning(_ pid: pid_t, apps: [NSRunningApplication]) -> NSRunningApplication? {
-        let browsers = apps.filter { browserBundleIDs.contains($0.bundleIdentifier ?? "") }
-        if browsers.isEmpty { return nil }
-        for p in ProcessLineage.lineage(of: pid) {
-            if let b = browsers.first(where: { $0.processIdentifier == p }) { return b }
-        }
-        // Safari's WebKit XPC services are launchd children; fall back to bundle path containment.
-        if let path = ProcessLineage.path(of: pid) {
-            if let outer = ProcessLineage.outerAppBundle(path),
-               let b = browsers.first(where: { $0.bundleURL?.path == outer }) { return b }
-            if path.contains("com.apple.WebKit"), let s = browsers.first(where: { $0.bundleIdentifier?.hasPrefix("com.apple.Safari") == true }) {
-                return s   // WebKit services are shared; only counts if Safari is the frontmost below
-            }
-        }
-        return nil
+    /// True if `pid` (a helper or the app itself) belongs to `app`.
+    static func pid(_ pid: pid_t, belongsTo app: NSRunningApplication) -> Bool {
+        if ProcessLineage.lineage(of: pid).contains(app.processIdentifier) { return true }
+        guard let path = ProcessLineage.path(of: pid) else { return false }
+        if let outer = ProcessLineage.outerAppBundle(path), app.bundleURL?.path == outer { return true }
+        // Safari's WebKit XPC services are launchd children, shared by every WebKit app.
+        return path.contains("com.apple.WebKit") && app.bundleIdentifier?.hasPrefix("com.apple.Safari") == true
     }
 
-    /// Name of the frontmost browser that is playing video, if any.
+    /// The frontmost app, if it is playing video: it (or a helper of it) holds a "Video Wake Lock".
+    /// No browser list: any app that asks for that assertion by that name is playing a <video>
+    /// (Chrome, Aside, other Chromium builds), and only the frontmost one counts.
     static func check() -> NSRunningApplication? {
-        guard let front = NSWorkspace.shared.frontmostApplication,
-              browserBundleIDs.contains(front.bundleIdentifier ?? "") else { return nil }
-        let apps = NSWorkspace.shared.runningApplications
-        for pid in assertingPIDs() {
-            guard let b = browserOwning(pid, apps: apps), b.processIdentifier == front.processIdentifier else { continue }
-            return front
-        }
-        return nil
+        guard let front = NSWorkspace.shared.frontmostApplication else { return nil }
+        return assertingPIDs().contains { pid($0, belongsTo: front) } ? front : nil
     }
 }
