@@ -9,6 +9,10 @@ public enum VideoSignal {
   public static let playbackNames: Set<String> = [
     "Video Wake Lock",                              // Chromium: Chrome, Aside (type NoDisplaySleepAssertion)
     "com.apple.WebCore: HTMLMediaElement playback", // Safari (type PreventUserIdleDisplaySleep), 2026-10-27
+    // Read from source, not yet measured on macBowena (Steve, 2026-10-27); measure, then drop this note.
+    "IINA playback is in progress",                 // IINA SleepPreventer.swift, ProcessInfo.beginActivity reason
+    "VLC video playback",                           // VLC video only; "VLC audio playback" is another type and must not count
+    "io.mpv.video_playing_back",                    // mpv
   ]
 
   public static func isPlayback(type: String?, name: String?) -> Bool {
