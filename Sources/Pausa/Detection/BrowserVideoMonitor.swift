@@ -15,6 +15,7 @@ enum BrowserVideoMonitor {
         "com.microsoft.edgemac", "com.microsoft.edgemac.Beta",
         "org.mozilla.firefox", "org.mozilla.firefoxdeveloperedition",
         "com.brave.Browser", "com.vivaldi.Vivaldi", "com.operasoftware.Opera",
+        "at.studio.AsideBrowser",                 // Aside; "Video Wake Lock" from the main pid seen in pmset log 2026-10-25
     ]
     /// Pids currently holding a video-playback assertion (VideoSignal: by type and name).
     static func assertingPIDs() -> [pid_t] {
