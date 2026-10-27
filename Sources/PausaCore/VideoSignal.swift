@@ -11,4 +11,15 @@ public enum VideoSignal {
     guard let type, let name else { return false }
     return types.contains(type) && playbackNames.contains(name)
   }
+
+  /// One power assertion as read from IOPMCopyAssertionsByProcess.
+  public struct Holder { public let pid: Int32, type: String?, name: String?
+    public init(pid: Int32, type: String?, name: String?) { self.pid = pid; self.type = type; self.name = name } }
+
+  /// The frontmost app is playing video when it, or a helper of it, holds a playback assertion.
+  /// No list of apps: Chrome, Aside, other Chromium builds and Electron apps all qualify by the
+  /// assertion alone (Steve, 2026-10-27).
+  public static func frontIsPlaying(_ holders: [Holder], belongsToFront: (Int32) -> Bool) -> Bool {
+    holders.contains { isPlayback(type: $0.type, name: $0.name) && belongsToFront($0.pid) }
+  }
 }

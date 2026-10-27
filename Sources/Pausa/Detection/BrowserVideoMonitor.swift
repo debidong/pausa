@@ -18,18 +18,18 @@ enum BrowserVideoMonitor {
         "com.brave.Browser", "com.vivaldi.Vivaldi", "com.operasoftware.Opera",
         "at.studio.AsideBrowser",                 // Aside; "Video Wake Lock" from the main pid seen in pmset log 2026-10-25
     ]
-    /// Pids currently holding a video-playback assertion (VideoSignal: by type and name).
-    static func assertingPIDs() -> [pid_t] {
+    /// Every power assertion held right now (same data as `pmset -g assertions`).
+    static func holders() -> [VideoSignal.Holder] {
         var dictRef: Unmanaged<CFDictionary>?
         guard IOPMCopyAssertionsByProcess(&dictRef) == kIOReturnSuccess,
               let dict = dictRef?.takeRetainedValue() as? [AnyHashable: Any] else { return [] }
-        var out: [pid_t] = []
+        var out: [VideoSignal.Holder] = []
         for (k, v) in dict {
             let pid: pid_t? = (k as? NSNumber).map { pid_t($0.int32Value) } ?? (k as? Int).map { pid_t($0) }
             guard let pid, let list = v as? [[String: Any]] else { continue }
-            if list.contains(where: { VideoSignal.isPlayback(type: $0[kIOPMAssertionTypeKey as String] as? String,
-                                                           name: $0[kIOPMAssertionNameKey as String] as? String) }) {
-                out.append(pid)
+            for a in list {
+                out.append(.init(pid: pid, type: a[kIOPMAssertionTypeKey as String] as? String,
+                                 name: a[kIOPMAssertionNameKey as String] as? String))
             }
         }
         return out
@@ -49,6 +49,6 @@ enum BrowserVideoMonitor {
     /// (Chrome, Aside, other Chromium builds), and only the frontmost one counts.
     static func check() -> NSRunningApplication? {
         guard let front = NSWorkspace.shared.frontmostApplication else { return nil }
-        return assertingPIDs().contains { pid($0, belongsTo: front) } ? front : nil
+        return VideoSignal.frontIsPlaying(holders()) { pid($0, belongsTo: front) } ? front : nil
     }
 }
