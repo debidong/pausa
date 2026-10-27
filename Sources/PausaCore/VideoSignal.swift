@@ -5,7 +5,11 @@
 /// an unknown name means "can't tell", and then breaks go on as normal (Steve, 2026-10-20).
 public enum VideoSignal {
   public static let types: Set<String> = ["PreventUserIdleDisplaySleep", "NoDisplaySleepAssertion"]
-  public static let playbackNames: Set<String> = ["Video Wake Lock"]
+  /// One measured name per line; never guess one (Steve, 2026-10-20). Source: `pmset -g log` on macBowena.
+  public static let playbackNames: Set<String> = [
+    "Video Wake Lock",                              // Chromium: Chrome, Aside (type NoDisplaySleepAssertion)
+    "com.apple.WebCore: HTMLMediaElement playback", // Safari (type PreventUserIdleDisplaySleep), 2026-10-27
+  ]
 
   public static func isPlayback(type: String?, name: String?) -> Bool {
     guard let type, let name else { return false }

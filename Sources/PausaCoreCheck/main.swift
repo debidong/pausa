@@ -804,6 +804,8 @@ let pc = PauseCapTests()
 func testVideoSignalOnlyPlayback() {
   XCTAssertTrue(VideoSignal.isPlayback(type: "NoDisplaySleepAssertion", name: "Video Wake Lock"))
   XCTAssertTrue(!VideoSignal.isPlayback(type: "NoDisplaySleepAssertion", name: "Capturing"))   // fcBowena 2026-10-20
+  XCTAssertTrue(VideoSignal.isPlayback(type: "PreventUserIdleDisplaySleep", name: "com.apple.WebCore: HTMLMediaElement playback"))   // Safari, macBowena 2026-10-27
+  XCTAssertTrue(!VideoSignal.isPlayback(type: "PreventUserIdleDisplaySleep", name: "Ongoing A/V conference"))                       // a call, not video
   XCTAssertTrue(!VideoSignal.isPlayback(type: "PreventUserIdleDisplaySleep", name: "AlDente-Pro"))
   XCTAssertTrue(!VideoSignal.isPlayback(type: "PreventUserIdleSystemSleep", name: "Video Wake Lock"))
   XCTAssertTrue(!VideoSignal.isPlayback(type: "NoDisplaySleepAssertion", name: nil))
