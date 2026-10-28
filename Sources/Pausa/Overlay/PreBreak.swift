@@ -492,6 +492,7 @@ final class PreBreakController {
     private var generation = 0
     private var pill: PreBreakPanel?
     private var pillTimer: Timer?
+    private var pillMonitors: [Any] = []
     private var screenObserver: NSObjectProtocol?
     #if DEBUG
     /// Debug (`--debug-show-prebreak`): pin the screen instead of following the pointer.
@@ -693,7 +694,15 @@ final class PreBreakController {
         pill = p
         follow()
         p.orderFrontRegardless()
-        let t = Timer(timeInterval: 1.0 / 30, repeats: true) { [weak self] _ in
+        // Follow every pointer event (the system's own rate, 120 Hz on ProMotion); the timer only backstops a
+        // pointer that moved without an event, such as a space switch or a display change. Neither monitor
+        // needs a permission: mouse-moved events carry no key data.
+        let moves: NSEvent.EventTypeMask = [.mouseMoved, .leftMouseDragged, .rightMouseDragged, .otherMouseDragged]
+        pillMonitors = [
+            NSEvent.addGlobalMonitorForEvents(matching: moves) { [weak self] _ in MainActor.assumeIsolated { self?.follow() } },
+            NSEvent.addLocalMonitorForEvents(matching: moves) { [weak self] e in MainActor.assumeIsolated { self?.follow() }; return e },
+        ].compactMap { $0 }
+        let t = Timer(timeInterval: 1.0 / 10, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.follow() }
         }
         RunLoop.main.add(t, forMode: .common)
@@ -702,6 +711,7 @@ final class PreBreakController {
 
     private func hidePill() {
         pillTimer?.invalidate(); pillTimer = nil
+        pillMonitors.forEach { NSEvent.removeMonitor($0) }; pillMonitors = []
         pill?.orderOut(nil)
         pill = nil
     }
@@ -712,7 +722,8 @@ final class PreBreakController {
         let size = host.fittingSize
         let m = NSEvent.mouseLocation
         guard let screen = NSScreen.screens.first(where: { NSMouseInRect(m, $0.frame, false) }) else { return }
-        p.setFrame(Self.pillFrame(mouse: m, size: size, in: screen.frame), display: true)
+        let f = Self.pillFrame(mouse: m, size: size, in: screen.frame)
+        if f.size == p.frame.size { p.setFrameOrigin(f.origin) } else { p.setFrame(f, display: true) }   // same size: just move
     }
 
     /// Room around the capsule for its shadow.
