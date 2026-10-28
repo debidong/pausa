@@ -111,7 +111,10 @@ public enum Command: Equatable {
 
 public struct Scheduler {
   public var config: Config
-  public private(set) var phase: Phase = .working
+  public private(set) var phase: Phase = .working {
+    // The panel's "already opened" memory lives only as long as the warning does.
+    didSet { if case .warning = phase {} else { cardOpened = false } }
+  }
 
   // Active work time since the last break (any kind), and breaks since the last long one.
   private(set) var sinceBreak: Double = 0
@@ -125,6 +128,8 @@ public struct Scheduler {
   private var deferUsed: Double = 0              // shared budget used for the current due break
   private var deferBySource: [DeferralKind: Double] = [:]
   public private(set) var deferring: DeferralKind?   // for the menu bar, nil when not deferring
+  private var cardOpened = false      // the pre-break panel has been up during this warning
+  private var typingWaiting = false   // set by the last tick: due, and waiting for typing / the mic to stop
   static let holds: Set<PauseReason> = [.meeting, .micInUse, .screenSharing, .video, .fullscreen]
   static let boundedHolds: Set<PauseReason> = [.video, .fullscreen]
 
@@ -190,6 +195,7 @@ public struct Scheduler {
     lastTick = now
     var reasons = inReasons
     deferring = nil
+    typingWaiting = false
 
     if case .onBreak(_, let endsAt) = phase {
       if now >= endsAt { return finish(.completed, now: now) }
@@ -234,8 +240,10 @@ public struct Scheduler {
     let (kind, remaining, _) = next
     if remaining > config.warnLead { phase = .working; dueSince = nil; return [] }
     if remaining > 0 {
-      if phase != .warning(kind) { phase = .warning(kind); return [.showWarning(kind, secondsLeft: remaining)] }
-      return []
+      var cmds: [Command] = []
+      if phase != .warning(kind) { phase = .warning(kind); cmds = [.showWarning(kind, secondsLeft: remaining)] }
+      if Int(remaining.rounded(.up)) >= PreBreakState.minOpenSeconds { cardOpened = true }
+      return cmds
     }
 
     // Due. Soft deferrals share one budget; each is also limited by its own cap.
@@ -251,6 +259,7 @@ public struct Scheduler {
       deferUsed += dt
       for d in usable { deferBySource[d.kind, default: 0] += dt }
       deferring = usable.contains { $0.kind == .typing } ? .typing : usable[0].kind
+      typingWaiting = deferring == .typing || deferring == .microphone
       return []
     }
 
@@ -260,6 +269,7 @@ public struct Scheduler {
     dueSince = since
     if !hard && deferUsed < budget && inputIdle < config.typingIdle && now - since < config.typingGrace {
       deferUsed += dt
+      typingWaiting = true
       return []
     }
     dueSince = nil
@@ -427,6 +437,43 @@ public struct Scheduler {
     if case .warning = phase { phase = .working }
     dueSince = nil
     return true
+  }
+
+  /// The pre-break panel's 「跳过休息」: skip the short break that is only announced, not yet on
+  /// screen. `finish` needs a running break, so the announcement phase has its own entry point.
+  /// Only a short break in the warning phase; anything else does nothing. Counts as a skip.
+  public mutating func skipUpcoming(now: Double) -> [Command] {
+    guard phase == .warning(.short) else { return [] }
+    phase = .working
+    dueSince = nil
+    clearDeferral()
+    reset(.short, done: false)
+    return [.recorded(.short, planned: config.shortLength, .skipped)]
+  }
+
+  /// What the pre-break panel and cursor pill show right now, or nil when neither does. Derived
+  /// from the scheduler's state on every read, so it can never lag behind `postpone`, `breakNow`,
+  /// `skipUpcoming` or a pause. Paused, on a break, or more than `warnLead` away: nil.
+  public var preBreak: PreBreakState? {
+    switch phase {
+    case .paused, .onBreak: return nil
+    case .working, .warning: break
+    }
+    let (kind, remaining, _) = next
+    let left = max(0, Int(remaining.rounded(.up)))
+    let warning = phase == .warning(kind) && remaining > 0 && remaining <= config.warnLead
+    let typingWait = typingWaiting && remaining <= 0
+    guard warning || typingWait else { return nil }
+    let hard = atHardLine
+    let snooze: PreBreakState.Snooze
+    if hard { snooze = .hidden }
+    else if canPostpone(by: config.snoozeLength) { snooze = .available(minutes: Int(config.snoozeLength / 60)) }
+    else { snooze = .usedUp }
+    return PreBreakState(
+      kind: kind, secondsLeft: left, snooze: snooze, canSkip: kind == .short, atHardLine: hard,
+      typingWait: typingWait,
+      showCard: warning && (cardOpened || left >= PreBreakState.minOpenSeconds),
+      showPill: (warning && left <= PreBreakState.pillSeconds) || typingWait)
   }
 
   /// Menu bar "立即休息".

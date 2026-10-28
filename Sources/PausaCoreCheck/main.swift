@@ -1190,6 +1190,184 @@ final class MicTests {
 }
 let mt = MicTests()
 
+/// Pre-break panel state (spec: pre-break notch panel, acceptance A1-A13). Short break due at t = 1200
+/// with the default config: the 30 s warning starts at t = 1170.
+final class PreBreakTests {
+  func tick(_ s: inout Scheduler, _ t: Double, reasons: Set<PauseReason> = [], deferrals: [Deferral] = [],
+            idle: Double = 10) -> [Command] {
+    s.tick(now: t, reasons: reasons, deferrals: deferrals, inputIdle: idle)
+  }
+  /// A scheduler ticked once a second up to and including `t`.
+  func sched(to t: Double, config: Config = Config()) -> Scheduler {
+    var s = Scheduler(config: config)
+    var i = 0.0
+    while i <= t { _ = tick(&s, i); i += 1 }
+    return s
+  }
+
+  func testCardAppearsAt30() {   // A1
+    var s = sched(to: 1169)
+    XCTAssertTrue(s.preBreak == nil)
+    _ = tick(&s, 1170)
+    XCTAssertEqual(s.preBreak?.showCard, true)
+    XCTAssertEqual(s.preBreak?.secondsLeft, 30)
+    XCTAssertEqual(s.preBreak?.kind, .short)
+  }
+
+  func testCountsDownEverySecond() {   // A2, A3
+    var s = sched(to: 1169)
+    for n in stride(from: 30, through: 1, by: -1) {
+      _ = tick(&s, 1200 - Double(n))
+      XCTAssertEqual(s.preBreak?.secondsLeft, n)
+      XCTAssertEqual(s.preBreak?.showCard, true)
+      XCTAssertEqual(s.preBreak?.showPill, n <= 10)
+    }
+  }
+
+  func testStartsBreakAtZero() {   // A4
+    var s = sched(to: 1199)
+    let cmds = tick(&s, 1200)
+    XCTAssertEqual(cmds, [.startBreak(.short, length: 20)])
+    XCTAssertTrue(s.preBreak == nil)
+  }
+
+  func testTypingWaitShowsPillOnly() {   // A5
+    for deferrals in [[Deferral.typing], []] {   // the typing deferral, and the fallback wait for input to stop
+      var s = sched(to: 1199)
+      _ = tick(&s, 1200, deferrals: deferrals, idle: 0)
+      let p = s.preBreak
+      XCTAssertEqual(p?.typingWait, true)
+      XCTAssertEqual(p?.showCard, false)
+      XCTAssertEqual(p?.showPill, true)
+      XCTAssertEqual(p?.secondsLeft, 0)
+      _ = tick(&s, 1201, deferrals: [], idle: 10)   // typing stopped: the break starts
+      XCTAssertTrue(s.preBreak == nil)
+    }
+    var m = sched(to: 1199)
+    _ = tick(&m, 1200, deferrals: [.microphone], idle: 10)
+    XCTAssertEqual(m.preBreak?.typingWait, true)
+    var f = sched(to: 1199)   // a focus app defers too, but no pill: the break is simply later
+    _ = tick(&f, 1200, deferrals: [.focusApp()], idle: 10)
+    XCTAssertTrue(f.preBreak == nil)
+  }
+
+  func testPauseReasonsHideIt() {   // A6
+    for r in [PauseReason.meeting, .screenSharing, .micInUse, .video, .fullscreen, .outsideHours] {
+      var s = sched(to: 1180)
+      XCTAssertEqual(s.preBreak?.showCard, true)
+      _ = tick(&s, 1181, reasons: [r])
+      XCTAssertTrue(s.preBreak == nil)
+    }
+  }
+
+  func testShortResumeDoesNotOpenCard() {   // A7: a card that would open with under 5 s left stays closed
+    var a = sched(to: 1195)                       // 5 s left
+    _ = tick(&a, 1196, reasons: [.fullscreen])
+    XCTAssertTrue(a.preBreak == nil)
+    _ = tick(&a, 1197)                            // back, 4 s left
+    XCTAssertEqual(a.preBreak?.secondsLeft, 4)
+    XCTAssertEqual(a.preBreak?.showCard, false)
+    XCTAssertEqual(a.preBreak?.showPill, true)
+    var b = sched(to: 1193)
+    _ = tick(&b, 1194, reasons: [.fullscreen])
+    _ = tick(&b, 1195)                            // back, 6 s left
+    XCTAssertEqual(b.preBreak?.secondsLeft, 6)
+    XCTAssertEqual(b.preBreak?.showCard, true)
+    var c = sched(to: 1196)                       // already open at 4 s: stays open until 0
+    XCTAssertEqual(c.preBreak?.secondsLeft, 4)
+    XCTAssertEqual(c.preBreak?.showCard, true)
+    _ = tick(&c, 1197)
+    XCTAssertEqual(c.preBreak?.showCard, true)
+  }
+
+  func testPostponeComesBackAt30() {   // A8
+    var s = sched(to: 1180)                       // 20 s left
+    XCTAssertTrue(s.postpone(by: 300))
+    XCTAssertTrue(s.preBreak == nil)
+    var t = 1181.0, ticks = 0
+    while s.preBreak == nil && t < 3000 { _ = tick(&s, t); t += 1; ticks += 1 }
+    XCTAssertEqual(s.preBreak?.secondsLeft, 30)
+    XCTAssertEqual(ticks, 20 + 300 - 30)
+  }
+
+  func testSnoozeUsedUp() {   // A9
+    var s = sched(to: 1180)
+    XCTAssertEqual(s.preBreak?.snooze, .available(minutes: 5))
+    XCTAssertTrue(s.postpone(by: 300))
+    var t = 1181.0
+    while s.preBreak == nil { _ = tick(&s, t); t += 1 }
+    XCTAssertEqual(s.preBreak?.snooze, .available(minutes: 5))
+    XCTAssertTrue(s.postpone(by: 300))            // the short budget is 10 minutes: two snoozes
+    while s.preBreak == nil { _ = tick(&s, t); t += 1 }
+    XCTAssertEqual(s.preBreak?.snooze, .usedUp)
+    XCTAssertEqual(s.preBreak?.canSkip, true)
+  }
+
+  /// 30-minute interval, long every 3rd break: the long break lands exactly on the 90-minute line.
+  func testNinetyMinuteLine() {   // A10, A11
+    var c = Config(); c.breakEvery = 30 * 60
+    var s = Scheduler(config: c)
+    var t = 0.0, longs = 0, last: PreBreakState?
+    while t < 6000 && longs == 0 {
+      for cmd in tick(&s, t) { if case .startBreak(.long, _) = cmd { longs += 1 } }
+      if case .onBreak = s.phase, longs == 0 { _ = s.finish(.completed, now: t) }
+      if case .warning(.long) = s.phase, let p = s.preBreak { last = p }
+      t += 1
+    }
+    XCTAssertEqual(longs, 1)
+    XCTAssertEqual(last?.kind, .long)
+    XCTAssertEqual(last?.atHardLine, true)
+    XCTAssertEqual(last?.snooze, .hidden)
+    XCTAssertEqual(last?.canSkip, false)
+  }
+
+  func testLongBreakHasNoSkip() {   // A11
+    var s = Scheduler()
+    var t = 0.0, p: PreBreakState?
+    while t < 3700 && p == nil {
+      _ = tick(&s, t)
+      if case .onBreak = s.phase { _ = s.finish(.completed, now: t) }
+      if case .warning(.long) = s.phase { p = s.preBreak }
+      t += 1
+    }
+    XCTAssertEqual(p?.kind, .long)
+    XCTAssertEqual(p?.canSkip, false)
+    XCTAssertEqual(p?.atHardLine, false)
+    XCTAssertEqual(p?.snooze, .available(minutes: 5))
+  }
+
+  func testSkipUpcoming() {   // A12
+    var s = sched(to: 1180)
+    let cmds = s.skipUpcoming(now: 1180)
+    XCTAssertEqual(cmds, [.recorded(.short, planned: 20, .skipped)])
+    XCTAssertEqual(s.sinceBreak, 0)
+    XCTAssertEqual(s.phase, .working)
+    XCTAssertTrue(s.preBreak == nil)
+    XCTAssertEqual(s.next.remaining, 1200, accuracy: 0.001)
+    var w = sched(to: 600)                        // not announced yet: nothing happens
+    XCTAssertEqual(w.skipUpcoming(now: 600), [])
+    XCTAssertEqual(w.sinceBreak, 600)
+    var l = Scheduler(); var t = 0.0
+    while t < 3700 {   // the long break's announcement can't be skipped
+      _ = tick(&l, t)
+      if case .onBreak = l.phase { _ = l.finish(.completed, now: t) }
+      if case .warning(.long) = l.phase { break }
+      t += 1
+    }
+    let before = l.sinceBreak
+    XCTAssertEqual(l.skipUpcoming(now: t), [])
+    XCTAssertEqual(l.sinceBreak, before)
+    XCTAssertEqual(l.phase, .warning(.long))
+  }
+
+  func testNoPanelOnBreakOrBreakNow() {
+    var s = sched(to: 1180)
+    _ = s.breakNow(.short, now: 1180)
+    XCTAssertTrue(s.preBreak == nil)
+  }
+}
+let pb = PreBreakTests()
+
 let cases: [(String, () -> Void)] = [
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
@@ -1217,6 +1395,10 @@ let cases: [(String, () -> Void)] = [
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleNotLongBreak", mp.testIdleDuringPauseIsNotALongBreak), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
  ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("video.onlyPlayback", testVideoSignalOnlyPlayback), ("video.frontAppAnyApp", testVideoFrontAppAnyApp), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle), ("accept.1", testAccept1MidnightSplit), ("accept.2", testAccept2IdleEndsAtLastInput), ("accept.3", testAccept3BreakNotWork), ("accept.4", testAccept4MeetingIgnoresIdle), ("accept.5", testAccept5LockNotWork), ("accept.6", testAccept6ActiveAndQuietHours), ("accept.7", testAccept7MeetingAfterHours), ("accept.8", testAccept8ManualPauseIsWork), ("accept.10", testAccept10ShortCompletes), ("accept.11", testAccept11LockThroughLong), ("accept.12", testAccept12SkipAddsNoTime), ("accept.13", testAccept13SnoozeThenComplete), ("accept.14", testAccept14MeetingNoBreakRows), ("accept.15", testAccept15BreakBelongsToStartDay), ("accept.16", testAccept16BarProportional), ("accept.17", testAccept17ScaleFloor), ("accept.18", testAccept18FullDay), ("accept.19", testAccept19ScaleCeiling), ("accept.20", testAccept20TypicalGapSpacing), ("accept.21", testAccept21GapPerBreak), ("accept.22", testAccept22GapPosition), ("accept.23", testAccept23SkipNoGap), ("accept.24", testAccept24BarLabels), ("accept.27", testAccept27EmptyDay), ("accept.30", testAccept30KeepThirtyDays), ("stats.durationParts", testDurationParts),
- ("mic.dictationStillGetsBreaks", mt.testDictationBurstsStillGetBreaks), ("mic.breakAfterBurst", mt.testBreakDueDuringBurstFiresAfter), ("mic.firmPastNinety", mt.testMicFirmPastNinetyLine), ("meeting.ninetyFiresAfter", mt.testNinetyLineFiresRightAfterMeeting), ("mic.aloneAfter60s", mt.testMicAloneAfter60s), ("mic.cameraAndMeetingAppImmediate", mt.testCameraAndMeetingAppImmediate), ("mic.backgroundThreeHoursGetsBreak", mt.testBackgroundMicThreeHoursGetsBreak)]
+ ("mic.dictationStillGetsBreaks", mt.testDictationBurstsStillGetBreaks), ("mic.breakAfterBurst", mt.testBreakDueDuringBurstFiresAfter), ("mic.firmPastNinety", mt.testMicFirmPastNinetyLine), ("meeting.ninetyFiresAfter", mt.testNinetyLineFiresRightAfterMeeting), ("mic.aloneAfter60s", mt.testMicAloneAfter60s), ("mic.cameraAndMeetingAppImmediate", mt.testCameraAndMeetingAppImmediate), ("mic.backgroundThreeHoursGetsBreak", mt.testBackgroundMicThreeHoursGetsBreak),
+ ("prebreak.cardAt30", pb.testCardAppearsAt30), ("prebreak.countdown", pb.testCountsDownEverySecond), ("prebreak.startsBreak", pb.testStartsBreakAtZero),
+ ("prebreak.typingWait", pb.testTypingWaitShowsPillOnly), ("prebreak.pauseHides", pb.testPauseReasonsHideIt), ("prebreak.shortResume", pb.testShortResumeDoesNotOpenCard),
+ ("prebreak.postpone", pb.testPostponeComesBackAt30), ("prebreak.snoozeUsedUp", pb.testSnoozeUsedUp), ("prebreak.ninetyLine", pb.testNinetyMinuteLine),
+ ("prebreak.longNoSkip", pb.testLongBreakHasNoSkip), ("prebreak.skipUpcoming", pb.testSkipUpcoming), ("prebreak.breakNow", pb.testNoPanelOnBreakOrBreakNow)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)
