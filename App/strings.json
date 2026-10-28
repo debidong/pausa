@@ -889,46 +889,6 @@
     "vi": "Nghỉ sau khi gõ xong",
     "th": "พักเมื่อพิมพ์เสร็จ"
   },
-  "prebreak.hide": {
-    "zh-Hans": "收起",
-    "zh-Hant": "收起",
-    "en": "Hide",
-    "es": "Ocultar",
-    "ru": "Скрыть",
-    "fr": "Masquer",
-    "vi": "Ẩn",
-    "th": "ซ่อน"
-  },
-  "prebreak.justRested": {
-    "zh-Hans": "刚休息过",
-    "zh-Hant": "剛休息過",
-    "en": "Just had a break",
-    "es": "Acabas de descansar",
-    "ru": "Вы только что отдохнули",
-    "fr": "Pause toute récente",
-    "vi": "Vừa nghỉ xong",
-    "th": "เพิ่งพักไป"
-  },
-  "prebreak.length.minutes": {
-    "zh-Hans": "休息 %d 分钟",
-    "zh-Hant": "休息 %d 分鐘",
-    "en": "%d-minute break",
-    "es": "Descanso de %d min",
-    "ru": "Перерыв %d мин",
-    "fr": "Pause de %d min",
-    "vi": "Nghỉ %d phút",
-    "th": "พัก %d นาที"
-  },
-  "prebreak.length.seconds": {
-    "zh-Hans": "休息 %d 秒",
-    "zh-Hant": "休息 %d 秒",
-    "en": "%d-second break",
-    "es": "Descanso de %d s",
-    "ru": "Перерыв %d с",
-    "fr": "Pause de %d s",
-    "vi": "Nghỉ %d giây",
-    "th": "พัก %d วินาที"
-  },
   "prebreak.postpone": {
     "zh-Hans": "稍后 %d 分钟",
     "zh-Hant": "稍後 %d 分鐘",
@@ -959,35 +919,25 @@
     "vi": "Bỏ qua lần nghỉ",
     "th": "ข้ามการพัก"
   },
-  "prebreak.title.long": {
-    "zh-Hans": "长休息即将开始",
-    "zh-Hant": "長休息即將開始",
-    "en": "Long break coming up",
-    "es": "Descanso largo en breve",
-    "ru": "Скоро длинный перерыв",
-    "fr": "Pause longue imminente",
-    "vi": "Sắp đến giờ nghỉ dài",
-    "th": "ใกล้ถึงเวลาพักยาว"
+  "prebreak.startsIn.long": {
+    "zh-Hans": "长休息将在 %d 秒后开始",
+    "zh-Hant": "長休息將在 %d 秒後開始",
+    "en": "Long break in %d s",
+    "es": "El descanso largo empieza en %d s",
+    "ru": "Длинный перерыв начнётся через %d с",
+    "fr": "La pause longue commence dans %d s",
+    "vi": "Nghỉ dài bắt đầu sau %d giây",
+    "th": "พักยาวจะเริ่มใน %d วินาที"
   },
-  "prebreak.title.short": {
-    "zh-Hans": "短休息即将开始",
-    "zh-Hant": "短休息即將開始",
-    "en": "Short break coming up",
-    "es": "Descanso corto en breve",
-    "ru": "Скоро короткий перерыв",
-    "fr": "Pause courte imminente",
-    "vi": "Sắp đến giờ nghỉ ngắn",
-    "th": "ใกล้ถึงเวลาพักสั้น"
-  },
-  "prebreak.workedFor": {
-    "zh-Hans": "已连续工作 %d 分钟",
-    "zh-Hant": "已連續工作 %d 分鐘",
-    "en": "Working for %d min",
-    "es": "Trabajando desde hace %d min",
-    "ru": "Вы работаете %d мин",
-    "fr": "Au travail depuis %d min",
-    "vi": "Đã làm việc %d phút",
-    "th": "ทำงานมา %d นาที"
+  "prebreak.startsIn.short": {
+    "zh-Hans": "短休息将在 %d 秒后开始",
+    "zh-Hant": "短休息將在 %d 秒後開始",
+    "en": "Short break in %d s",
+    "es": "El descanso corto empieza en %d s",
+    "ru": "Короткий перерыв начнётся через %d с",
+    "fr": "La pause courte commence dans %d s",
+    "vi": "Nghỉ ngắn bắt đầu sau %d giây",
+    "th": "พักสั้นจะเริ่มใน %d วินาที"
   },
   "preset.custom": {
     "zh-Hans": "自定义",

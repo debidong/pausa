@@ -10,6 +10,7 @@ final class AppController {
     private(set) var scheduler: PausaCore.Scheduler
     let detector = PauseDetector()
     let overlay = BreakOverlayController()
+    let preBreak = PreBreakController()
     let settings = Settings.shared
     private var pauseCap = PauseCap()
     private(set) var reasons: [PausaCore.PauseReason: String] = [:]   // reason -> full 「已暂停：…」 line
@@ -31,6 +32,18 @@ final class AppController {
         restoreState()
         detector.$reasons.sink { [weak self] r in self?.updateReasons(r) }.store(in: &bag)
         detector.onAway = { [weak self] e in self?.handleAway(e) }
+        preBreak.onStartNow = { [weak self] in
+            guard let self, let k = self.scheduler.preBreak?.kind else { return }
+            self.breakNow(k)
+        }
+        preBreak.onPostpone = { [weak self] in
+            guard let self else { return }
+            self.postpone(by: self.scheduler.config.snoozeLength)
+        }
+        preBreak.onSkip = { [weak self] in
+            guard let self else { return }
+            self.apply(self.scheduler.skipUpcoming(now: Self.now()))
+        }
         settings.onChange = { [weak self] c in self?.scheduler.config = c; self?.onChange?() }
         settings.onScheduleChange = { [weak self] in self?.scheduleChanged() }
         // Wall clock moved under us: re-evaluate 时段 and re-arm the boundary timer.
@@ -121,6 +134,7 @@ final class AppController {
             if now < until {
                 let idle = Self.inputIdle()
                 scheduler.manualPauseTick(now: now)
+                preBreak.update(nil, removal: .animated)
                 trackWork(now: now, idle: idle, inHours: awaySince == nil && !outsideHours, holding: false)   // 暂停 1 小时 is still work; a lock is not
                 return
             }
@@ -192,7 +206,7 @@ final class AppController {
         for c in cmds {
             switch c {
             case .showWarning:
-                break   // menu bar icon reflects .warning on the next refresh
+                break   // 面板由 `scheduler.preBreak` 驱动 (refreshPreBreak below); the menu bar icon reflects .warning on the next refresh
             case .recorded(let kind, let planned, let result):
                 BreakLog.shared.append(BreakRecord(start: breakStart ?? Date(), kind: kind, planned: planned, result: result))
                 breakStart = nil
@@ -228,7 +242,15 @@ final class AppController {
                 onBreakEnded?()
             }
         }
+        refreshPreBreak(immediate: cmds.contains { if case .startBreak = $0 { return true }; if case .resumeBreak = $0 { return true }; return false })
         onChange?()
+    }
+
+    /// Hand the scheduler's current pre-break state to the panel. A break that just started removes it at once;
+    /// anything else retracts it. Manual pause and away show nothing (spec 7.4).
+    private func refreshPreBreak(immediate: Bool = false) {
+        let hidden = manualPauseUntil != nil || awaySince != nil
+        preBreak.update(hidden ? nil : scheduler.preBreak, removal: immediate ? .immediate : .animated)
     }
 
     /// Wall-clock start of the break on screen, for its stats row (the scheduler runs on a monotonic clock).
@@ -269,6 +291,7 @@ final class AppController {
             endWork(at: now)
             awaySince = now
             overlay.dismiss(animated: false)
+            preBreak.update(nil, removal: .immediate)
         case .end:
             let secs = awaySince.map { now - $0 } ?? 0
             awaySince = nil
@@ -282,7 +305,7 @@ final class AppController {
     func breakNow(_ kind: BreakKind) { apply(scheduler.breakNow(kind, now: Self.now())) }
 
     /// Popover +5分 / +15分: push the next break back within the shared budget (greyed out otherwise).
-    func postpone(by seconds: Double) { scheduler.postpone(by: seconds); onChange?() }
+    func postpone(by seconds: Double) { scheduler.postpone(by: seconds); refreshPreBreak(); onChange?() }
 
     /// Settings "预览": 5 s of the long-break scene. Never touches the scheduler.
     func previewLong() {
@@ -299,6 +322,7 @@ final class AppController {
         }
         overlay.dismiss()
         manualPauseUntil = Self.now() + 3600
+        preBreak.update(nil, removal: .animated)
         onChange?()
     }
 

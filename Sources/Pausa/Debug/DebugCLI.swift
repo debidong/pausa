@@ -1,5 +1,6 @@
 #if DEBUG
 import AppKit
+import PausaCore
 
 /// Debug entry points for Detection/ and Overlay/ (no app shell needed).
 ///   --debug-detect [seconds]        print detector state every second (default 10s)
@@ -11,9 +12,12 @@ import AppKit
 ///   --debug-selftest-spacehold      Space/repeat handling with synthesized events (no window)
 ///   --debug-selftest-break-key      SHOWS short + long breaks (2 s each) and asserts the break window is key; dev Macs only
 ///   --debug-render-glass <dir>     PROTOTYPE: Liquid Glass vs fallback break screens (no window)
-///   --debug-render-prebreak <dir>  pre-break card: short/long/90-min line × light/dark × zh/en (no window)
-///   --debug-render-pill <dir>      cursor pill: countdown/typing × light/dark × zh/en (no window)
-///   --debug-selftest-prebreak      pill geometry + card content rules (no window)
+///   --debug-render-prebreak <dir>  pre-break panel: zh/en × notch/no notch × short/short-used-up/long/90-min, 16 PNGs at 2x (no window)
+///   --debug-render-pill <dir>      cursor pill: countdown/typing × zh/en, 4 PNGs at 2x (no window)
+///   --debug-selftest-prebreak      pill geometry, button sets, row wrapping, notch placement (no window)
+///   --debug-show-prebreak [--screen builtin|external|pointer] [--kind short|long|hard] [--used] [--from N] [--hold S] [--lang code]
+///                                  SHOWS the real panel counting down from N (default 30) for S seconds; dev Macs only, ask first.
+///                                  PAUSA_CAPTURABLE=1 lets screencapture see it.
 ///   --debug-render-short <out.png> [sample.png]  offscreen render of the short-break blur [--opacity 0-1]
 enum DebugCLI {
     static func handles(_ args: [String]) -> Bool {
@@ -342,6 +346,45 @@ enum DebugCLI {
             }
             app.run(); exit(0)
         }
+        if args.contains("--debug-show-prebreak") {
+            func opt(_ n: String) -> String? { args.firstIndex(of: n).flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil } }
+            let kindArg = opt("--kind") ?? "short"
+            let kind: BreakKind = kindArg == "short" ? .short : .long
+            let hard = kindArg == "hard", used = args.contains("--used")
+            var n = Int(opt("--from") ?? "30") ?? 30
+            let hold = Int(opt("--hold") ?? "12") ?? 12
+            if let l = opt("--lang"), let lang = AppLanguage(rawValue: l) { AppLanguage.override = lang }
+            let screenArg = opt("--screen") ?? "pointer"
+            Task { @MainActor in
+                #if DEBUG
+                let c = PreBreakController()
+                c.screenOverride = {
+                    switch screenArg {
+                    case "builtin": return NSScreen.screens.first { $0.safeAreaInsets.top > 0 }
+                    case "external": return NSScreen.screens.first { $0.safeAreaInsets.top == 0 }
+                    default: return nil
+                    }
+                }
+                c.onStartNow = { print("tap: break now"); c.dismissAll() }
+                c.onPostpone = { print("tap: snooze"); c.update(nil, removal: .animated) }
+                c.onSkip = { print("tap: skip"); c.update(nil, removal: .animated) }
+                func st(_ n: Int) -> PreBreakState {
+                    PreBreakState(kind: kind, secondsLeft: n, snooze: hard ? .hidden : (used ? .usedUp : .available(minutes: 5)),
+                                  canSkip: kind == .short, atHardLine: hard, typingWait: false, showCard: true, showPill: n <= 10)
+                }
+                for i in 0..<hold {
+                    c.update(st(max(1, n)), removal: .animated)
+                    if i == 1 { print("shown, screen: \(screenArg)") }
+                    try? await Task.sleep(nanoseconds: 1_000_000_000)
+                    n -= 1
+                }
+                c.update(nil, removal: .animated)
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                #endif
+                exit(0)
+            }
+            app.run(); exit(0)
+        }
         if args.contains("--debug-selftest-break-key") {
             // Visible: never run on a user's Mac without asking. Asserts the break window is key once it appears.
             Task { @MainActor in
@@ -375,7 +418,7 @@ enum DebugCLI {
             guard let i = args.firstIndex(of: flag), i + 1 < args.count else { continue }
             let dir = URL(fileURLWithPath: args[i + 1])
             MainActor.assumeIsolated {
-                PreBreakSnapshots.write(to: dir, cards: flag == "--debug-render-prebreak", pills: flag == "--debug-render-pill")
+                if flag == "--debug-render-prebreak" { PreBreakSnapshots.writePanels(to: dir) } else { PreBreakSnapshots.writePills(to: dir) }
             }
             exit(0)
         }
