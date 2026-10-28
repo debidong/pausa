@@ -24,6 +24,15 @@ public struct PreBreakState: Equatable {
     self.atHardLine = atHardLine; self.typingWait = typingWait; self.showCard = showCard; self.showPill = showPill
   }
 
+  /// What the user's two switches leave of this state; nil when neither the panel nor the pill remains.
+  /// The scheduler still counts as if both were on, so switching one off never changes when a break starts.
+  public func filtered(card: Bool, pill: Bool) -> PreBreakState? {
+    var s = self
+    s.showCard = showCard && card
+    s.showPill = showPill && pill
+    return s.showCard || s.showPill ? s : nil
+  }
+
   /// A panel that would open with fewer seconds left than this stays closed (only the pill
   /// shows), so it never grows and vanishes at once. Once open it stays until 0.
   public static let minOpenSeconds = 5

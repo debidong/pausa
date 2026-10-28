@@ -674,6 +674,14 @@ struct BreaksPage: View {
                     ForEach(S.longLengthOptions, id: \.self) { v in Text(L("unit.minutes", v)).tag(v) }
                 }
             }
+            Section {
+                Toggle(L("prebreak.setting.card"), isOn: $settings.preBreakCard)
+                Toggle(L("prebreak.setting.pill"), isOn: $settings.preBreakPill)
+            } header: {
+                Text(L("prebreak.setting.header"))
+            } footer: {
+                FormFooter(L("prebreak.setting.footer"))
+            }
             AutoPauseSection(settings: settings)
             ScheduleSection(settings: settings)
         }

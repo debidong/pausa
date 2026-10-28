@@ -201,6 +201,9 @@ final class Settings: ObservableObject {
     @Published var pauseForScreenSharing: Bool { didSet { d.set(pauseForScreenSharing, forKey: "pauseForScreenSharing") } }
     @Published var pauseForFocusMode: Bool { didSet { d.set(pauseForFocusMode, forKey: "pauseForFocusMode") } }
     @Published var focusModeScope: FocusModeScope { didSet { d.set(focusModeScope.rawValue, forKey: "focusModeScope") } }
+    /// 休息前提醒: the top-of-screen panel and the pointer countdown are two independent switches (default on).
+    @Published var preBreakCard: Bool { didSet { d.set(preBreakCard, forKey: "preBreakCard") } }
+    @Published var preBreakPill: Bool { didSet { d.set(preBreakPill, forKey: "preBreakPill") } }
     @Published var customPauseApps: [CustomPauseApp] {
         didSet { if !Self.dryRun, let data = try? JSONEncoder().encode(customPauseApps) { d.set(data, forKey: "customPauseApps") } }
     }
@@ -211,7 +214,8 @@ final class Settings: ObservableObject {
         ud.register(defaults: ["shortEveryMin": r.shortEvery, "shortLengthSec": r.shortLength,
                               "longLengthMin": r.longLength,
                               "pauseForMeetings": true, "pauseWhileTyping": true, "pauseForBrowserVideo": true,
-                              "pauseForScreenSharing": true, "pauseForFocusMode": true])
+                              "pauseForScreenSharing": true, "pauseForFocusMode": true,
+                              "preBreakCard": true, "preBreakPill": true])
         func pick(_ key: String, _ allowed: [Int], _ def: Int) -> Int {
             let v = ud.integer(forKey: key); return allowed.contains(v) ? v : def
         }
@@ -249,6 +253,8 @@ final class Settings: ObservableObject {
         ud.removeObject(forKey: "browserVideoScope")   // 包括网页里的视频 removed (Steve): web video always counts
         pauseForScreenSharing = ud.bool(forKey: "pauseForScreenSharing")
         pauseForFocusMode = ud.bool(forKey: "pauseForFocusMode")
+        preBreakCard = ud.bool(forKey: "preBreakCard")
+        preBreakPill = ud.bool(forKey: "preBreakPill")
         focusModeScope = FocusModeScope(rawValue: ud.string(forKey: "focusModeScope") ?? "") ?? .shortOnly
         customPauseApps = ud.data(forKey: "customPauseApps").flatMap { try? JSONDecoder().decode([CustomPauseApp].self, from: $0) } ?? []
         var sch = ud.data(forKey: "schedule").flatMap { try? JSONDecoder().decode(PausaSchedule.self, from: $0) } ?? Self.defaultSchedule
