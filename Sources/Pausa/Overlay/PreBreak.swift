@@ -366,9 +366,9 @@ struct CursorPill: View {
             .foregroundColor(.primary)
             .lineLimit(1).fixedSize()
             .padding(.horizontal, 10).padding(.vertical, 5)
-            // 65% solid between the glass and the text (white in light, black in dark): a white page or bright video
+            // 35% solid between the glass and the text (white in light, black in dark): a white page or bright video
             // behind the pill can't wash the digits out (Steve, appendix B). Later .background sits further back.
-            .background(Capsule().fill((scheme == .dark ? Color.black : Color.white).opacity(0.65)))
+            .background(Capsule().fill((scheme == .dark ? Color.black : Color.white).opacity(0.35)))
             .background(PillGlass())
             .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
     }
