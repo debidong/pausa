@@ -247,7 +247,7 @@ struct PanelSentence: View {
     /// 1 down to 0.8 when a language's sentence is wider than 320 (zh and en never are).
     private var scale: CGFloat {
         let p = parts
-        let w = PanelText.width(p.before, size: 15, weight: .regular) + max(24, PanelText.width(p.number, size: 20, weight: .semibold))
+        let w = PanelText.width(p.before, size: 15, weight: .regular) + max(26, PanelText.width(p.number, size: 20, weight: .semibold))
             + PanelText.width(p.after, size: 13, weight: .regular)
         return w <= PanelMetrics.contentWidth ? 1 : max(0.8, PanelMetrics.contentWidth / w)
     }
@@ -257,7 +257,7 @@ struct PanelSentence: View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             if !p.before.isEmpty { Text(p.before).font(.system(size: 15)).foregroundColor(.white.opacity(0.85)) }
             Text(p.number).font(.system(size: 20, weight: .semibold).monospacedDigit()).foregroundColor(.white)
-                .frame(minWidth: 24)
+                .frame(width: 26)
             if !p.after.isEmpty { Text(p.after).font(.system(size: 13)).foregroundColor(.white.opacity(0.6)) }
         }
         .lineLimit(1).fixedSize()
@@ -870,7 +870,7 @@ enum PreBreakSnapshots {
             AppLanguage.override = lang
             let a = NSHostingView(rootView: PanelSentence(kind: .short, seconds: 10)).fittingSize.width
             let b = NSHostingView(rootView: PanelSentence(kind: .short, seconds: 9)).fittingSize.width
-            check(abs(a - b) <= 2, "\(lang.rawValue): 10 → 9 moves the sentence by \(abs(a - b)) pt (≤ 2)")
+            check(abs(a - b) <= 0.5, "\(lang.rawValue): 10 → 9 moves the sentence by \(abs(a - b)) pt (≤ 0.5)")
         }
         // Outline: same command count at any radius (so Core Animation can interpolate).
         let p1 = PanelPath.make(CGRect(x: 0, y: 0, width: 185, height: 32), radius: 10, yUp: true)
