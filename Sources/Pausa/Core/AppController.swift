@@ -391,8 +391,9 @@ final class AppController {
     }
 
     var statusLine: String {
-        if let since = manualPausedSince {   // 「提醒已暂停 2 小时 10 分钟」, whole minutes
-            return L("status.pausedFor", StatsText.duration((max(0, Date().timeIntervalSince(since)) / 60).rounded(.down) * 60))
+        if let since = manualPausedSince {   // 「提醒已暂停 2 小时 10 分钟」, whole minutes; under a minute just 「提醒已暂停」
+            let minutes = (max(0, Date().timeIntervalSince(since)) / 60).rounded(.down)
+            return minutes < 1 ? L("status.paused") : L("status.pausedFor", StatsText.duration(minutes * 60))
         }
         if awaySince != nil { return L("status.away") }
         if case .paused(.outsideHours) = scheduler.phase {

@@ -1599,6 +1599,16 @@
     "vi": "Ngoài khung giờ",
     "th": "นอกช่วงเวลาเตือน"
   },
+  "status.paused": {
+    "zh-Hans": "提醒已暂停",
+    "zh-Hant": "提醒已暫停",
+    "en": "Reminders paused",
+    "es": "Recordatorios en pausa",
+    "ru": "Напоминания приостановлены",
+    "fr": "Rappels suspendus",
+    "vi": "Đã tạm dừng nhắc",
+    "th": "หยุดเตือนอยู่"
+  },
   "status.pausedFor": {
     "zh-Hans": "提醒已暂停 %@",
     "zh-Hant": "提醒已暫停 %@",
