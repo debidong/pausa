@@ -920,7 +920,7 @@
     "th": "ข้ามการพัก"
   },
   "prebreak.setting.card": {
-    "en": "Show a reminder at the top of the screen",
+    "en": "Show reminder at top of screen",
     "es": "Mostrar un aviso en la parte superior de la pantalla",
     "fr": "Afficher un rappel en haut de l'écran",
     "ru": "Показывать напоминание вверху экрана",
@@ -928,16 +928,6 @@
     "vi": "Hiển thị lời nhắc ở đầu màn hình",
     "zh-Hans": "在屏幕顶部显示提醒",
     "zh-Hant": "在螢幕頂部顯示提醒"
-  },
-  "prebreak.setting.footer": {
-    "en": "The reminder appears at the top of the screen 30 seconds before a break. For the last 10 seconds, a countdown follows your pointer.",
-    "es": "El aviso aparece en la parte superior de la pantalla 30 segundos antes de un descanso. Durante los últimos 10 segundos, una cuenta atrás sigue al puntero.",
-    "fr": "Le rappel apparaît en haut de l’écran 30 secondes avant une pause. Pendant les 10 dernières secondes, un compte à rebours suit le pointeur.",
-    "ru": "Напоминание появляется вверху экрана за 30 секунд до перерыва. В последние 10 секунд рядом с курсором появляется обратный отсчёт.",
-    "th": "การแจ้งเตือนจะปรากฏที่ด้านบนของหน้าจอ 30 วินาทีก่อนถึงเวลาพัก และในช่วง 10 วินาทีสุดท้าย การนับถอยหลังจะตามตัวชี้เมาส์ไป",
-    "vi": "Lời nhắc xuất hiện ở đầu màn hình 30 giây trước giờ nghỉ. Trong 10 giây cuối, đồng hồ đếm ngược đi theo con trỏ.",
-    "zh-Hans": "休息开始前 30 秒，提醒会出现在屏幕顶部。最后 10 秒，倒计时会跟在指针旁边。",
-    "zh-Hant": "休息開始前 30 秒，提醒會出現在螢幕頂部。最後 10 秒，倒數會跟在指標旁邊。"
   },
   "prebreak.setting.header": {
     "en": "Before a break",
@@ -950,7 +940,7 @@
     "zh-Hant": "休息前提醒"
   },
   "prebreak.setting.pill": {
-    "en": "Show a countdown next to the pointer",
+    "en": "Show countdown near the pointer",
     "es": "Mostrar una cuenta atrás junto al puntero",
     "fr": "Afficher un compte à rebours près du pointeur",
     "ru": "Показывать обратный отсчёт рядом с курсором",

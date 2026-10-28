@@ -26,10 +26,10 @@ public struct PreBreakState: Equatable {
 
   /// What the user's two switches leave of this state; nil when neither the panel nor the pill remains.
   /// The scheduler still counts as if both were on, so switching one off never changes when a break starts.
-  public func filtered(card: Bool, pill: Bool) -> PreBreakState? {
+  public func masked(panel: Bool, pointer: Bool) -> PreBreakState? {
     var s = self
-    s.showCard = showCard && card
-    s.showPill = showPill && pill
+    s.showCard = showCard && panel
+    s.showPill = showPill && pointer
     return s.showCard || s.showPill ? s : nil
   }
 

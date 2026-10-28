@@ -335,16 +335,38 @@ struct PreBreakContentView: View {
     }
 }
 
-/// The cursor pill for the last 10 seconds: black capsule, white text, no icon.
+/// A frosted capsule behind the pill, the same `.popover` material as the menu bar popover. It follows the system
+/// appearance, and Reduce Transparency is handled by the system. `.active` because the panel is never key.
+private struct PillGlass: NSViewRepresentable {
+    final class V: NSVisualEffectView {
+        override func layout() {
+            super.layout()
+            wantsLayer = true
+            layer?.cornerRadius = bounds.height / 2
+            layer?.masksToBounds = true
+        }
+    }
+    func makeNSView(context: Context) -> V {
+        let v = V()
+        v.material = .popover
+        v.blendingMode = .behindWindow
+        v.state = .active
+        return v
+    }
+    func updateNSView(_ v: V, context: Context) {}
+}
+
+/// The cursor pill for the last 10 seconds: frosted capsule, system text colour, no icon (Steve, appendix B).
 struct CursorPill: View {
     @ObservedObject var model: PreBreakModel
     var body: some View {
         Text(model.state.typingWait ? PreBreakCopy.typing : PreBreakCopy.pill(max(0, model.state.secondsLeft)))
             .font(.system(size: 12, weight: .semibold).monospacedDigit())
-            .foregroundColor(.white)
+            .foregroundColor(.primary)
             .lineLimit(1).fixedSize()
             .padding(.horizontal, 10).padding(.vertical, 5)
-            .background(Capsule().fill(Color.black))
+            .background(PillGlass())
+            .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
     }
 }
 
@@ -649,11 +671,19 @@ final class PreBreakController {
     private func showPill() {
         guard pill == nil, let model else { return }
         let host = NSHostingView(rootView: CursorPill(model: model)
-            .shadow(color: .black.opacity(0.4), radius: 7, x: 0, y: 4).padding(PreBreakController.pillInset)
+            .padding(PreBreakController.pillInset)
             .environment(\.locale, AppLanguage.current.locale))
         let p = PreBreakPanel(contentRect: NSRect(origin: .zero, size: host.fittingSize),
                               styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         Self.configure(p)
+        p.hasShadow = true                   // the system shadow follows the capsule's alpha
+        #if DEBUG
+        switch ProcessInfo.processInfo.environment["PAUSA_APPEARANCE"] {
+        case "dark": p.appearance = NSAppearance(named: .darkAqua)
+        case "light": p.appearance = NSAppearance(named: .aqua)
+        default: break
+        }
+        #endif
         p.ignoresMouseEvents = true          // clicks fall through to the app below
         p.contentView = host
         pill = p
@@ -781,23 +811,6 @@ enum PreBreakSnapshots {
                 for (stem, st) in cases {
                     png(scene(st, notch: notch), to: dir.appendingPathComponent("\(tag)-\(notch ? "notch" : "nonotch")-\(stem).png"))
                 }
-            }
-        }
-    }
-
-    /// 4 pills: {zh, en} × {countdown N = 7, typing} (spec 12.2).
-    static func writePills(to dir: URL) {
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let saved = AppLanguage.override
-        defer { AppLanguage.override = saved }
-        for (lang, tag) in [(AppLanguage.zhHans, "zh"), (.en, "en")] {
-            AppLanguage.override = lang
-            for (name, typing) in [("countdown", false), ("typing", true)] {
-                var st = state(.short, snooze: .available(minutes: 5), seconds: 7)
-                st.typingWait = typing
-                let v = CursorPill(model: PreBreakModel(st)).shadow(color: .black.opacity(0.4), radius: 7, x: 0, y: 4)
-                    .padding(24).background(backdrop)
-                png(v, to: dir.appendingPathComponent("\(tag)-pill-\(name).png"))
             }
         }
     }

@@ -32,8 +32,8 @@ final class AppController {
         restoreState()
         detector.$reasons.sink { [weak self] r in self?.updateReasons(r) }.store(in: &bag)
         // @Published fires before the value changes, so read it again on the next run-loop turn.
-        settings.$preBreakCard.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.refreshPreBreak() } }.store(in: &bag)
-        settings.$preBreakPill.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.refreshPreBreak() } }.store(in: &bag)
+        settings.$showPreBreakPanel.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.refreshPreBreak() } }.store(in: &bag)
+        settings.$showPreBreakPill.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.refreshPreBreak() } }.store(in: &bag)
         detector.onAway = { [weak self] e in self?.handleAway(e) }
         preBreak.onStartNow = { [weak self] in
             guard let self, let k = self.scheduler.preBreak?.kind else { return }
@@ -253,7 +253,7 @@ final class AppController {
     /// anything else retracts it. Manual pause and away show nothing (spec 7.4).
     private func refreshPreBreak(immediate: Bool = false) {
         let hidden = manualPauseUntil != nil || awaySince != nil
-        let shown = hidden ? nil : scheduler.preBreak?.filtered(card: settings.preBreakCard, pill: settings.preBreakPill)
+        let shown = hidden ? nil : scheduler.preBreak?.masked(panel: settings.showPreBreakPanel, pointer: settings.showPreBreakPill)
         preBreak.update(shown, removal: immediate ? .immediate : .animated)
     }
 

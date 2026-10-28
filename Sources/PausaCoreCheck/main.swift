@@ -1336,23 +1336,29 @@ final class PreBreakTests {
     XCTAssertEqual(p?.snooze, .available(minutes: 5))
   }
 
-  func testSwitchesFilterTheState() {   // Bowen 2026-10-28: card and pill are two independent switches
-    var s = sched(to: 1175)                       // 25 s left: card only
-    let a = s.preBreak
-    XCTAssertEqual(a?.showCard, true); XCTAssertEqual(a?.showPill, false)
-    XCTAssertTrue(a?.filtered(card: true, pill: true) == a)
-    XCTAssertTrue(a?.filtered(card: false, pill: true) == nil)       // nothing left to show yet
-    XCTAssertEqual(a?.filtered(card: true, pill: false)?.showCard, true)
-    var t = sched(to: 1190)                       // 10 s left: card and pill
-    let b = t.preBreak
-    XCTAssertEqual(b?.showCard, true); XCTAssertEqual(b?.showPill, true)
-    let onlyPill = b?.filtered(card: false, pill: true)
-    XCTAssertEqual(onlyPill?.showCard, false); XCTAssertEqual(onlyPill?.showPill, true)
-    XCTAssertEqual(onlyPill?.secondsLeft, b?.secondsLeft)
-    let onlyCard = b?.filtered(card: true, pill: false)
-    XCTAssertEqual(onlyCard?.showCard, true); XCTAssertEqual(onlyCard?.showPill, false)
-    XCTAssertTrue(b?.filtered(card: false, pill: false) == nil)
-    _ = s.skipUpcoming(now: 1175); _ = t.skipUpcoming(now: 1190)
+  // Bowen 2026-10-28: the top panel and the pointer countdown are two independent switches.
+  func testMaskOnlyPanel() {
+    let s = sched(to: 1190).preBreak                 // 10 s left: panel and pill
+    XCTAssertEqual(s?.showCard, true); XCTAssertEqual(s?.showPill, true)
+    let m = s?.masked(panel: true, pointer: false)
+    XCTAssertEqual(m?.showCard, true); XCTAssertEqual(m?.showPill, false)
+    XCTAssertEqual(m?.secondsLeft, s?.secondsLeft)
+    XCTAssertTrue(s?.masked(panel: true, pointer: true) == s)
+  }
+
+  func testMaskOnlyPointer() {
+    let s = sched(to: 1190).preBreak
+    let m = s?.masked(panel: false, pointer: true)
+    XCTAssertEqual(m?.showCard, false); XCTAssertEqual(m?.showPill, true)
+    XCTAssertEqual(m?.secondsLeft, s?.secondsLeft)
+    let early = sched(to: 1175).preBreak              // 25 s left: only the panel exists yet, so nothing remains
+    XCTAssertEqual(early?.showPill, false)
+    XCTAssertTrue(early?.masked(panel: false, pointer: true) == nil)
+  }
+
+  func testMaskBothOff() {
+    XCTAssertTrue(sched(to: 1175).preBreak?.masked(panel: false, pointer: false) == nil)
+    XCTAssertTrue(sched(to: 1190).preBreak?.masked(panel: false, pointer: false) == nil)
   }
 
   func testSkipUpcoming() {   // A12
@@ -1418,6 +1424,6 @@ let cases: [(String, () -> Void)] = [
  ("prebreak.cardAt30", pb.testCardAppearsAt30), ("prebreak.countdown", pb.testCountsDownEverySecond), ("prebreak.startsBreak", pb.testStartsBreakAtZero),
  ("prebreak.typingWait", pb.testTypingWaitShowsPillOnly), ("prebreak.pauseHides", pb.testPauseReasonsHideIt), ("prebreak.shortResume", pb.testShortResumeDoesNotOpenCard),
  ("prebreak.postpone", pb.testPostponeComesBackAt30), ("prebreak.snoozeUsedUp", pb.testSnoozeUsedUp), ("prebreak.ninetyLine", pb.testNinetyMinuteLine),
- ("prebreak.longNoSkip", pb.testLongBreakHasNoSkip), ("prebreak.skipUpcoming", pb.testSkipUpcoming), ("prebreak.switches", pb.testSwitchesFilterTheState), ("prebreak.breakNow", pb.testNoPanelOnBreakOrBreakNow)]
+ ("prebreak.longNoSkip", pb.testLongBreakHasNoSkip), ("prebreak.skipUpcoming", pb.testSkipUpcoming), ("prebreak.maskOnlyPanel", pb.testMaskOnlyPanel), ("prebreak.maskOnlyPointer", pb.testMaskOnlyPointer), ("prebreak.maskBothOff", pb.testMaskBothOff), ("prebreak.breakNow", pb.testNoPanelOnBreakOrBreakNow)]
 for (n, f) in cases { let before = failures; f(); print(failures == before ? "ok   \(n)" : "FAIL \(n)") }
 print(failures == 0 ? "ALL PASS (\(cases.count))" : "\(failures) failures"); exit(failures == 0 ? 0 : 1)
