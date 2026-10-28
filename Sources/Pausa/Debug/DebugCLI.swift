@@ -355,8 +355,13 @@ enum DebugCLI {
             let hold = Int(opt("--hold") ?? "12") ?? 12
             if let l = opt("--lang"), let lang = AppLanguage(rawValue: l) { AppLanguage.override = lang }
             let screenArg = opt("--screen") ?? "pointer"
+            setvbuf(stdout, nil, _IOLBF, 0)
             Task { @MainActor in
                 #if DEBUG
+                NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .leftMouseUp, .mouseEntered, .mouseMoved]) { e in
+                    print("event \(e.type.rawValue) in window level \(e.window?.level.rawValue ?? -1) key=\(e.window?.isKeyWindow ?? false) hit=\(e.window?.contentView?.hitTest(e.locationInWindow).map { String(describing: type(of: $0)) } ?? "-")"); return e
+                }
+                NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown]) { e in print("global mouseDown at \(NSEvent.mouseLocation)") }
                 let c = PreBreakController()
                 c.screenOverride = {
                     switch screenArg {
