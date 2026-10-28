@@ -86,7 +86,7 @@ struct MenuPopoverView: View {
             .frame(maxWidth: .infinity)
             .padding(.top, 12)
             if s.hardLine {
-                Text(L("break.hardLine"))
+                Text(Settings.shared.hardLineText)
                     .font(.system(size: 11)).foregroundColor(Color(nsColor: .systemOrange))
                     .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
                     .padding(.top, 4)

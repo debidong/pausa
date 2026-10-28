@@ -211,20 +211,22 @@ final class SchedulerTests {
     XCTAssertEqual(s.next.remaining, 300, accuracy: 3)
   }
   func testLegacyLongEveryMigration() {
-    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 50, everyMin: 20), 3)   // old default → 标准
-    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 45, everyMin: 20), 2)   // old 护眼优先
-    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 60, everyMin: 40), 2)   // old 少打扰
-    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 120, everyMin: 20), 4)  // capped at 90 min
-    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 30, everyMin: 25), 2)   // never below 2
+    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 50, everyMin: 20, line: 90), 3)   // old default → 标准
+    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 45, everyMin: 20, line: 90), 2)   // old 护眼优先
+    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 60, everyMin: 40, line: 90), 2)   // old 少打扰
+    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 120, everyMin: 20, line: 90), 4)  // capped at 90 min
+    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 30, everyMin: 25, line: 90), 2)   // never below 2
+    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 120, everyMin: 20, line: 60), 3)  // capped at the 60-minute line
+    XCTAssertEqual(Config.nth(forLegacyLongEveryMin: 120, everyMin: 20, line: 120), 6) // 120: room for all of it
   }
   func testNthCountConversion() {
     for (n, c) in [(2, 1), (3, 2), (4, 3), (5, 4), (6, 5)] {
       XCTAssertEqual(Config.count(fromNth: n), c); XCTAssertEqual(Config.nth(fromCount: c), n)
     }
     XCTAssertEqual(Config.count(fromNth: 1), 1)                                 // never below 1
-    XCTAssertTrue(Config.allows(everyMin: 45, count: 1)); XCTAssertTrue(!Config.allows(everyMin: 45, count: 2))
-    XCTAssertTrue(Config.allows(everyMin: 30, count: 2)); XCTAssertTrue(!Config.allows(everyMin: 30, count: 3))
-    XCTAssertTrue(Config.allows(everyMin: 15, count: 5)); XCTAssertTrue(!Config.allows(everyMin: 60, count: 1))
+    XCTAssertTrue(Config.allows(everyMin: 45, count: 1, line: 90)); XCTAssertTrue(!Config.allows(everyMin: 45, count: 2, line: 90))
+    XCTAssertTrue(Config.allows(everyMin: 30, count: 2, line: 90)); XCTAssertTrue(!Config.allows(everyMin: 30, count: 3, line: 90))
+    XCTAssertTrue(Config.allows(everyMin: 15, count: 5, line: 90)); XCTAssertTrue(!Config.allows(everyMin: 60, count: 1, line: 90))
     var c = Config(); c.breakEvery = 20 * 60; c.longEveryNth = Config.nth(fromCount: 1)   // default: 1 short, then long
     var s = Scheduler(); s.config = c
     XCTAssertEqual(s.cycle.of, 2)
@@ -235,9 +237,27 @@ final class SchedulerTests {
     XCTAssertEqual(ringStep(fraction: 0.8, paused: true), 0); XCTAssertEqual(ringStep(fraction: .nan, paused: false), 0)
   }
   func testCycleNinetyCap() {
-    XCTAssertTrue(Config.allows(everyMin: 20, nth: 3)); XCTAssertTrue(Config.allows(everyMin: 40, nth: 2))
-    XCTAssertTrue(Config.allows(everyMin: 45, nth: 2)); XCTAssertTrue(!Config.allows(everyMin: 20, nth: 5))
-    XCTAssertTrue(!Config.allows(everyMin: 60, nth: 2))
+    XCTAssertTrue(Config.allows(everyMin: 20, nth: 3, line: 90)); XCTAssertTrue(Config.allows(everyMin: 40, nth: 2, line: 90))
+    XCTAssertTrue(Config.allows(everyMin: 45, nth: 2, line: 90)); XCTAssertTrue(!Config.allows(everyMin: 20, nth: 5, line: 90))
+    XCTAssertTrue(!Config.allows(everyMin: 60, nth: 2, line: 90))
+  }
+  /// spec-hardline acceptance 2: at the 60-minute line, 20 × 3 fits and 30 × 3 does not; 120 lets 60 × 2 in.
+  func testHardLineSetting() {
+    XCTAssertTrue(Config.allows(everyMin: 20, nth: 3, line: 60)); XCTAssertTrue(!Config.allows(everyMin: 30, nth: 3, line: 60))
+    XCTAssertTrue(Config.allows(everyMin: 60, nth: 2, line: 120)); XCTAssertTrue(!Config.allows(everyMin: 45, nth: 2, line: 60))
+    XCTAssertEqual(Config.hardLineMinutes(60), 60); XCTAssertEqual(Config.hardLineMinutes(120), 120)
+    XCTAssertEqual(Config.hardLineMinutes(0), 90); XCTAssertEqual(Config.hardLineMinutes(75), 90)   // missing / other → 90
+    XCTAssertEqual(Config().hardLine, 90 * 60)
+  }
+  /// spec-hardline §4: line at 60, a 70-minute meeting: the long break starts the tick it ends, no heads-up.
+  func testSixtyLineMeetingEndsIntoLongBreak() {
+    var c = Config(); c.hardLine = 60 * 60
+    var s = Scheduler(config: c)
+    _ = run(&s, from: 0, to: 4200, reasons: [.meeting])   // 70 minutes
+    XCTAssertTrue(s.longMustNotDefer)
+    let out = s.tick(now: 4201, reasons: [], inputIdle: 10)
+    XCTAssertEqual(out, [.startBreak(.long, length: c.longLength)])
+    XCTAssertTrue(s.finish(.skipped, now: 4202).isEmpty)   // still can't be skipped
   }
 
   func testBreakEndsOnItsOwn() {
@@ -1394,7 +1414,7 @@ final class PreBreakTests {
 let pb = PreBreakTests()
 
 let cases: [(String, () -> Void)] = [
- ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
+ ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("hardLine.setting", t.testHardLineSetting), ("hardLine.sixtyMeeting", t.testSixtyLineMeetingEndsIntoLongBreak), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
  ("meeting.longEarns", t.testLongMeetingEarnsLongBreak), ("meeting.nearLong", t.testShortMeetingNearLongEarnsLongBreak), ("meeting.resumes", t.testShortMeetingResumes),
  ("waitsForTypingButNotForever", t.testWaitsForTypingButNotForever), ("lidClosedHourDoesNotFireStaleBreak", t.testLidClosedHourDoesNotFireStaleBreak),

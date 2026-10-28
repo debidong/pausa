@@ -176,7 +176,7 @@ enum PreBreakCopy {
     static func spoken(_ k: BreakKind, seconds n: Int) -> String {
         L(k == .short ? "prebreak.startsIn.short" : "prebreak.startsIn.long", n)
     }
-    static var hardLine: String { L("break.hardLine") }
+    static var hardLine: String { Settings.shared.hardLineText }
     static func pill(_ s: Int) -> String { L("pill.countdown", s) }
     static var typing: String { L("pill.typing") }
 }

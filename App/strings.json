@@ -300,14 +300,14 @@
     "th": "ขณะเล่นวิดีโอ"
   },
   "break.hardLine": {
-    "zh-Hans": "已连续使用 90 分钟，长休息不能再延后。",
-    "zh-Hant": "已連續使用 90 分鐘，長休息不能再延後。",
-    "en": "After 90 minutes, this long break can't be delayed.",
-    "es": "Llevas 90 minutos trabajando. La pausa larga ya no se puede posponer.",
-    "ru": "Вы работаете уже 90 минут. Длинный перерыв больше нельзя отложить.",
-    "fr": "Vous travaillez depuis 90 minutes. La pause longue ne peut plus être reportée.",
-    "vi": "Bạn đã làm việc 90 phút. Không thể hoãn lần nghỉ dài nữa.",
-    "th": "คุณใช้งานต่อเนื่องมา 90 นาทีแล้ว เลื่อนพักยาวออกไปอีกไม่ได้"
+    "zh-Hans": "已连续使用 %d 分钟，长休息不能再延后。",
+    "zh-Hant": "已連續使用 %d 分鐘，長休息不能再延後。",
+    "en": "After %d minutes, this long break can't be delayed.",
+    "es": "Llevas %d minutos trabajando. La pausa larga ya no se puede posponer.",
+    "ru": "Вы работаете уже %d минут. Длинный перерыв больше нельзя отложить.",
+    "fr": "Vous travaillez depuis %d minutes. La pause longue ne peut plus être reportée.",
+    "vi": "Bạn đã làm việc %d phút. Không thể hoãn lần nghỉ dài nữa.",
+    "th": "คุณใช้งานต่อเนื่องมา %d นาทีแล้ว เลื่อนพักยาวออกไปอีกไม่ได้"
   },
   "break.holdToSkip": {
     "zh-Hans": "长按 %@ 跳过",
@@ -348,6 +348,26 @@
     "fr": "Durée de la pause longue",
     "vi": "Thời lượng nghỉ dài",
     "th": "ระยะเวลาพักยาว"
+  },
+  "breaks.hardLine": {
+    "zh-Hans": "长休息最晚间隔",
+    "zh-Hant": "長休息最晚間隔",
+    "en": "Latest time between long breaks",
+    "es": "Tiempo máximo entre descansos largos",
+    "ru": "Максимум между длинными перерывами",
+    "fr": "Délai maximal entre pauses longues",
+    "vi": "Thời gian tối đa giữa hai lần nghỉ dài",
+    "th": "ระยะห่างสูงสุดระหว่างพักยาว"
+  },
+  "breaks.hardLineOption": {
+    "zh-Hans": "%d 分钟",
+    "zh-Hant": "%d 分鐘",
+    "en": "%d minutes",
+    "es": "%d minutos",
+    "ru": "%d минут",
+    "fr": "%d minutes",
+    "vi": "%d phút",
+    "th": "%d นาที"
   },
   "breaks.preset": {
     "zh-Hans": "预设",

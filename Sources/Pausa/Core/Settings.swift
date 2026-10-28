@@ -99,15 +99,17 @@ final class Settings: ObservableObject {
     // Allowed steps (ranges reviewed by 华佗); first value of each pair is the recommended default.
     static let shortEveryOptions = [10, 15, 20, 25, 30, 40, 45, 60]      // minutes
     static let shortLengthOptions = [20, 30, 45, 60]                 // seconds
-    static let shortsBeforeLongOptions = [1, 2, 3, 4, 5]                   // short breaks before a long one (old N − 1); interval × (count+1) ≤ 90
+    static let shortsBeforeLongOptions = [1, 2, 3, 4, 5]                   // short breaks before a long one (old N − 1); interval × (count+1) ≤ hard line
     static let longLengthOptions = [1, 2, 3, 5, 10]                  // minutes
     static let recommended = (shortEvery: 20, shortLength: 20, longEvery: 60, longLength: 5)
     static let recommendedCount = 1   // Steve: default 1 short break, then a long one
     /// count if Config.allows it for this interval, otherwise the largest option it allows (never below 1).
-    static func clampedCount(_ n: Int, everyMin: Int) -> Int {
-        if shortsBeforeLongOptions.contains(n), Config.allows(everyMin: everyMin, count: n) { return n }
-        return shortsBeforeLongOptions.filter { Config.allows(everyMin: everyMin, count: $0) }.max() ?? shortsBeforeLongOptions[0]
+    static func clampedCount(_ n: Int, everyMin: Int, line: Int) -> Int {
+        if shortsBeforeLongOptions.contains(n), Config.allows(everyMin: everyMin, count: n, line: line) { return n }
+        return shortsBeforeLongOptions.filter { Config.allows(everyMin: everyMin, count: $0, line: line) }.max() ?? shortsBeforeLongOptions[0]
     }
+    /// An interval is offered only if even the smallest count keeps the long break within the hard line.
+    static func intervalAllowed(_ m: Int, line: Int) -> Bool { Config.allows(everyMin: m, count: shortsBeforeLongOptions[0], line: line) }
 
     /// Rhythm presets. Values pending medical confirmation: keep them all in this one table.
     enum Preset: String, CaseIterable, Identifiable {
@@ -158,6 +160,15 @@ final class Settings: ObservableObject {
     @Published var shortLengthSec: Int { didSet { save() } }
     @Published var shortsBeforeLong: Int { didSet { save() } }
     var longEveryNth: Int { Config.nth(fromCount: shortsBeforeLong) }
+    /// 「长休息最晚间隔」: the hard line in minutes (Config.hardLineOptions). The one value every cap reads.
+    @Published var hardLineMinutes: Int { didSet { save() } }
+    /// 「已连续使用 N 分钟，长休息不能再延后。」 with the current hard line.
+    var hardLineText: String { L("break.hardLine", hardLineMinutes) }
+    /// A preset is offered only if its rhythm fits under the current hard line (greyed otherwise).
+    func allows(_ p: Preset) -> Bool {
+        guard let v = p.values else { return true }
+        return Config.allows(everyMin: v.shortEvery, count: v.count, line: hardLineMinutes)
+    }
     @Published var longLengthMin: Int { didSet { save() } }
     @Published var theme: ThemeChoice {
         didSet {
@@ -220,22 +231,26 @@ final class Settings: ObservableObject {
             let v = ud.integer(forKey: key); return allowed.contains(v) ? v : def
         }
         shortLengthSec = pick("shortLengthSec", Self.shortLengthOptions, r.shortLength)
+        let line = Config.hardLineMinutes(ud.integer(forKey: "hardLineMinutes"))   // missing or unknown → 90
+        hardLineMinutes = line
         // Migration: old builds stored "long break every M minutes"; map it to the nearest N.
         var every = pick("shortEveryMin", Self.shortEveryOptions, r.shortEvery)
         var count: Int
-        if every > 45 { every = 45 }   // no count ≥ 1 fits 90 minutes above 45 (that interval is greyed too)
+        if !Self.intervalAllowed(every, line: line) {   // no count ≥ 1 fits (that interval is greyed too)
+            every = Self.shortEveryOptions.filter { Self.intervalAllowed($0, line: line) }.max() ?? r.shortEvery
+        }
         if ud.object(forKey: "shortsBeforeLong") != nil {
             count = ud.integer(forKey: "shortsBeforeLong")
         } else if ud.object(forKey: "longEveryNth") != nil {
             count = Config.count(fromNth: ud.integer(forKey: "longEveryNth"))   // N=2→1, N=3→2, …
         } else if ud.object(forKey: "longEveryMin") != nil {
-            count = Config.count(fromNth: Config.nth(forLegacyLongEveryMin: ud.integer(forKey: "longEveryMin"), everyMin: every))
+            count = Config.count(fromNth: Config.nth(forLegacyLongEveryMin: ud.integer(forKey: "longEveryMin"), everyMin: every, line: line))
         } else {
             count = Self.recommendedCount
         }
         ud.removeObject(forKey: "longEveryNth"); ud.removeObject(forKey: "longEveryMin")
         // Clamp exactly as the interval picker does (largest count Config.allows), silently.
-        count = Self.clampedCount(count, everyMin: every)
+        count = Self.clampedCount(count, everyMin: every, line: line)
         shortEveryMin = every
         shortsBeforeLong = count
         theme = ThemeChoice.migrated(ud.string(forKey: "theme"))
@@ -271,6 +286,7 @@ final class Settings: ObservableObject {
         c.longEveryNth = longEveryNth
         c.shortLength = Double(shortLengthSec)
         c.longLength = Double(longLengthMin) * 60
+        c.hardLine = Double(hardLineMinutes) * 60
         return c
     }
 
@@ -279,6 +295,7 @@ final class Settings: ObservableObject {
         d.set(shortsBeforeLong, forKey: "shortsBeforeLong")
         d.set(shortLengthSec, forKey: "shortLengthSec")
         d.set(longLengthMin, forKey: "longLengthMin")
+        d.set(hardLineMinutes, forKey: "hardLineMinutes")
         onChange?(config)
     }
 

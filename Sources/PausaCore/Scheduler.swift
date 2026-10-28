@@ -64,9 +64,13 @@ public struct Config: Equatable {
   // Unified deferral budget (design §0).
   public var longDeferBudget: Double = 30 * 60
   public var shortDeferBudget: Double = 10 * 60
-  public var hardLine: Double = Double(Config.hardLineMinutes * 60)   // since last completed long break
-  /// The 90-minute line, in minutes: one definition for hardLine and the settings caps below.
-  public static let hardLineMinutes = 90
+  public var hardLine: Double = Double(Config.defaultHardLineMinutes * 60)   // since last completed long break
+  /// The hard line (「长休息最晚间隔」), in minutes: the setting's options and its default. Settings
+  /// passes the chosen value to hardLine and to the caps below; nothing else may hard-code it.
+  public static let hardLineOptions = [60, 90, 120]
+  public static let defaultHardLineMinutes = 90
+  /// A stored value that is not one of the options counts as the default.
+  public static func hardLineMinutes(_ stored: Int) -> Int { hardLineOptions.contains(stored) ? stored : defaultHardLineMinutes }
   public init() {}
 
   /// Shared deferral budget and length of each kind of break.
@@ -76,19 +80,19 @@ public struct Config: Equatable {
   /// Old name, kept for callers that still say "short".
   public var shortEvery: Double { get { breakEvery } set { breakEvery = newValue } }
 
-  /// interval × N may not exceed the 90-minute line (settings grey out the rest).
-  public static func allows(everyMin: Int, nth: Int) -> Bool { nth >= 1 && everyMin * nth <= hardLineMinutes }
+  /// interval × N may not exceed the hard line of `line` minutes (settings grey out the rest).
+  public static func allows(everyMin: Int, nth: Int, line: Int) -> Bool { nth >= 1 && everyMin * nth <= line }
 
   /// Settings show "短休息 [count] 次后进行一次长休息": count = short breaks between long ones = N − 1.
   public static func count(fromNth n: Int) -> Int { max(1, n - 1) }
   public static func nth(fromCount c: Int) -> Int { max(1, c) + 1 }
-  /// The 90-minute cap in count terms: interval × (count + 1) ≤ 90 (same Config.allows).
-  public static func allows(everyMin: Int, count: Int) -> Bool { allows(everyMin: everyMin, nth: nth(fromCount: count)) }
+  /// The same cap in count terms: interval × (count + 1) ≤ line (same Config.allows).
+  public static func allows(everyMin: Int, count: Int, line: Int) -> Bool { allows(everyMin: everyMin, nth: nth(fromCount: count), line: line) }
 
   /// Migrate the old "long break every M minutes" to the nearest N for interval `everyMin`.
-  public static func nth(forLegacyLongEveryMin m: Int, everyMin: Int) -> Int {
+  public static func nth(forLegacyLongEveryMin m: Int, everyMin: Int, line: Int) -> Int {
     guard everyMin > 0 else { return 3 }
-    let maxN = max(2, hardLineMinutes / everyMin)
+    let maxN = max(2, line / everyMin)
     let n = Int((Double(m) / Double(everyMin)).rounded())
     return min(maxN, max(2, n))
   }

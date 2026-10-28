@@ -649,20 +649,27 @@ struct BreaksPage: View {
     private var interval: Binding<Int> {
         Binding(get: { settings.shortEveryMin }, set: { v in
             settings.shortEveryMin = v
-            settings.shortsBeforeLong = S.clampedCount(settings.shortsBeforeLong, everyMin: v)
+            settings.shortsBeforeLong = S.clampedCount(settings.shortsBeforeLong, everyMin: v, line: settings.hardLineMinutes)
         })
     }
-    /// An interval is offered only if even the smallest count keeps the long break within 90 minutes.
-    static func intervalDisabled(_ m: Int) -> Bool { !Config.allows(everyMin: m, count: S.shortsBeforeLongOptions.first!) }
+    /// An interval is offered only if even the smallest count keeps the long break within the hard line.
+    static func intervalDisabled(_ m: Int) -> Bool { !S.intervalAllowed(m, line: S.shared.hardLineMinutes) }
 
     var body: some View {
         // Steve: grouped Form, one control per row; the rhythm sentence is the one exception.
         Form {
             Section {
                 Picker(L("breaks.preset"), selection: Binding(get: { settings.preset }, set: { settings.preset = $0 })) {
-                    ForEach(S.Preset.allCases) { Text($0.title).tag($0) }
+                    ForEach(S.Preset.allCases) { Text($0.title).tag($0).disabled(!settings.allows($0)) }
                 }
                 RhythmSentence(settings: settings, interval: interval)
+                // 「长休息最晚间隔」: a line under interval × count is greyed; nothing else changes with it.
+                Picker(L("breaks.hardLine"), selection: $settings.hardLineMinutes) {
+                    ForEach(Config.hardLineOptions, id: \.self) { v in
+                        Text(L("breaks.hardLineOption", v)).tag(v)
+                            .disabled(!Config.allows(everyMin: settings.shortEveryMin, count: settings.shortsBeforeLong, line: v))
+                    }
+                }
             } header: {
                 Text(L("breaks.rhythm"))
             }
@@ -702,7 +709,7 @@ struct RhythmSentence: View {
             })
             line(Plural.pick("rhythm.line2", settings.shortsBeforeLong), Picker("", selection: $settings.shortsBeforeLong) {
                 ForEach(S.shortsBeforeLongOptions, id: \.self) { n in
-                    Text(verbatim: "\(n)").tag(n).disabled(!Config.allows(everyMin: settings.shortEveryMin, count: n))
+                    Text(verbatim: "\(n)").tag(n).disabled(!Config.allows(everyMin: settings.shortEveryMin, count: n, line: settings.hardLineMinutes))
                 }
             })
         }
