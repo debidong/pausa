@@ -13,7 +13,7 @@ import PausaCore
 ///   --debug-selftest-break-key      SHOWS short + long breaks (2 s each) and asserts the break window is key; dev Macs only
 ///   --debug-render-glass <dir>     PROTOTYPE: Liquid Glass vs fallback break screens (no window)
 ///   --debug-render-prebreak <dir>  pre-break panel: zh/en × notch/no notch × short/short-used-up/long/90-min, 16 PNGs at 2x (no window)
-///   --debug-render-pill <dir>      cursor pill: countdown/typing × zh/en, 4 PNGs at 2x (no window)
+///   --debug-render-pill <dir>      cursor pill: prints a pointer to scripts/render-pill.sh (the pill is a real window now)
 ///   --debug-selftest-prebreak      pill geometry, button sets, row wrapping, notch placement (no window)
 ///   --debug-show-prebreak [--screen builtin|external|pointer] [--kind short|long|hard] [--used] [--from N] [--hold S] [--lang code]
 ///                                  SHOWS the real panel counting down from N (default 30) for S seconds; dev Macs only, ask first.
@@ -423,7 +423,10 @@ enum DebugCLI {
             guard let i = args.firstIndex(of: flag), i + 1 < args.count else { continue }
             let dir = URL(fileURLWithPath: args[i + 1])
             MainActor.assumeIsolated {
-                if flag == "--debug-render-prebreak" { PreBreakSnapshots.writePanels(to: dir) } else { PreBreakSnapshots.writePills(to: dir) }
+                if flag == "--debug-render-prebreak" { PreBreakSnapshots.writePanels(to: dir) } else {
+                    print("The pill is frosted glass, which ImageRenderer cannot draw. Run scripts/render-pill.sh <dir> instead (captures the real window).")
+                    exit(2)
+                }
             }
             exit(0)
         }
