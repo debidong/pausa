@@ -804,7 +804,7 @@ let pc = PauseCapTests()
 func testVideoSignalOnlyPlayback() {
   XCTAssertTrue(VideoSignal.isPlayback(type: "NoDisplaySleepAssertion", name: "Video Wake Lock"))
   XCTAssertTrue(!VideoSignal.isPlayback(type: "NoDisplaySleepAssertion", name: "Capturing"))   // fcBowena 2026-10-20
-  XCTAssertTrue(VideoSignal.isPlayback(type: "PreventUserIdleDisplaySleep", name: "com.apple.WebCore: HTMLMediaElement playback"))   // Safari, macBowena 2026-10-27
+  XCTAssertTrue(VideoSignal.isPlayback(type: "PreventUserIdleDisplaySleep", name: "com.apple.WebCore: HTMLMediaElement playback"))   // Safari, macBowena 2026-10-23
   XCTAssertTrue(!VideoSignal.isPlayback(type: "PreventUserIdleDisplaySleep", name: "IINA playback is in progress"))   // held for audio-only files too, macBowena 2026-10-27
   XCTAssertTrue(VideoSignal.isPlayback(type: "PreventUserIdleDisplaySleep", name: "VLC video playback"))
   XCTAssertTrue(!VideoSignal.isPlayback(type: "PreventUserIdleSystemSleep", name: "VLC audio playback"))
