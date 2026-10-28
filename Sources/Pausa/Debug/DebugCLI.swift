@@ -120,7 +120,7 @@ enum DebugCLI {
                 check("\(lang.rawValue): keys present", v("break.holdToSkip").contains("%@") && !v("key.space").isEmpty && !v("break.short.hint").isEmpty)
                 check("\(lang.rawValue): one line on a 1280-pt screen", cap < 600 && shortW < 1200)
             }
-            // Forced long break (past the 90-minute line), end to end through the same wiring the overlay uses.
+            // Forced long break (past the hard line), end to end through the same wiring the overlay uses.
             MainActor.assumeIsolated {
                 let real = HoldToSkip(); var skipped = false; real.onComplete = { skipped = true }
                 let forced = BreakOverlayController.holdFor(mustNotDefer: true, real)
@@ -373,6 +373,7 @@ enum DebugCLI {
                 c.onStartNow = { print("tap: break now"); c.dismissAll() }
                 c.onPostpone = { print("tap: snooze"); c.update(nil, removal: .animated) }
                 c.onSkip = { print("tap: skip"); c.update(nil, removal: .animated) }
+                c.onUrgent = { print("tap: urgent"); c.update(nil, removal: .immediate) }
                 func st(_ n: Int) -> PreBreakState {
                     PreBreakState(kind: kind, secondsLeft: n, snooze: hard ? .hidden : (used ? .usedUp : .available(minutes: 5)),
                                   canSkip: kind == .short, atHardLine: hard, typingWait: false, showCard: true, showPill: n <= 10)

@@ -143,7 +143,7 @@ final class SchedulerTests {
     XCTAssertEqual(k5, .short)                       // completed: a new cycle starts
   }
 
-  /// Skipping again and again never gets past the 90-minute line: there the skip is refused.
+  /// Skipping again and again never gets past the hard line: there the skip is refused.
   func testRepeatedSkipsStopAtNinety() {
     var s = Scheduler()
     var t = 0.0
@@ -538,7 +538,7 @@ final class DeferralTests {
     }
     XCTAssertEqual(start, 1800, accuracy: 2)
   }
-  /// R20: past the 90-minute line the long break starts on time even mid-typing.
+  /// R20: past the hard line the long break starts on time even mid-typing.
   func testTypingNeverDelaysForcedLong() {
     var s = Scheduler(config: cfg(95))
     var t = 0.0, start = -1.0
@@ -557,7 +557,7 @@ final class DeferralTests {
   }
   func testMenuPostponeLongStopsAtNinety() {
     let c = cfg(85)
-    var s = Scheduler(config: c)   // only 5 min left before the 90-minute line
+    var s = Scheduler(config: c)   // only 5 min left before the hard line
     _ = s.tick(now: 0, reasons: [], inputIdle: 10)
     XCTAssertTrue(!s.canPostpone(by: 900)); XCTAssertTrue(s.postpone(by: 300))
     XCTAssertEqual(s.postponeLeft, 0, accuracy: 1)
@@ -702,7 +702,7 @@ final class ManualPauseTests {
     for t in stride(from: 0.0, to: 7200, by: 1) { s.manualPauseTick(now: t) }
     XCTAssertEqual(s.phase, .working)
   }
-  /// Idle during 暂停提醒 1 小时 is not a long break either; only a lock is (Steve, 2026-10-20).
+  /// Idle during 暂停提醒 is not a long break either; only a lock is (Steve, 2026-10-20).
   func testIdleDuringPauseIsNotALongBreak() {
     var s = Scheduler()
     s.config.longEveryNth = 99
@@ -874,7 +874,7 @@ final class PersistenceTests {
     XCTAssertEqual(r.manualPauseEnded(now: t), [.startBreak(.long, length: 300)])
   }
 
-  /// Past the 90-minute line (and after skipping past it): a quick restart does not clear it.
+  /// Past the hard line (and after skipping past it): a quick restart does not clear it.
   func testMustNotDeferSurvivesRestart() {
     var s = ManualPauseTests().sixtyThenPause()       // 120 min since the last long break
     XCTAssertTrue(s.longMustNotDefer)
@@ -1097,7 +1097,7 @@ func testAccept7MeetingAfterHours() {
   XCTAssertEqual(total, 0, accuracy: 0.1)
 }
 func testAccept8ManualPauseIsWork() {
-  // 暂停 1 小时: AppController passes counting = in hours, holding = false.
+  // 暂停提醒: AppController passes counting = in hours, holding = false.
   var s = Scheduler()
   let total = Accept.workSeconds(from: 0, to: 3600) { t in s.manualPauseTick(now: t); return (true, false, 1) }
   XCTAssertEqual(total, 3600, accuracy: 1)
@@ -1257,7 +1257,7 @@ final class MicTests {
     let r = run(&s, from: 0, to: 1300, mic: { $0 >= 1190 && $0 < 1210 })
     XCTAssertEqual(r.starts, [1210]); XCTAssertEqual(r.holdTicks, 0)
   }
-  /// Past the 90-minute line nothing defers the long break except the mic's one-minute question: a
+  /// Past the hard line nothing defers the long break except the mic's one-minute question: a
   /// call starting just then gets no break on screen; a 20 s burst there delays it to the burst's end.
   func testMicFirmPastNinetyLine() {
     var cf = Config(); cf.breakEvery = 95 * 60; cf.longEveryNth = 1
@@ -1267,8 +1267,8 @@ final class MicTests {
     var s2 = Scheduler(config: cf)
     XCTAssertEqual(run(&s2, from: 0, to: 5800, mic: { $0 >= 5690 && $0 < 5710 }).starts, [5710])
   }
-  /// 100-minute meeting crossing the 90-minute line: no break during it or its grace; the long break
-  /// the tick the hold ends, no heads-up wait, the 90-minute clock not restarted.
+  /// 100-minute meeting crossing the hard line: no break during it or its grace; the long break
+  /// the tick the hold ends, no heads-up wait, the long-break clock not restarted.
   func testNinetyLineFiresRightAfterMeeting() {
     var s = Scheduler()
     let r = run(&s, from: 0, to: 6778, mic: { $0 >= 600 && $0 < 6660 })   // last mic tick 6659, grace to 6778
@@ -1427,7 +1427,7 @@ final class PreBreakTests {
     XCTAssertEqual(s.preBreak?.canSkip, true)
   }
 
-  /// 30-minute interval, long every 3rd break: the long break lands exactly on the 90-minute line.
+  /// 30-minute interval, long every 3rd break: the long break lands exactly on the hard line.
   func testNinetyMinuteLine() {   // A10, A11
     var c = Config(); c.breakEvery = 30 * 60
     var s = Scheduler(config: c)

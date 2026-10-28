@@ -14,7 +14,10 @@ final class AppController {
     let settings = Settings.shared
     private var pauseCap = PauseCap()
     private(set) var reasons: [PausaCore.PauseReason: String] = [:]   // reason -> full 「已暂停：…」 line
-    private(set) var manualPauseUntil: Double?
+    /// 暂停提醒 (spec-hardline: no expiry): when it was pressed, nil when not paused. Kept in UserDefaults
+    /// ("manualPaused" + "manualPausedSince", wall clock) so a quit or restart doesn't drop it.
+    private(set) var manualPausedSince: Date?
+    var manualPaused: Bool { manualPausedSince != nil }
     private var awaySince: Double?
     private var timer: Timer?
     private var bag: Set<AnyCancellable> = []
@@ -30,6 +33,10 @@ final class AppController {
     init() {
         scheduler = PausaCore.Scheduler(config: settings.config)
         restoreState()
+        if !Settings.dryRun, UserDefaults.standard.bool(forKey: "manualPaused") {
+            let t = UserDefaults.standard.double(forKey: "manualPausedSince")
+            manualPausedSince = t > 0 ? Date(timeIntervalSince1970: t) : Date()
+        }
         detector.$reasons.sink { [weak self] r in self?.updateReasons(r) }.store(in: &bag)
         // @Published fires before the value changes, so read it again on the next run-loop turn.
         settings.$showPreBreakPanel.dropFirst().sink { [weak self] _ in DispatchQueue.main.async { self?.refreshPreBreak() } }.store(in: &bag)
@@ -47,6 +54,7 @@ final class AppController {
             guard let self else { return }
             self.apply(self.scheduler.skipUpcoming(now: Self.now()))
         }
+        preBreak.onUrgent = { [weak self] in self?.urgentPause() }
         settings.onChange = { [weak self] c in self?.scheduler.config = c; self?.onChange?() }
         settings.onScheduleChange = { [weak self] in self?.scheduleChanged() }
         // Wall clock moved under us: re-evaluate 时段 and re-arm the boundary timer.
@@ -103,7 +111,7 @@ final class AppController {
         CGEventSource.secondsSinceLastEventType(.combinedSessionState, eventType: CGEventType(rawValue: ~0)!)
     }
 
-    // MARK: persistence (time since last long break, shared defer budget, 90-minute line)
+    // MARK: persistence (time since last long break, shared defer budget, hard line)
 
     private static let stateKey = "scheduler.state"
 
@@ -133,15 +141,12 @@ final class AppController {
     private func tick() {
         let now = Self.now()
         if now - lastSave >= 60 { saveState() }
-        if let until = manualPauseUntil {
-            if now < until {
-                let idle = Self.inputIdle()
-                scheduler.manualPauseTick(now: now)
-                preBreak.update(nil, removal: .animated)
-                trackWork(now: now, idle: idle, inHours: awaySince == nil && !outsideHours, holding: false)   // 暂停 1 小时 is still work; a lock is not
-                return
-            }
-            resume()
+        if manualPaused {   // until 恢复提醒; a lock resets the clock (away) but doesn't end the pause
+            let idle = Self.inputIdle()
+            scheduler.manualPauseTick(now: now)
+            preBreak.update(nil, removal: .animated)
+            trackWork(now: now, idle: idle, inHours: awaySince == nil && !outsideHours, holding: false)   // 暂停提醒 is still work; a lock is not
+            onChange?()   // 「提醒已暂停 N 分钟」 moves on each minute
             return
         }
         if awaySince != nil { return }
@@ -227,7 +232,8 @@ final class AppController {
                                  onFinish: { [weak self] in self?.finish(.completed) },
                                  show15: scheduler.postponeBudget(.long) >= Self.postponeLong,
                                  can15: scheduler.deferralLeft >= Self.postponeLong,
-                                 mustNotDefer: scheduler.longMustNotDefer)
+                                 mustNotDefer: scheduler.longMustNotDefer,
+                                 onUrgent: { [weak self] in self?.urgentPause() })
             case .resumeBreak(.short, let left):
                 overlay.showShort(duration: left,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
@@ -239,7 +245,8 @@ final class AppController {
                                  onFinish: { [weak self] in self?.finish(.completed) },
                                  show15: scheduler.postponeBudget(.long) >= Self.postponeLong,
                                  can15: scheduler.deferralLeft >= Self.postponeLong,
-                                 mustNotDefer: scheduler.longMustNotDefer)
+                                 mustNotDefer: scheduler.longMustNotDefer,
+                                 onUrgent: { [weak self] in self?.urgentPause() })
             case .endBreak:
                 overlay.dismiss()
                 onBreakEnded?()
@@ -252,7 +259,7 @@ final class AppController {
     /// Hand the scheduler's current pre-break state to the panel. A break that just started removes it at once;
     /// anything else retracts it. Manual pause and away show nothing (spec 7.4).
     private func refreshPreBreak(immediate: Bool = false) {
-        let hidden = manualPauseUntil != nil || awaySince != nil
+        let hidden = manualPaused || awaySince != nil
         let shown = hidden ? nil : scheduler.preBreak?.masked(panel: settings.showPreBreakPanel, pointer: settings.showPreBreakPill)
         preBreak.update(shown, removal: immediate ? .immediate : .animated)
     }
@@ -317,24 +324,44 @@ final class AppController {
         overlay.showLong(duration: 5, onSnooze: { _ in }, onSkip: {})
     }
 
-    func pauseForAnHour() {
-        if case .onBreak = scheduler.phase {
-            // Past the 90-minute line the long break can't be skipped, so it can't be paused away.
-            let cmds = scheduler.finish(.skipped, now: Self.now())
-            if cmds.isEmpty { return }
-            apply(cmds)   // records the skip
+    /// Menu 暂停提醒: no record of its own. A break on screen ends as skipped (one row); past the hard
+    /// line skip is refused, so it takes the urgent exit instead (also one skipped row).
+    func pause() {
+        let wasOnBreak = isOnBreak
+        setManualPause(Date())
+        if wasOnBreak {
+            var cmds = scheduler.finish(.skipped, now: Self.now())
+            if cmds.isEmpty { cmds = scheduler.urgentPause(now: Self.now()) }
+            apply(cmds)
         }
         overlay.dismiss()
-        manualPauseUntil = Self.now() + 3600
         preBreak.update(nil, removal: .animated)
         onChange?()
     }
 
+    /// 「有急事，暂停提醒」 (long-break screen / pre-break panel, only at the hard line): end that long
+    /// break as exactly one skip, then pause reminders as the menu does.
+    func urgentPause() {
+        setManualPause(Date())
+        apply(scheduler.urgentPause(now: Self.now()))
+        overlay.dismiss()
+        preBreak.update(nil, removal: .immediate)
+        onChange?()
+    }
+
     func resume() {
-        manualPauseUntil = nil
-        // Round 7b: the pause counted toward the 90-minute line; past it, the long break starts now.
+        setManualPause(nil)
+        // The pause counted toward the hard line; past it, the long break starts now.
         apply(scheduler.manualPauseEnded(now: Self.now()))
         onChange?()
+    }
+
+    private func setManualPause(_ since: Date?) {
+        manualPausedSince = since
+        guard !Settings.dryRun else { return }
+        let d = UserDefaults.standard
+        d.set(since != nil, forKey: "manualPaused")
+        if let since { d.set(since.timeIntervalSince1970, forKey: "manualPausedSince") } else { d.removeObject(forKey: "manualPausedSince") }
     }
 
     // MARK: what the menu shows
@@ -364,8 +391,8 @@ final class AppController {
     }
 
     var statusLine: String {
-        if let until = manualPauseUntil {
-            return L("status.pausedUntil", Self.clock(until - Self.now()))
+        if let since = manualPausedSince {   // 「提醒已暂停 2 小时 10 分钟」, whole minutes
+            return L("status.pausedFor", StatsText.duration((max(0, Date().timeIntervalSince(since)) / 60).rounded(.down) * 60))
         }
         if awaySince != nil { return L("status.away") }
         if case .paused(.outsideHours) = scheduler.phase {
@@ -395,7 +422,7 @@ final class AppController {
     }
 
     var isPaused: Bool {
-        if manualPauseUntil != nil || awaySince != nil { return true }
+        if manualPaused || awaySince != nil { return true }
         if case .paused = scheduler.phase { return true }
         return false
     }

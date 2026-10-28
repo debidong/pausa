@@ -10,7 +10,7 @@ public enum PauseReason: Hashable, Comparable {
   // order = display priority
   case meeting, screenSharing   // "holds": person still at the screen, never interrupted on screen
   case micInUse                 // hold: mic alone, no camera / meeting app (2-hour recheck applies)
-  case video                    // hold, but bounded by the deferral budget and the 90-minute rule
+  case video                    // hold, but bounded by the deferral budget and the hard line
   case fullscreen
   case outsideHours          // outside the user's Pausa 时段 (lowest priority)
 }
@@ -20,7 +20,7 @@ public enum PauseReason: Hashable, Comparable {
 public enum DeferralKind: Hashable {
   case typing, focusApp, focusMode
   case microphone   // mic on, not yet long enough to count as a meeting
-  /// Firm: holds even past the shared budget and the 90-minute line, for at most its own cap. Only
+  /// Firm: holds even past the shared budget and the hard line, for at most its own cap. Only
   /// the mic, so a call's first minute never gets a break on screen.
   var firm: Bool { self == .microphone }
 }
@@ -148,7 +148,7 @@ public struct Scheduler {
   /// A long break is owed until one is completed (Steve, 2026-10-20). Two ways it comes due:
   /// the Nth break of the cycle, or interval × N of active time since the last *completed* long
   /// break (default 60 min). Skips don't reset either, so a skipped long break comes back as the
-  /// next break, and nothing slips past the 90-minute line (interval × N <= hardLine, Config.allows).
+  /// next break, and nothing slips past the hard line (interval × N <= hardLine, Config.allows).
   /// The cycle count stays because meetingEnded uses it to owe a long break early.
   /// `k` breaks from now, `left` seconds of work away.
   private func isLong(afterBreaks k: Int, at left: Double) -> Bool {
@@ -183,7 +183,7 @@ public struct Scheduler {
     return kind.firm ? own : min(deferralLeft, own)
   }
 
-  /// 90-minute line reached: the long break may not wait.
+  /// Hard line reached: the long break may not wait.
   private func mustNotDefer(_ kind: BreakKind) -> Bool {
     kind == .long && sinceLongDone >= config.hardLine
   }
@@ -217,7 +217,7 @@ public struct Scheduler {
       if due { deferUsed += dt }
       let kind = next.kind
       let budget = config.deferBudget(kind)
-      // Video and fullscreen are bounded: past the budget or the 90-minute line it stops holding. Meetings and
+      // Video and fullscreen are bounded: past the budget or the hard line it stops holding. Meetings and
       // screen sharing keep waiting (no overlay on someone else's screen); the break follows after.
       if due && !reasons.isDisjoint(with: Self.boundedHolds) && (deferUsed >= budget || mustNotDefer(kind)) {
         reasons.subtract(Self.boundedHolds)
@@ -255,7 +255,7 @@ public struct Scheduler {
     let hard = mustNotDefer(kind)
     let usable = deferrals.filter { d in
       d.kinds.contains(kind) && (deferBySource[d.kind] ?? 0) < d.cap
-        // R20: past the 90-minute line nothing defers the long break, not even typing. A firm
+        // R20: past the hard line nothing defers the long break, not even typing. A firm
         // deferral (the mic, at most a minute) waits to learn whether it is a meeting.
         && (d.kind.firm || (!hard && deferUsed < budget))
     }
@@ -268,7 +268,7 @@ public struct Scheduler {
     }
 
     // Wait for a pause in typing, but not forever (R19, R21): the wait comes out of the shared
-    // budget, and stops when the budget is spent or the 90-minute line is reached.
+    // budget, and stops when the budget is spent or the hard line is reached.
     let since = dueSince ?? now
     dueSince = since
     if !hard && deferUsed < budget && inputIdle < config.typingIdle && now - since < config.typingGrace {
@@ -292,7 +292,7 @@ public struct Scheduler {
   /// User skipped, snoozed, or the overlay finished.
   public mutating func finish(_ outcome: BreakOutcome, now: Double) -> [Command] {
     guard case .onBreak(let kind, _) = phase else { return [] }
-    // Past the 90-minute line the long break can't be skipped or snoozed, whatever the UI shows.
+    // Past the hard line the long break can't be skipped or snoozed, whatever the UI shows.
     if kind == .long && outcome != .completed && mustNotDefer(.long) { return [] }
     phase = .working
     clearDeferral()
@@ -402,8 +402,8 @@ public struct Scheduler {
 
   /// At launch: pick up where the last run stopped. The time the app was not running is treated
   /// like a locked screen: at least `longLength` of it counts as a long break taken (both the
-  /// 90-minute clock and the defer budget reset); shorter gaps leave the counters as they were,
-  /// so the 90-minute line (mustNotDefer) survives a restart. A wall clock that moved backwards
+  /// long-break clock and the defer budget reset); shorter gaps leave the counters as they were,
+  /// so the hard line (mustNotDefer) survives a restart. A wall clock that moved backwards
   /// counts as no gap.
   public mutating func restore(_ s: Saved, wallClock: Double, now: Double) {
     sinceLongDone = max(0, s.sinceLongDone)
@@ -430,7 +430,7 @@ public struct Scheduler {
   }
 
   /// Seconds the menu's +5分 / +15分 may still push back the next break. Shares the deferral
-  /// budget, and a long break may never be pushed past the 90-minute line.
+  /// budget, and a long break may never be pushed past the hard line.
   public var postponeLeft: Double {
     let (kind, remaining, _) = next
     var left = deferralLeft
@@ -448,14 +448,14 @@ public struct Scheduler {
   /// Active time since the last *completed* long break, for the menu's 「距上次长休息」 row.
   public var sinceLastLongBreak: Double { sinceLongDone }
 
-  /// The 90-minute line is what limits postponing (not the budget): for the popover's reason line.
+  /// The hard line is what limits postponing (not the budget): for the popover's reason line.
   public var atHardLine: Bool {
     let (kind, remaining, _) = next
     return kind == .long && (mustNotDefer(.long) || sinceLongDone + remaining >= config.hardLine)
   }
 
   /// Menu bar "+5分 / +15分": push the next break back. Returns false (and does nothing) when the
-  /// budget or the 90-minute line doesn't allow it; the button should already be greyed out.
+  /// budget or the hard line doesn't allow it; the button should already be greyed out.
   @discardableResult
   public mutating func postpone(by seconds: Double) -> Bool {
     guard seconds > 0, canPostpone(by: seconds) else { return false }
@@ -510,14 +510,14 @@ public struct Scheduler {
   /// Rule: a long break is owed after a meeting if the meeting lasted >= meetingLongMin, or if the
   /// long break is within meetingNearLong of due (or overdue). It is then due afterMeetingDelay
   /// after the meeting ends (normal heads-up first), and the short break is held so it can't
-  /// fire in between; past the 90-minute line it starts the tick the hold ends. Otherwise both
+  /// fire in between; past the hard line it starts the tick the hold ends. Otherwise both
   /// counters resume where they were.
   mutating func meetingEnded(lasted: Double) {
     let longNear = next.kind == .long && next.remaining <= config.meetingNearLong
     guard lasted >= config.meetingLongMin || longNear || mustNotDefer(.long) else { return }
     breaksSinceLong = max(0, config.longEveryNth - 1)   // the next break is the long one
-    // Past the 90-minute line (reached before or during the hold) it is owed now: no 3-minute
-    // wait and no heads-up, and the 90-minute clock is not restarted (Steve, 2026-10-19).
+    // Past the hard line (reached before or during the hold) it is owed now: no 3-minute
+    // wait and no heads-up, and the long-break clock is not restarted (Steve, 2026-10-19).
     sinceBreak = mustNotDefer(.long) ? config.breakEvery : config.breakEvery - config.afterMeetingDelay
   }
 

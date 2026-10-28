@@ -89,7 +89,7 @@ struct PanelShape: Shape {
 // MARK: - Buttons: which ones, and how they wrap
 
 enum PanelButton: Equatable {
-    case skip, snooze(Int), snoozeUsedUp, now
+    case skip, snooze(Int), snoozeUsedUp, urgent, now
 
     /// Left to right (spec section 3). The view shows exactly this list.
     static func set(for s: PreBreakState) -> [PanelButton] {
@@ -98,7 +98,7 @@ enum PanelButton: Equatable {
         switch s.snooze {
         case .available(let m): b.append(.snooze(m))
         case .usedUp: b.append(.snoozeUsedUp)
-        case .hidden: break
+        case .hidden: if s.kind == .long && s.atHardLine { b.append(.urgent) }   // spec-hardline §5.2: in the snooze's place
         }
         b.append(.now)
         return b
@@ -109,6 +109,7 @@ enum PanelButton: Equatable {
         case .skip: return L("prebreak.skip")
         case .snooze(let m): return L("prebreak.postpone", m)
         case .snoozeUsedUp: return L("prebreak.postponeUsedUp")
+        case .urgent: return L("break.urgentPause")
         case .now: return L("menu.breakNow")
         }
     }
@@ -147,7 +148,7 @@ enum RowLayout: Equatable {
         if width(of: b) <= avail { return .single }
         if b.contains(.snoozeUsedUp) {
             if width(of: b.filter { $0 != .snoozeUsedUp }) <= avail { return .noteBelow }
-        } else if b.contains(where: { $0.isSnooze }) {
+        } else if b.contains(where: { $0.isSnooze || $0 == .urgent }) {
             let top = b.filter { $0 != .now }
             if width(of: top) <= avail, width(of: [.now]) <= avail { return .wrapNow }
         }
@@ -193,6 +194,7 @@ final class PreBreakModel: ObservableObject {
 struct PreBreakActions {
     var skip: () -> Void = {}
     var snooze: () -> Void = {}
+    var urgent: () -> Void = {}
     var now: () -> Void = {}
 }
 
@@ -207,7 +209,7 @@ struct PanelButtonView: View {
     private var fg: Color {
         switch kind {
         case .skip: return .white.opacity(hover ? 0.75 : 0.45)
-        case .snooze: return .white.opacity(hover ? 1 : 0.75)
+        case .snooze, .urgent: return .white.opacity(hover ? 1 : 0.75)
         case .snoozeUsedUp: return .white.opacity(0.3)
         case .now: return .black
         }
@@ -215,7 +217,7 @@ struct PanelButtonView: View {
     private var bg: Color {
         switch kind {
         case .now: return hover ? Color(white: 0xE8 / 255.0) : .white
-        case .snooze: return hover ? .white.opacity(0.08) : .clear
+        case .snooze, .urgent: return hover ? .white.opacity(0.08) : .clear
         default: return .clear
         }
     }
@@ -300,6 +302,7 @@ struct PreBreakContentView: View {
             switch b {
             case .skip: actions.skip()
             case .snooze: actions.snooze()
+            case .urgent: actions.urgent()
             case .now: actions.now()
             case .snoozeUsedUp: break
             }
@@ -485,6 +488,7 @@ final class PreBreakController {
     var onStartNow: () -> Void = {}
     var onPostpone: () -> Void = {}
     var onSkip: () -> Void = {}
+    var onUrgent: () -> Void = {}
 
     private var model: PreBreakModel?
     private var panel: OpenPanel?
@@ -553,6 +557,7 @@ final class PreBreakController {
     private var actions: PreBreakActions {
         PreBreakActions(skip: { [weak self] in self?.onSkip() },
                         snooze: { [weak self] in self?.onPostpone() },
+                        urgent: { [weak self] in self?.onUrgent() },
                         now: { [weak self] in self?.onStartNow() })
     }
 
@@ -647,7 +652,7 @@ final class PreBreakController {
         CATransaction.commit()
     }
 
-    /// The content can change height while the panel is up (the 90-minute line appears): follow it, no animation.
+    /// The content can change height while the panel is up (the hard line appears): follow it, no animation.
     private func resizeSoon() {
         DispatchQueue.main.async { [weak self] in
             MainActor.assumeIsolated {
@@ -853,7 +858,7 @@ enum PreBreakSnapshots {
         check(PanelButton.set(for: c[1]) == [.skip, .snoozeUsedUp, .now], "S2: skip · can't snooze · now")
         check(PanelButton.set(for: c[2]) == [.snooze(5), .now], "S3: snooze · now")
         check(PanelButton.set(for: state(.long, snooze: .usedUp)) == [.snoozeUsedUp, .now], "S4: can't snooze · now")
-        check(PanelButton.set(for: c[3]) == [.now], "S5: now only")
+        check(PanelButton.set(for: c[3]) == [.urgent, .now], "S5: urgent · now")
 
         // 2. English S2 puts the note on its own line, Chinese does not.
         AppLanguage.override = .en

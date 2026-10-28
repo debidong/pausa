@@ -18,7 +18,6 @@ struct PopoverState: Equatable {
     var show15 = true                   // this break type's total allowance reaches 15 min (round 3 §7)
     var manualPaused = false
     var autoPaused = false
-    var canPause = true                 // round 7b: greyed while the long break must not be deferred
     var update: String?                 // a downloaded update waiting for a restart (「有新版本 x.y.z」)
     var canInstall = true               // false during a break: installing relaunches the app
 }
@@ -93,17 +92,17 @@ struct MenuPopoverView: View {
             }
 
             // One row when it fits; long translations wrap to break-now over the postpones.
-            // Round 7b: 暂停提醒 1 小时 / 恢复提醒 is a bordered button like 休息延后, alone and centred
-            // on the next row, one button gap (6 pt) below. Hidden during an automatic pause.
+            // Round 7b: 暂停提醒 / 恢复提醒 is a bordered button like 休息延后, alone and centred
+            // on the next row, one button gap (6 pt) below. Hidden during an automatic pause; never
+            // greyed (spec-hardline: also past the hard line).
             VStack(spacing: Self.buttonGap) {
                 ViewThatFits(in: .horizontal) {
                     HStack(spacing: Self.buttonGap) { breakButton; postponeButtons }
                     VStack(spacing: Self.buttonGap) { breakButton; HStack(spacing: Self.buttonGap) { postponeButtons } }
                 }
                 if s.manualPaused || !s.autoPaused {
-                    Button(s.manualPaused ? L("menu.resume") : L("menu.pauseHour"), action: actions.togglePause)
+                    Button(s.manualPaused ? L("menu.resume") : L("menu.pause"), action: actions.togglePause)
                         .buttonStyle(.bordered).fixedSize()
-                        .disabled(!s.manualPaused && !s.canPause)
                 }
             }
             .controlSize(.small)
@@ -154,7 +153,7 @@ struct MenuPopoverView: View {
         L(s.kind == .long ? "menu.next.long" : "menu.next.short", AppController.clock(s.remaining), Self.lengthText(s.length))
     }
 
-    /// While paused, or at the 90-minute line, only 「现在休息」 is left. 15 is hidden when the allowance can never reach it.
+    /// While paused, or at the hard line, only 「现在休息」 is left. 15 is hidden when the allowance can never reach it.
     private var postponeButtons: some View {
         ForEach(s.hardLine || s.held ? [] : (s.show15 ? [5, 15] : [5]), id: \.self) { m in
             Button(BreakOverlayController.Copy.snooze(m)) { actions.postpone(Double(m * 60)) }

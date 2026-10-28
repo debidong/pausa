@@ -7,7 +7,7 @@ public struct PreBreakState: Equatable {
   public enum Snooze: Equatable {
     case available(minutes: Int)   // 「稍后 N 分钟」 can be tapped
     case usedUp                    // 「不能再延后」, greyed out
-    case hidden                    // not shown at all (90-minute line)
+    case hidden                    // not shown at all (hard line)
   }
   public var kind: BreakKind
   public var secondsLeft: Int      // ceil(remaining); 1…30 while the panel is up; 0 while waiting for typing

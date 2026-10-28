@@ -175,7 +175,7 @@ final class MenuBarController: NSObject {
         st.held = held
         if held {
             st.status = app.statusLine
-            if app.manualPauseUntil == nil, let src = app.currentPauseSource, st.status == src.statusText {
+            if !app.manualPaused, let src = app.currentPauseSource, st.status == src.statusText {
                 st.statusAppID = src.bundleID; st.statusAppName = src.displayName
             }
         }
@@ -184,9 +184,8 @@ final class MenuBarController: NSObject {
         st.can15 = !held && sch.canPostpone(by: AppController.postponeLong)
         st.hardLine = !held && sch.atHardLine && !st.can5
         st.show15 = sch.postponeBudget(n.kind) >= AppController.postponeLong
-        st.manualPaused = app.manualPauseUntil != nil
-        st.autoPaused = app.isPaused && app.manualPauseUntil == nil
-        st.canPause = !sch.longMustNotDefer
+        st.manualPaused = app.manualPaused
+        st.autoPaused = app.isPaused && !app.manualPaused
         st.update = UpdateModel.shared.readyVersion
         st.canInstall = !onBreak
         UpdateModel.shared.canInstall = !onBreak
@@ -258,7 +257,7 @@ final class MenuBarController: NSObject {
 
     // MARK: actions
 
-    private func togglePause() { app.manualPauseUntil == nil ? app.pauseForAnHour() : app.resume() }
+    private func togglePause() { app.manualPaused ? app.resume() : app.pause() }
 
     /// "关于 Pausa": the About page of the Settings window (no separate panel).
     static weak var shared: MenuBarController?
@@ -267,7 +266,7 @@ final class MenuBarController: NSObject {
 #if DEBUG
     /// `--capture-menu out.png [--paused] [--meeting]`: open the real popover, screenshot it, exit.
     func captureMenu(to path: String, paused: Bool, meeting: Bool = false) {
-        if paused { app.pauseForAnHour() }
+        if paused { app.pause() }
         if meeting { app.simulateReasons([.meeting]) }
         DispatchQueue.main.asyncAfter(deadline: .now() + (meeting ? 1.5 : 0.3)) {
             if meeting { self.app.simulateReasons([.meeting]) }
@@ -1010,7 +1009,7 @@ final class SnapshotWindow: NSWindow {
 }
 
 /// `Pausa --render-menu out.png [--lang en]`: the menu-bar popover offscreen, light and dark, in a set of
-/// sample states (normal, postpone used up, long next, at the 90-minute line, paused).
+/// sample states (normal, postpone used up, long next, at the hard line, paused).
 enum MenuSnapshot {
     static var samples: [(String, PopoverState)] {
         var normal = PopoverState()   // short break: 10-minute allowance, so no 15
@@ -1021,13 +1020,13 @@ enum MenuSnapshot {
         long.kind = .long; long.length = 300; long.remaining = 728; long.show15 = true; long.can15 = false
         var longFree = long             // nothing used yet
         longFree.can15 = true
-        var limit = long                // 90-minute line: only 现在休息
-        limit.hardLine = true; limit.can5 = false; limit.can15 = false; limit.canPause = false
+        var limit = long                // hard line: only 现在休息 (暂停提醒 stays)
+        limit.hardLine = true; limit.can5 = false; limit.can15 = false
         var paused = normal
         paused.held = true; paused.status = PauseReason.meeting.pausedText; paused.can5 = false; paused.can15 = false
         paused.autoPaused = true
-        var manual = normal              // 暂停提醒 1 小时 pressed: the same button reads 恢复提醒
-        manual.held = true; manual.status = L("status.pausedUntil", "58:00"); manual.can5 = false; manual.can15 = false
+        var manual = normal              // 暂停提醒 pressed: the same button reads 恢复提醒
+        manual.held = true; manual.status = L("status.pausedFor", StatsText.duration(2 * 3600 + 10 * 60)); manual.can5 = false; manual.can15 = false
         manual.manualPaused = true
         var out = [("1-normal", normal), ("2-used", used), ("3-long", long), ("3b-long-free", longFree), ("4-limit", limit), ("5-paused", paused), ("6-manual-paused", manual)]
         // PauseSource: one paused state per kind with that app's icon (Safari when the app isn't installed),

@@ -309,6 +309,16 @@
     "vi": "Bạn đã làm việc %d phút. Không thể hoãn lần nghỉ dài nữa.",
     "th": "คุณใช้งานต่อเนื่องมา %d นาทีแล้ว เลื่อนพักยาวออกไปอีกไม่ได้"
   },
+  "break.urgentPause": {
+    "zh-Hans": "有急事，暂停提醒",
+    "zh-Hant": "有急事，暫停提醒",
+    "en": "Urgent: pause reminders",
+    "es": "Tengo una urgencia: pausar recordatorios",
+    "ru": "Срочное дело: приостановить напоминания",
+    "fr": "Urgence : suspendre les rappels",
+    "vi": "Có việc gấp, tạm dừng nhắc",
+    "th": "มีธุระด่วน หยุดเตือนชั่วคราว"
+  },
   "break.holdToSkip": {
     "zh-Hans": "长按 %@ 跳过",
     "zh-Hant": "長按 %@ 略過",
@@ -599,15 +609,15 @@
     "vi": "%@ nữa nghỉ ngắn, %@",
     "th": "พักสั้นในอีก %@ นาน %@"
   },
-  "menu.pauseHour": {
-    "zh-Hans": "暂停提醒 1 小时",
-    "zh-Hant": "暫停提醒 1 小時",
-    "en": "Pause for 1 hour",
-    "es": "Pausar 1 hora",
-    "ru": "Приостановить на 1 час",
-    "fr": "Suspendre 1 heure",
-    "vi": "Tạm dừng nhắc 1 giờ",
-    "th": "หยุดเตือน 1 ชั่วโมง"
+  "menu.pause": {
+    "zh-Hans": "暂停提醒",
+    "zh-Hant": "暫停提醒",
+    "en": "Pause reminders",
+    "es": "Pausar recordatorios",
+    "ru": "Приостановить напоминания",
+    "fr": "Suspendre les rappels",
+    "vi": "Tạm dừng nhắc",
+    "th": "หยุดเตือนชั่วคราว"
   },
   "menu.postpone": {
     "zh-Hans": "稍后 %d 分钟",
@@ -1589,15 +1599,15 @@
     "vi": "Ngoài khung giờ",
     "th": "นอกช่วงเวลาเตือน"
   },
-  "status.pausedUntil": {
-    "zh-Hans": "已暂停，%@ 后恢复",
-    "zh-Hant": "已暫停，%@ 後恢復",
-    "en": "Paused, resumes in %@",
-    "es": "En pausa, se reanuda en %@",
-    "ru": "Приостановлено, возобновится через %@",
-    "fr": "En pause, reprise dans %@",
-    "vi": "Đã tạm dừng, tiếp tục sau %@",
-    "th": "หยุดชั่วคราว เริ่มต่อในอีก %@"
+  "status.pausedFor": {
+    "zh-Hans": "提醒已暂停 %@",
+    "zh-Hant": "提醒已暫停 %@",
+    "en": "Reminders paused for %@",
+    "es": "Recordatorios en pausa desde hace %@",
+    "ru": "Напоминания приостановлены уже %@",
+    "fr": "Rappels suspendus depuis %@",
+    "vi": "Đã tạm dừng nhắc được %@",
+    "th": "หยุดเตือนมาแล้ว %@"
   },
   "status.shortIn": {
     "zh-Hans": "短休息：%@ 后",

@@ -78,7 +78,7 @@ public struct WorkClock: Equatable {
   public init() {}
 
   /// `counting`: Pausa would remind now (active hours, not quiet hours), no break on screen, not locked.
-  /// 暂停提醒 1 小时 still counts. `holding`: a meeting, screen share, video or full screen, where the
+  /// 暂停提醒 still counts. `holding`: a meeting, screen share, video or full screen, where the
   /// scheduler already treats the person as at the screen; idle does not end the span then.
   public mutating func update(now: Double, counting: Bool, holding: Bool = false, inputIdle: Double,
                               idleLimit: Double) -> (start: Double, end: Double)? {

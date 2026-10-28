@@ -29,6 +29,8 @@ public final class BreakOverlayController {
     private var dimWindows: [NSWindow] = []
     private var capsules: [NSPanel] = []
     private var onShortSkip: (() -> Void)?
+    /// 「有急事，暂停提醒」 on a long break past the hard line (spec-hardline §5.2).
+    private var onUrgent: (() -> Void)?
     /// Tint over the short-break blur; a bit stronger in Dark mode.
     static let shortDim = 0.25
     static let shortDimDark = 0.32
@@ -75,7 +77,7 @@ public final class BreakOverlayController {
     }
     private func removeKeyMonitor() { if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil } }
     private var shownAt: TimeInterval = 0
-    /// Past the 90-minute line: no postpone buttons and Space can't skip (no progress, no beep).
+    /// Past the hard line: no postpone buttons and Space can't skip (no progress, no beep).
     private var mustNotDefer = false
     private var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
     /// Fade-in for every break window (round 3b §1).
@@ -123,12 +125,14 @@ public final class BreakOverlayController {
                          onSnooze: @escaping (Int) -> Void,
                          onSkip: @escaping () -> Void,
                          onFinish: (() -> Void)? = nil,
-                         show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false) {
+                         show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false,
+                         onUrgent: (() -> Void)? = nil) {
         RandomScene.roll()
         dismiss(animated: false)
         self.show15 = show15; self.can15 = can15; self.mustNotDefer = mustNotDefer
         mode = .long(onSnooze: onSnooze, onSkip: onSkip)
         self.onFinish = onFinish
+        self.onUrgent = mustNotDefer ? onUrgent : nil
         let cd = Countdown(total: duration) { [weak self] in self?.finish() }
         countdown = cd
 
@@ -161,6 +165,7 @@ public final class BreakOverlayController {
         mode = nil
         onFinish = nil
         onShortSkip = nil
+        onUrgent = nil
         let windows = dimWindows + longWindows + capsules
         dimWindows = []; longWindows = []; capsules = []
         fadeOut(windows, animated: animated)
@@ -193,6 +198,13 @@ public final class BreakOverlayController {
         holdToSkip.cancel(animated: false)
         guard case .long(_, let onSkip) = mode else { return }
         dismiss(); onSkip()
+    }
+
+    /// 「有急事，暂停提醒」: off the screen at once, then the app pauses reminders.
+    private func urgent() {
+        guard case .long = mode, let cb = onUrgent else { return }
+        dismiss(animated: false)
+        cb()
     }
 
     private func restorePreviousApp() {
@@ -243,7 +255,8 @@ public final class BreakOverlayController {
             let view = LongBreakView(countdown: cd, showControls: screen == primary,
                                      onSnooze: { [weak self] in self?.snooze($0) },
                                      seed: sceneSeed, daypart: daypart, hold: Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip), quote: longQuote,
-                                     show15: show15, can15: can15, locked: mustNotDefer)
+                                     show15: show15, can15: can15, locked: mustNotDefer,
+                                     onUrgent: onUrgent == nil ? nil : { [weak self] in self?.urgent() })
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
             let frame = NSRect(origin: .zero, size: screen.frame.size)
             let base = Self.makeBlurView(frame: frame, tint: Self.currentShortDim)
@@ -435,7 +448,7 @@ enum SpaceHold {
 }
 
 extension BreakOverlayController {
-    /// nil past the 90-minute line: Space is still swallowed by the window, but never skips.
+    /// nil past the hard line: Space is still swallowed by the window, but never skips.
     static func holdFor(mustNotDefer: Bool, _ hold: HoldToSkip) -> HoldToSkip? { mustNotDefer ? nil : hold }
     /// Debug self-test hook: the window that should be key while a break is up.
     var keyTargetForTest: NSWindow? { longWindows.first { $0.isKeyWindow } ?? capsules.first }

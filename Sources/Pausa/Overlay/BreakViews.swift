@@ -295,8 +295,10 @@ struct LongBreakView: View {
     /// Round 3 §7: 15 is hidden when the long-break allowance is under 15 min, dimmed when what's left is.
     var show15 = true
     var can15 = true
-    /// Round 7b: past the 90-minute line. No skip hint and no postpone buttons, just the reason.
+    /// Round 7b: past the hard line. No skip hint and no postpone buttons, just the reason.
     var locked = false
+    /// spec-hardline §5.2: 「有急事，暂停提醒」 under the reason while `locked` (nil: no button).
+    var onUrgent: (() -> Void)? = nil
     /// Hero mock (DEV): only the hold-to-skip capsule, no postpone buttons.
     var skipOnly = false
     /// Hero mock (DEV): draw this image instead of the scenery; `bare` hides all UI over it.
@@ -339,8 +341,11 @@ struct LongBreakView: View {
                     Spacer()
                     HStack(spacing: 10) {
                         if locked {
-                            Text(Settings.shared.hardLineText)
-                                .font(.system(size: 13, weight: .medium)).foregroundColor(.white.opacity(0.85))
+                            VStack(spacing: 10) {
+                                Text(Settings.shared.hardLineText)
+                                    .font(.system(size: 13, weight: .medium)).foregroundColor(.white.opacity(0.85))
+                                if let onUrgent { Button(L("break.urgentPause"), action: onUrgent) }
+                            }
                         } else {
                             if !skipOnly { Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) } }
                             if show15, !skipOnly {
@@ -370,7 +375,7 @@ extension LongBreakView {
     static let midnightDim = 0.5
     /// Clock + quote: bright by day/evening, dim at midnight so the screen doesn't wake you up.
     var textTone: GlassClock.Tone { daypart == .midnight ? .dim : .bright }
-    /// The skip capsule is drawn only when skipping is possible (never past the 90-minute line).
+    /// The skip capsule is drawn only when skipping is possible (never past the hard line).
     var showsSkipCapsule: Bool { !locked && (hold != nil || debugHoldProgress != nil) }
     static func clockSize(_ height: CGFloat) -> CGFloat { max(76, height * 0.12) }
 
