@@ -29,7 +29,7 @@ public final class BreakOverlayController {
     private var dimWindows: [NSWindow] = []
     private var capsules: [NSPanel] = []
     private var onShortSkip: (() -> Void)?
-    /// 「有急事，暂停提醒」 on a long break past the hard line (spec-hardline §5.2).
+    /// 「紧急暂停提醒」 on a long break past the hard line (spec-hardline §5.2).
     private var onUrgent: (() -> Void)?
     /// Tint over the short-break blur; a bit stronger in Dark mode.
     static let shortDim = 0.25
@@ -200,7 +200,7 @@ public final class BreakOverlayController {
         dismiss(); onSkip()
     }
 
-    /// 「有急事，暂停提醒」: off the screen at once, then the app pauses reminders.
+    /// 「紧急暂停提醒」: off the screen at once, then the app pauses reminders.
     private func urgent() {
         guard case .long = mode, let cb = onUrgent else { return }
         dismiss(animated: false)

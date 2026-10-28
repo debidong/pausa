@@ -146,7 +146,7 @@ final class AppController {
             scheduler.manualPauseTick(now: now)
             preBreak.update(nil, removal: .animated)
             trackWork(now: now, idle: idle, inHours: awaySince == nil && !outsideHours, holding: false)   // 暂停提醒 is still work; a lock is not
-            onChange?()   // 「提醒已暂停 N 分钟」 moves on each minute
+            onChange?()   // refresh every tick; the 「提醒已暂停 N 分钟」 text itself only changes each whole minute
             return
         }
         if awaySince != nil { return }
@@ -339,7 +339,7 @@ final class AppController {
         onChange?()
     }
 
-    /// 「有急事，暂停提醒」 (long-break screen / pre-break panel, only at the hard line): end that long
+    /// 「紧急暂停提醒」 (long-break screen / pre-break panel, only at the hard line): end that long
     /// break as exactly one skip, then pause reminders as the menu does.
     func urgentPause() {
         setManualPause(Date())

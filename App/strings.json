@@ -310,14 +310,14 @@
     "th": "คุณใช้งานต่อเนื่องมา %d นาทีแล้ว เลื่อนพักยาวออกไปอีกไม่ได้"
   },
   "break.urgentPause": {
-    "zh-Hans": "有急事，暂停提醒",
-    "zh-Hant": "有急事，暫停提醒",
+    "zh-Hans": "紧急暂停提醒",
+    "zh-Hant": "緊急暫停提醒",
     "en": "Urgent: pause reminders",
-    "es": "Tengo una urgencia: pausar recordatorios",
-    "ru": "Срочное дело: приостановить напоминания",
+    "es": "Urgente: pausar recordatorios",
+    "ru": "Срочно: приостановить напоминания",
     "fr": "Urgence : suspendre les rappels",
-    "vi": "Có việc gấp, tạm dừng nhắc",
-    "th": "มีธุระด่วน หยุดเตือนชั่วคราว"
+    "vi": "Khẩn cấp: tạm dừng nhắc",
+    "th": "ด่วน: หยุดเตือนชั่วคราว"
   },
   "break.holdToSkip": {
     "zh-Hans": "长按 %@ 跳过",

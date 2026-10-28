@@ -297,7 +297,7 @@ struct LongBreakView: View {
     var can15 = true
     /// Round 7b: past the hard line. No skip hint and no postpone buttons, just the reason.
     var locked = false
-    /// spec-hardline §5.2: 「有急事，暂停提醒」 under the reason while `locked` (nil: no button).
+    /// spec-hardline §5.2: 「紧急暂停提醒」 under the reason while `locked` (nil: no button).
     var onUrgent: (() -> Void)? = nil
     /// Hero mock (DEV): only the hold-to-skip capsule, no postpone buttons.
     var skipOnly = false
@@ -473,7 +473,7 @@ enum BreakViewSnapshots {
             save(r.nsImage, dir.appendingPathComponent("long-forest-w-\(n).png"))
         }
         LongBreakView.countdownWeight = .semibold
-        // Past the hard line: the reason line and 「有急事，暂停提醒」 (spec-hardline §5.2).
+        // Past the hard line: the reason line and 「紧急暂停提醒」 (spec-hardline §5.2).
         var locked = LongBreakView(countdown: Countdown(total: 180, onDone: {}),
                                    showControls: true, onSnooze: { _ in },
                                    theme: .forest, seed: 7, animate: false, stillTime: 60,

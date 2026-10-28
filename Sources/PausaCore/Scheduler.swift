@@ -341,7 +341,7 @@ public struct Scheduler {
     return []
   }
 
-  /// 「有急事，暂停提醒」 (spec-hardline §5.2): the one way out of a long break past the hard line,
+  /// 「紧急暂停提醒」 (spec-hardline §5.2): the one way out of a long break past the hard line,
   /// where `finish` refuses skip and snooze. Ends the long break on screen, or the one the pre-break
   /// panel announces at the line, as skipped: one stats row, the long break stays owed and nothing
   /// is reset that a skip keeps (sinceLongDone runs on). The caller then pauses reminders.
