@@ -341,7 +341,30 @@ public struct Scheduler {
     return []
   }
 
-  /// 暂停提醒 1 小时 (Steve, round 7b): no reminders at all, but the time since the last long break
+  /// 「有急事，暂停提醒」 (spec-hardline §5.2): the one way out of a long break past the hard line,
+  /// where `finish` refuses skip and snooze. Ends the long break on screen, or the one the pre-break
+  /// panel announces at the line, as skipped: one stats row, the long break stays owed and nothing
+  /// is reset that a skip keeps (sinceLongDone runs on). The caller then pauses reminders.
+  /// Anywhere else (no long break up, or not at the line) it does nothing.
+  public mutating func urgentPause(now: Double) -> [Command] {
+    let cmds: [Command]
+    switch phase {
+    case .onBreak(.long, _) where mustNotDefer(.long):
+      cmds = [.recorded(.long, planned: breakLength ?? config.longLength, .skipped), .endBreak]
+      breakLength = nil
+    case .warning(.long) where atHardLine:
+      cmds = [.recorded(.long, planned: config.longLength, .skipped)]
+    default:
+      return []
+    }
+    phase = .working
+    dueSince = nil
+    clearDeferral()
+    reset(.long, done: false)
+    return cmds
+  }
+
+  /// 暂停提醒 (Steve, round 7b; permanent since spec-hardline): no reminders at all, but the time since the last long break
   /// keeps counting. Only a locked screen counts as a long break taken (away), not input idle
   /// (Steve, 2026-10-20). The short clock and the postpone budget (deferUsed) are untouched.
   public mutating func manualPauseTick(now: Double) {
@@ -351,7 +374,7 @@ public struct Scheduler {
     sinceLongDone += dt
   }
 
-  /// The manual pause ended (expired or 恢复提醒). Past the 90-minute line the long break starts now
+  /// The manual pause ended (恢复提醒). Past the hard line the long break starts now
   /// and can't be deferred (mustNotDefer); otherwise counting simply resumes.
   public mutating func manualPauseEnded(now: Double) -> [Command] {
     lastTick = now
