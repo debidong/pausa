@@ -473,6 +473,16 @@ enum BreakViewSnapshots {
             save(r.nsImage, dir.appendingPathComponent("long-forest-w-\(n).png"))
         }
         LongBreakView.countdownWeight = .semibold
+        // Past the hard line: the reason line and 「有急事，暂停提醒」 (spec-hardline §5.2).
+        var locked = LongBreakView(countdown: Countdown(total: 180, onDone: {}),
+                                   showControls: true, onSnooze: { _ in },
+                                   theme: .forest, seed: 7, animate: false, stillTime: 60,
+                                   night: night, fixedRemaining: 167, flatControls: true)
+        locked.locked = true
+        locked.onUrgent = {}
+        let rl = ImageRenderer(content: locked.frame(width: 1920, height: 1200))
+        rl.scale = 1
+        save(rl.nsImage, dir.appendingPathComponent("long-forest-locked\(night ? "-night" : "").png"))
         SceneryArt.override = nil
     }
 
