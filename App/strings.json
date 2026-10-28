@@ -919,6 +919,36 @@
     "vi": "Bỏ qua lần nghỉ",
     "th": "ข้ามการพัก"
   },
+  "prebreak.setting.card": {
+    "en": "Show reminder at top of screen",
+    "es": "Mostrar un aviso en la parte superior de la pantalla",
+    "fr": "Afficher un rappel en haut de l'écran",
+    "ru": "Показывать напоминание вверху экрана",
+    "th": "แสดงการแจ้งเตือนที่ด้านบนของหน้าจอ",
+    "vi": "Hiển thị lời nhắc ở đầu màn hình",
+    "zh-Hans": "在屏幕顶部显示提醒",
+    "zh-Hant": "在螢幕頂部顯示提醒"
+  },
+  "prebreak.setting.header": {
+    "en": "Before a break",
+    "es": "Antes de un descanso",
+    "fr": "Avant une pause",
+    "ru": "Перед перерывом",
+    "th": "ก่อนถึงเวลาพัก",
+    "vi": "Trước giờ nghỉ",
+    "zh-Hans": "休息前提醒",
+    "zh-Hant": "休息前提醒"
+  },
+  "prebreak.setting.pill": {
+    "en": "Show countdown near the pointer",
+    "es": "Mostrar una cuenta atrás junto al puntero",
+    "fr": "Afficher un compte à rebours près du pointeur",
+    "ru": "Показывать обратный отсчёт рядом с курсором",
+    "th": "แสดงการนับถอยหลังข้างตัวชี้เมาส์",
+    "vi": "Hiển thị đếm ngược bên cạnh con trỏ",
+    "zh-Hans": "在指针旁显示倒计时",
+    "zh-Hant": "在指標旁顯示倒數"
+  },
   "prebreak.startsIn.long": {
     "zh-Hans": "长休息将在 %d 秒后开始",
     "zh-Hant": "長休息將在 %d 秒後開始",
