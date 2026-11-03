@@ -1567,7 +1567,87 @@ final class ChimeTests {
 }
 let ct = ChimeTests()
 
+final class PhotoContrastTests {
+  typealias P = PhotoContrast
+  func near(_ a: Double, _ b: Double, _ tol: Double = 1e-4) -> Bool { abs(a - b) <= tol }
+
+  func testLuminance() {
+    XCTAssertEqual(P.luminance(0, 0, 0), 0)
+    XCTAssertTrue(near(P.luminance(255, 255, 255), 1))
+    XCTAssertTrue(near(P.luminance(128, 128, 128), 0.2158))
+    XCTAssertTrue(near(P.luminance(255, 0, 0), 0.2126) && near(P.luminance(0, 255, 0), 0.7152) && near(P.luminance(0, 0, 255), 0.0722))
+    for v in [0.0, 0.002, 0.01, 0.18333, 0.5, 1] { XCTAssertTrue(near(P.linear(P.encode(v)), v, 1e-9)) }
+    XCTAssertTrue(near(P.maxBackgroundY, 0.18333) && near(P.maxBackgroundG, 0.4653))
+  }
+
+  func testPercentile() {
+    XCTAssertEqual(P.percentile95((1...100).map(Double.init)), 95)        // ceil(95) = 95th
+    XCTAssertEqual(P.percentile95((1...10).map(Double.init).reversed()), 10)   // ceil(9.5) = 10th
+    XCTAssertEqual(P.percentile95((1...21).map(Double.init)), 20)         // ceil(19.95) = 20th
+    XCTAssertEqual(P.percentile95([0.3]), 0.3)
+    XCTAssertEqual(P.percentile95([]), 0)
+  }
+
+  // Spec §3.5 samples (16:10): snow 0.53, sunset 0.43, night 0.00.
+  func testExtraDimFormula() {
+    XCTAssertEqual(P.extraDim(y95: 0.9399), 0.53)
+    XCTAssertEqual(P.extraDim(y95: 0.6115), 0.43)
+    XCTAssertEqual(P.extraDim(y95: 0.0135), 0)
+    XCTAssertTrue(P.extraDim(y95: 0.0135).sign == .plus)                     // stored as 0, not -0
+    XCTAssertEqual(P.extraDim(y95: P.maxBackgroundY), 0)                   // exactly at the limit
+    XCTAssertEqual(P.extraDim(y95: 1), 0.54)                               // pure white needs 0.535
+    XCTAssertEqual(P.extraDim(g: 5), 0.55)                                 // cap
+    XCTAssertEqual(P.extraDim(g: P.maxBackgroundG / 0.57), 0.43)           // exact hundredth stays put
+    XCTAssertEqual(P.extraDim(g: P.maxBackgroundG / 0.5699), 0.44)         // anything over rounds up
+    // After the dim the 95th-percentile background keeps 4.5:1 (hand example: sunset 4.61).
+    let g = P.encode(0.6115), after = P.linear(g * (1 - P.extraDim(g: g)))
+    XCTAssertTrue(near(1.05 / (after + 0.05), 4.61, 0.01))
+  }
+
+  func testTextZone() {
+    XCTAssertTrue(P.textZone(width: 1440, height: 900, aspect: 1.6) == (288, 225, 864, 450))
+    XCTAssertTrue(P.textZone(width: 1600, height: 900, aspect: 1.6) == (368, 225, 864, 450))   // wider: sides cut
+    XCTAssertTrue(P.textZone(width: 900, height: 1200, aspect: 1.6) == (180, 459, 540, 282))  // portrait: top/bottom cut
+  }
+
+  func image(_ w: Int, _ h: Int, _ px: (Int, Int) -> UInt8) -> [UInt8] {
+    var a = [UInt8](repeating: 0, count: w * h * 4)
+    for y in 0..<h { for x in 0..<w { let v = px(x, y); a[(y * w + x) * 4] = v; a[(y * w + x) * 4 + 1] = v; a[(y * w + x) * 4 + 2] = v } }
+    return a
+  }
+
+  func testMeasure() {
+    XCTAssertEqual(P.measure(pixels: image(160, 100) { _, _ in 255 }, width: 160, height: 100, aspect: 1.6).extraDim, 0.54)
+    XCTAssertEqual(P.measure(pixels: image(160, 100) { _, _ in 10 }, width: 160, height: 100, aspect: 1.6).extraDim, 0)
+    // White only outside the text zone (a bright frame): no dim.
+    let frame = image(160, 100) { x, y in (x < 32 || x >= 128 || y < 25 || y >= 75) ? 255 : 20 }
+    XCTAssertEqual(P.measure(pixels: frame, width: 160, height: 100, aspect: 1.6).extraDim, 0)
+    // A few bright pixels (< 5% of the zone) don't count; a bright half does.
+    let spots = image(160, 100) { x, y in (y == 50 && x % 4 == 0) ? 255 : 20 }
+    XCTAssertEqual(P.measure(pixels: spots, width: 160, height: 100, aspect: 1.6).extraDim, 0)
+    let half = image(160, 100) { _, y in y < 50 ? 255 : 20 }
+    XCTAssertEqual(P.measure(pixels: half, width: 160, height: 100, aspect: 1.6).extraDim, 0.54)
+    // Large zone (shrunk to 256): uniform grey keeps its value through the box filter.
+    let big = P.measure(pixels: image(2000, 1250) { _, _ in 200 }, width: 2000, height: 1250, aspect: 1.6)
+    XCTAssertTrue(near(big.y95, P.luminance(200, 200, 200), 1e-9))
+    // RGB (3 bytes per pixel) with padded rows reads the same pixels.
+    let rb = 160 * 3 + 8
+    var rgb = [UInt8](repeating: 0, count: 100 * rb)
+    for y in 0..<50 { for x in 0..<160 { for c in 0..<3 { rgb[y * rb + x * 3 + c] = 255 } } }
+    for y in 50..<100 { for x in 0..<160 { for c in 0..<3 { rgb[y * rb + x * 3 + c] = 20 } } }
+    XCTAssertEqual(P.measure(pixels: rgb, width: 160, height: 100, bytesPerPixel: 3, rowBytes: rb, aspect: 1.6),
+                   P.measure(pixels: half, width: 160, height: 100, aspect: 1.6))
+  }
+
+  func testBoxResize() {
+    let src: [UInt8] = [0, 0, 0, 255, 255, 255, 100, 100, 100, 200, 200, 200]   // 4 x 1
+    XCTAssertEqual(P.boxResize(src, width: 4, height: 1, to: 2, 1), [128, 128, 128, 150, 150, 150])
+  }
+}
+let phc = PhotoContrastTests()
+
 let cases: [(String, () -> Void)] = [
+ ("photo.luminance", phc.testLuminance), ("photo.percentile95", phc.testPercentile), ("photo.extraDimFormula", phc.testExtraDimFormula), ("photo.textZone", phc.testTextZone), ("photo.measure", phc.testMeasure), ("photo.boxResize", phc.testBoxResize),
  ("chime.table", ct.testTable), ("chime.defaultLongOnly", ct.testDefaultIsLongOnly), ("chime.silencing", ct.testSilencing), ("chime.schedulerPaths", ct.testSchedulerPaths),
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("hardLine.setting", t.testHardLineSetting), ("hardLine.sixtyMeeting", t.testSixtyLineMeetingEndsIntoLongBreak), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
