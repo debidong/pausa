@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import PausaCore
 
 /// Frosted glass that follows the system light/dark appearance.
 struct VisualEffectBackground: NSViewRepresentable {
@@ -320,6 +321,9 @@ struct LongBreakView: View {
         ZStack {
             if let backdrop { Image(nsImage: backdrop).resizable() }
             else if theme == .softDesktop { Color.clear }   // 模糊桌面: the window's frosted layer shows through
+            else if theme == .photo, let photo = PhotoBackground.image(px: SceneryArt.override ?? SceneryArt.targetPixels) {
+                PhotoBackdrop(image: photo, extraDim: PhotoBackground.extraDim, night: night || daypart != .day)   // 我的照片
+            }
             else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night || daypart != .day) }
             if daypart == .midnight { Color.black.opacity(Self.midnightDim).allowsHitTesting(false) }
             if !bare {
@@ -485,6 +489,50 @@ enum BreakViewSnapshots {
         rl.scale = 1
         save(rl.nsImage, dir.appendingPathComponent("long-forest-locked\(night ? "-night" : "").png"))
         SceneryArt.override = nil
+    }
+
+    /// 我的照片 (spec §3.4, §7 12-14, 19): each photo goes through the real import (16:10 reference, into a
+    /// temp folder, never the user's), then the long break at 16:10, 16:9 and 21:9 by day, plus night and
+    /// midnight at 16:10. Prints photoExtraDim and the white-text contrast measured on the drawn
+    /// background (no UI over it) in the text zone at the 95th percentile.
+    static func writeLongPhoto(to dir: URL, photos: [String]) {
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("pausa-photo-render-\(ProcessInfo.processInfo.processIdentifier)")
+        defer { try? FileManager.default.removeItem(at: tmp); PhotoBackground.override = nil; SceneryArt.override = nil }
+        SceneryArt.override = 1920
+        for path in photos {
+            let name = URL(fileURLWithPath: path).deletingPathExtension().lastPathComponent
+            let into = tmp.appendingPathComponent(name)
+            guard case .success(let dim) = PhotoImport.importPhoto(URL(fileURLWithPath: path), aspect: 16.0 / 10.0, into: into) else {
+                print("\(name): import failed"); continue
+            }
+            PhotoBackground.override = (into.appendingPathComponent(PhotoImport.fileName), dim)
+            func view(_ w: Double, _ h: Double, night: Bool, _ part: BreakDaypart, bare: Bool = false) -> some View {
+                var v = LongBreakView(countdown: Countdown(total: 180, onDone: {}), showControls: true, onSnooze: { _ in },
+                                      theme: .photo, seed: 7, animate: false, stillTime: 60, night: night, daypart: part,
+                                      fixedRemaining: 167, flatControls: true, quote: RestQuotes.all.first?.text(for: AppLanguage.current))
+                v.bare = bare
+                return v.frame(width: w, height: h)
+            }
+            for (tag, w, h) in [("1610", 1920.0, 1200.0), ("169", 1920.0, 1080.0), ("219", 2520.0, 1080.0)] {
+                let r = ImageRenderer(content: view(w, h, night: false, .day)); r.scale = 1
+                save(r.nsImage, dir.appendingPathComponent("long-photo-\(name)-\(tag).png"))
+            }
+            for (tag, night, part) in [("night", true, BreakDaypart.night), ("midnight", true, .midnight)] {
+                let r = ImageRenderer(content: view(1920, 1200, night: night, part)); r.scale = 1
+                save(r.nsImage, dir.appendingPathComponent("long-photo-\(name)-1610-\(tag).png"))
+            }
+            // Contrast on what is drawn under the text (day, 16:10): photo + photoExtraDim + day dim.
+            let bare = ImageRenderer(content: view(1920, 1200, night: false, .day, bare: true)); bare.scale = 1
+            if let cg = bare.cgImage, let c = CGContext(data: nil, width: cg.width, height: cg.height, bitsPerComponent: 8,
+                                                        bytesPerRow: cg.width * 4, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                                        bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue) {
+                c.draw(cg, in: CGRect(x: 0, y: 0, width: cg.width, height: cg.height))
+                let px = [UInt8](UnsafeBufferPointer(start: c.data!.assumingMemoryBound(to: UInt8.self), count: c.bytesPerRow * cg.height))
+                let m = PhotoContrast.measure(pixels: px, width: cg.width, height: cg.height, rowBytes: c.bytesPerRow, aspect: 1.6)
+                print(String(format: "%@: photoExtraDim %.2f, drawn text-zone Y95 %.4f, white text %.2f:1", name, dim, m.y95, 1.05 / (m.y95 + 0.05)))
+            }
+        }
     }
 
     /// Quotes under the countdown: short (light / dark desktop) and long (forest day, night) per language.

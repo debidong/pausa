@@ -22,9 +22,11 @@ extension ThemeChoice {
 
     var accent: Color { [.random, .softDesktop, .photo].contains(self) ? .accentColor : Color(nsColor: accentNS) }
 
-    /// The scene on screen: the chosen theme, or for 随机 the scene rolled for this break.
+    /// The scene on screen: the chosen theme, or for 随机 the scene rolled for this break. 我的照片…
+    /// whose file can't be read when the break opens shows the rolled scene too (§3.7).
     static var current: ThemeChoice {
         let t = Settings.shared.theme
+        if t == .photo && PhotoBackground.fallback { return RandomScene.current }
         return t == .random ? RandomScene.current : t
     }
 }
@@ -35,9 +37,9 @@ enum RandomScene {
     static var current: ThemeChoice {
         ThemeChoice(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .forest
     }
-    /// Call when a break starts. No-op unless 随机 is selected.
+    /// Call when a break starts. No-op unless 随机 or 我的照片… is selected (the photo's fallback, §3.7).
     static func roll() {
-        guard Settings.shared.theme == .random else { return }
+        guard [.random, .photo].contains(Settings.shared.theme) else { return }
         let next = pick(after: current)
         UserDefaults.standard.set(next.rawValue, forKey: key)
     }

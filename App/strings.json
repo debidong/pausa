@@ -489,6 +489,16 @@
     "vi": "Sửa",
     "th": "แก้ไข"
   },
+  "common.ok": {
+    "zh-Hans": "好",
+    "zh-Hant": "好",
+    "en": "OK",
+    "es": "OK",
+    "ru": "ОК",
+    "fr": "OK",
+    "vi": "OK",
+    "th": "ตกลง"
+  },
   "common.preview": {
     "zh-Hans": "预览",
     "zh-Hant": "預覽",
@@ -938,6 +948,16 @@
     "fr": "Attente jusqu’à %@",
     "vi": "Chờ tối đa %@",
     "th": "รอได้อีกไม่เกิน %@"
+  },
+  "photo.importFailed": {
+    "zh-Hans": "无法使用这张图片",
+    "zh-Hant": "無法使用這張圖片",
+    "en": "Can't use this image",
+    "es": "No se puede usar esta imagen",
+    "ru": "Не удаётся использовать это изображение",
+    "fr": "Impossible d'utiliser cette image",
+    "vi": "Không thể dùng ảnh này",
+    "th": "ใช้รูปภาพนี้ไม่ได้"
   },
   "pill.countdown": {
     "zh-Hans": "%d 秒后休息",

@@ -8,6 +8,7 @@ import PausaCore
 ///   --debug-long [seconds]          show the long break (default 8s), then exit
 ///   --debug-about [seconds]         show the About panel (default 8s), then exit
 ///   --debug-render-long <dir> [--night] [--oil off|light|medium]  long break per theme, 16:10 + 16:9, countdown 2:47
+///   --debug-render-long <dir> --theme photo --photo <file> [--photo <file>…]  我的照片: real import into a temp folder, renders + contrast
 ///   --debug-render-quotes <dir> --lang <code>  short + long break with the longest quote
 ///   --debug-selftest-spacehold      Space/repeat handling with synthesized events (no window)
 ///   --debug-selftest-break-key      SHOWS short + long breaks (2 s each) and asserts the break window is key; dev Macs only
@@ -441,7 +442,12 @@ enum DebugCLI {
             let dir = URL(fileURLWithPath: args[i + 1])
             Task { @MainActor in
                 #if DEBUG
-                BreakViewSnapshots.writeLong(to: dir, night: args.contains("--night"))
+                if let j = args.firstIndex(of: "--theme"), j + 1 < args.count, args[j + 1] == "photo" {
+                    let photos = args.indices.filter { args[$0] == "--photo" && $0 + 1 < args.count }.map { args[$0 + 1] }
+                    BreakViewSnapshots.writeLongPhoto(to: dir, photos: photos)
+                } else {
+                    BreakViewSnapshots.writeLong(to: dir, night: args.contains("--night"))
+                }
                 #endif
                 exit(0)
             }

@@ -152,8 +152,8 @@ enum ThemePickerSnapshot {
         // The open pop-up's items (stand-in for the native menu, which can't be drawn offscreen).
         Settings.shared.theme = .random
         let list = VStack(alignment: .leading, spacing: 0) {
-            ForEach(ThemeChoice.scenes + [.random]) { t in
-                if t == .random { Divider().padding(.vertical, 4) }
+            ForEach(ThemeChoice.scenes + [.random, .softDesktop, .photo]) { t in
+                if t == .random || t == .softDesktop { Divider().padding(.vertical, 4) }
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark").opacity(t == .random ? 1 : 0).frame(width: 12)
                     Text(t.title)
@@ -165,7 +165,7 @@ enum ThemePickerSnapshot {
         .font(.system(size: 13)).frame(width: 180).padding(.vertical, 5)
         .environment(\.locale, AppLanguage.current.locale)
         for (name, ap) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
-            SettingsSnapshot.draw(AnyView(list), width: 180, height: 6 * 22 + 19, ap, "\(dir)/picker-items-\(lang)-\(name).png")
+            SettingsSnapshot.draw(AnyView(list), width: 180, height: 7 * 22 + 2 * 9 + 10, ap, "\(dir)/picker-items-\(lang)-\(name).png")
         }
     }
 }

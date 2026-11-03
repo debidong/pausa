@@ -771,12 +771,12 @@ struct AppearanceSection: View {
                 Picker(L("appearance.mode"), selection: $settings.appearance) {
                     ForEach(AppearanceMode.allCases) { Text($0.title).tag($0) }
                 }
-                Picker(L("appearance.theme"), selection: $settings.theme) {
-                    ForEach(ThemeChoice.scenes) { Text($0.title).tag($0) }
-                    Divider()
-                    Text(ThemeChoice.random.title).tag(ThemeChoice.random)
-                    Divider()
-                    Text(ThemeChoice.softDesktop.title).tag(ThemeChoice.softDesktop)
+                // 我的照片… never sets the theme itself: it opens the panel (also when already chosen),
+                // and only a successful import sets it (PhotoBackground.choose, spec §3.1).
+                LabeledContent(L("appearance.theme")) {
+                    ThemePopUp(selection: settings.theme) { new in
+                        if new == .photo { PhotoBackground.choose(in: NSApp.keyWindow) } else { settings.theme = new }
+                    }.fixedSize()
                 }
                 LabeledContent(L("appearance.previewBreak")) {
                     Button(L("common.preview"), action: onPreview)

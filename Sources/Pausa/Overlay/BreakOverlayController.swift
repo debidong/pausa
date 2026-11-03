@@ -93,6 +93,7 @@ public final class BreakOverlayController {
     /// Capsule near the cursor + slight dim. `onFinish` fires when time is up.
     public func showShort(duration: TimeInterval, onSkip: (() -> Void)? = nil, onFinish: (() -> Void)? = nil) {
         RandomScene.roll()
+        PhotoBackground.prepare(long: false)
         dismiss(animated: false)
         mode = .short
         self.onFinish = onFinish
@@ -131,6 +132,7 @@ public final class BreakOverlayController {
                          show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false,
                          onUrgent: (() -> Void)? = nil) {
         RandomScene.roll()
+        PhotoBackground.prepare(long: true)   // 我的照片…: decode now, or this break falls back to random
         dismiss(animated: false)
         self.show15 = show15; self.can15 = can15; self.mustNotDefer = mustNotDefer
         mode = .long(onSnooze: onSnooze, onSkip: onSkip)
