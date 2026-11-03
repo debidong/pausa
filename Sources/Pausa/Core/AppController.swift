@@ -11,6 +11,8 @@ final class AppController {
     let detector = PauseDetector()
     let overlay = BreakOverlayController()
     let preBreak = PreBreakController()
+    /// 提示音: sounds loaded once, at launch.
+    let chime = BreakChime()
     let settings = Settings.shared
     private var pauseCap = PauseCap()
     private(set) var reasons: [PausaCore.PauseReason: String] = [:]   // reason -> full 「已暂停：…」 line
@@ -210,8 +212,10 @@ final class AppController {
         return WorkSpan(start: wall.addingTimeInterval(s.start - now), end: wall.addingTimeInterval(s.end - now))
     }
 
-    private func apply(_ cmds: [PausaCore.Command]) {
+    /// `chime: false` when coming back from a lock: a break that ran out meanwhile ends quietly.
+    private func apply(_ cmds: [PausaCore.Command], chime chimes: Bool = true) {
         for c in cmds {
+            defer { if chimes { chime.play(for: c, reasons: chimeReasons) } }   // after the overlay is up
             switch c {
             case .showWarning:
                 break   // 面板由 `scheduler.preBreak` 驱动 (refreshPreBreak below); the menu bar icon reflects .warning on the next refresh
@@ -306,7 +310,7 @@ final class AppController {
         case .end:
             let secs = awaySince.map { now - $0 } ?? 0
             awaySince = nil
-            apply(scheduler.away(.locked, seconds: secs, now: now))
+            apply(scheduler.away(.locked, seconds: secs, now: now), chime: false)
         }
         onChange?()
     }
@@ -318,11 +322,21 @@ final class AppController {
     /// Popover +5分 / +15分: push the next break back within the shared budget (greyed out otherwise).
     func postpone(by seconds: Double) { scheduler.postpone(by: seconds); refreshPreBreak(); onChange?() }
 
-    /// Settings "预览": 5 s of the long-break scene. Never touches the scheduler.
+    /// Settings "预览": 5 s of the long-break scene. Never touches the scheduler. Chimes like a real
+    /// long break: start now, end when the 5 s run out. The end sound lives only in onFinish, which only
+    /// the overlay's countdown calls; skip, snooze and dismiss stop the countdown and clear onFinish first.
     func previewLong() {
         if case .onBreak = scheduler.phase { return }
-        overlay.showLong(duration: 5, onSnooze: { _ in }, onSkip: {})
+        overlay.showLong(duration: 5, onSnooze: { _ in }, onSkip: {},
+                         onFinish: { [weak self] in
+                             guard let self else { return }
+                             self.chime.play(for: .recorded(.long, planned: 5, .completed), reasons: self.chimeReasons)
+                         })
+        chime.play(for: .startBreak(.long, length: 5), reasons: chimeReasons)
     }
+
+    /// What the detector sees right now, unfiltered by the 自动暂停 switches: a call is a call.
+    private var chimeReasons: Set<PausaCore.PauseReason> { Set(detector.reasons.map(\.core)) }
 
     /// Menu 暂停提醒: no record of its own. A break on screen ends as skipped (one row); past the hard
     /// line skip is refused, so it takes the urgent exit instead (also one skipped row).

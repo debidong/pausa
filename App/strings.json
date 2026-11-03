@@ -409,6 +409,16 @@
     "vi": "Thời lượng nghỉ ngắn",
     "th": "ระยะเวลาพักสั้น"
   },
+  "breaks.sound": {
+    "zh-Hans": "提示音",
+    "zh-Hant": "提示音",
+    "en": "Break sound",
+    "es": "Sonido de pausa",
+    "ru": "Звук перерыва",
+    "fr": "Son de la pause",
+    "vi": "Âm báo nghỉ",
+    "th": "เสียงแจ้งเตือนการพัก"
+  },
   "breaks.sound.all": {
     "zh-Hans": "所有休息",
     "zh-Hant": "所有休息",

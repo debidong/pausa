@@ -679,6 +679,9 @@ struct BreaksPage: View {
                 Picker(L("breaks.longLength"), selection: $settings.longLengthMin) {
                     ForEach(S.longLengthOptions, id: \.self) { v in Text(L("unit.minutes", v)).tag(v) }
                 }
+                Picker(L("breaks.sound"), selection: $settings.breakSound) {
+                    ForEach(BreakSound.allCases) { Text($0.title).tag($0) }
+                }
             }
             Section {
                 Toggle(L("prebreak.setting.card"), isOn: $settings.showPreBreakPanel)

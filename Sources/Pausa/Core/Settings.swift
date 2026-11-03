@@ -72,10 +72,8 @@ enum ThemeChoice: String, CaseIterable, Identifiable {
     }
 }
 
-/// 提示音: which breaks play the start and end chime. Stored under "breakSound"; unknown → longOnly.
-enum BreakSound: String, CaseIterable, Identifiable {
-    case off, longOnly, all
-    var id: String { rawValue }
+/// 提示音 (BreakSound lives in PausaCore with the chime rule): menu titles.
+extension BreakSound {
     var title: String {
         switch self { case .off: return L("breaks.sound.off"); case .longOnly: return L("breaks.sound.longOnly"); case .all: return L("breaks.sound.all") }
     }

@@ -1517,7 +1517,58 @@ final class PreBreakTests {
 }
 let pb = PreBreakTests()
 
+final class ChimeTests {
+  func chimes(_ cmds: [Command], _ sound: BreakSound = .longOnly, _ r: Set<PauseReason> = []) -> [Chime] {
+    cmds.compactMap { Chime.pick($0, sound: sound, reasons: r) }
+  }
+
+  // setting × kind × event, nothing silencing (spec §5.1–5.2).
+  func testTable() {
+    for k in [BreakKind.short, .long] {
+      let start = Command.startBreak(k, length: 20), done = Command.recorded(k, planned: 20, .completed)
+      let quiet: [Command] = [.resumeBreak(k, remaining: 10), .recorded(k, planned: 20, .skipped), .endBreak, .showWarning(k, secondsLeft: 30)]
+      for sound in BreakSound.allCases {
+        let on = sound == .all || (sound == .longOnly && k == .long)
+        XCTAssertEqual(chimes([start], sound), on ? [.start] : [])
+        XCTAssertEqual(chimes([done], sound), on ? [.end] : [])
+        XCTAssertEqual(chimes(quiet, sound), [])
+      }
+    }
+  }
+
+  func testDefaultIsLongOnly() {
+    XCTAssertEqual(BreakSound(rawValue: "bogus") ?? .longOnly, .longOnly)
+    XCTAssertTrue(BreakSound.longOnly.includes(.long) && !BreakSound.longOnly.includes(.short))
+  }
+
+  // Meeting, mic, screen sharing (recording maps here) silence; video, fullscreen, outside hours don't.
+  func testSilencing() {
+    let start = Command.startBreak(.long, length: 300)
+    for r in [PauseReason.meeting, .micInUse, .screenSharing] { XCTAssertEqual(chimes([start], .all, [r]), []) }
+    for r in [PauseReason.video, .fullscreen, .outsideHours] { XCTAssertEqual(chimes([start], .all, [r]), [.start]) }
+    XCTAssertEqual(chimes([.recorded(.long, planned: 300, .completed)], .all, [.video, .meeting]), [])
+  }
+
+  // Through the real scheduler: only a new break and one that runs out chime.
+  func testSchedulerPaths() {
+    var s = Scheduler()
+    XCTAssertEqual(chimes(s.breakNow(.long, now: 0)), [.start])
+    XCTAssertEqual(chimes(s.tick(now: 300, reasons: [], inputIdle: 10)), [.end])          // countdown ran out
+    _ = s.breakNow(.long, now: 400)
+    XCTAssertEqual(chimes(s.finish(.completed, now: 700)), [.end])                       // overlay finished first
+    _ = s.breakNow(.long, now: 800)
+    XCTAssertEqual(chimes(s.away(.locked, seconds: 60, now: 900)), [])                     // .resumeBreak
+    XCTAssertEqual(chimes(s.finish(.snoozed, now: 910)), [])
+    _ = s.breakNow(.long, now: 1000)
+    XCTAssertEqual(chimes(s.finish(.skipped, now: 1010)), [])                            // hold Space, menu pause
+    _ = s.breakNow(.short, now: 1100)
+    XCTAssertEqual(chimes(s.finish(.completed, now: 1120)), [])                          // short, default setting
+  }
+}
+let ct = ChimeTests()
+
 let cases: [(String, () -> Void)] = [
+ ("chime.table", ct.testTable), ("chime.defaultLongOnly", ct.testDefaultIsLongOnly), ("chime.silencing", ct.testSilencing), ("chime.schedulerPaths", ct.testSchedulerPaths),
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("hardLine.setting", t.testHardLineSetting), ("hardLine.sixtyMeeting", t.testSixtyLineMeetingEndsIntoLongBreak), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
  ("meeting.longEarns", t.testLongMeetingEarnsLongBreak), ("meeting.nearLong", t.testShortMeetingNearLongEarnsLongBreak), ("meeting.resumes", t.testShortMeetingResumes),

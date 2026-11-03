@@ -92,6 +92,8 @@ cp App/strings.json "$RES/strings.json"   # every UI string, all languages (see 
 # Focus filter text shown by System Settings (system language; English is the key, see FocusFilter.swift).
 for d in App/*.lproj; do mkdir -p "$RES/$(basename "$d")" && cp "$d"/Localizable.strings "$RES/$(basename "$d")/"; done
 cp App/rest-quotes.json "$RES/rest-quotes.json" && echo "quotes: $(grep -c '"id"' App/rest-quotes.json)"
+# Break chimes (提示音, Core/BreakChime.swift): start and end, CAF LEI16 48 kHz mono.
+mkdir -p "$RES/sounds" && cp App/sounds/break-start.caf App/sounds/break-end.caf "$RES/sounds/"
 # Long-break backgrounds: release builds ship HEIC only, from App/backgrounds.
 # The PNG originals are kept outside the repo. Regenerate a HEIC from a PNG with:
 #   sips -s format heic -s formatOptions 80 in.png --out App/backgrounds/<name>.heic
