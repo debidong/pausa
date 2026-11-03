@@ -16,11 +16,11 @@ extension ThemeChoice {
         case .ocean: return .systemTeal
         case .sunset: return .systemOrange
         case .night: return .systemIndigo
-        case .random: return .controlAccentColor   // the scene changes per break; controls use the system accent
+        case .random, .softDesktop, .photo: return .controlAccentColor   // not one fixed scene; controls use the system accent
         }
     }
 
-    var accent: Color { self == .random ? .accentColor : Color(nsColor: accentNS) }
+    var accent: Color { [.random, .softDesktop, .photo].contains(self) ? .accentColor : Color(nsColor: accentNS) }
 
     /// The scene on screen: the chosen theme, or for 随机 the scene rolled for this break.
     static var current: ThemeChoice {
@@ -177,7 +177,7 @@ enum Scenery {
         case .ocean: return sea(&r)
         case .sunset: return dusk(&r)
         case .night: return night(&r)
-        case .random: return neutral(&r)   // never on screen (resolved first); kept for debug renders
+        case .random, .softDesktop, .photo: return neutral(&r)   // never painted on screen; kept for debug renders
         }
     }
 
@@ -559,7 +559,7 @@ struct SceneryArt {
         case .ocean: return [("ocean-layer", 0.60, true), ("ocean-glints-layer", 0.22, false)]
         case .sunset: return [("dusk-layer", 0.58, true)]
         case .night: return [("night-layer", 0.22, false)]
-        case .random: return []
+        case .random, .softDesktop, .photo: return []
         }
     }
 

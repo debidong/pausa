@@ -409,6 +409,36 @@
     "vi": "Thời lượng nghỉ ngắn",
     "th": "ระยะเวลาพักสั้น"
   },
+  "breaks.sound.all": {
+    "zh-Hans": "所有休息",
+    "zh-Hant": "所有休息",
+    "en": "All breaks",
+    "es": "Todos los descansos",
+    "ru": "Все перерывы",
+    "fr": "Toutes les pauses",
+    "vi": "Mọi lần nghỉ",
+    "th": "การพักทุกครั้ง"
+  },
+  "breaks.sound.longOnly": {
+    "zh-Hans": "仅长休息",
+    "zh-Hant": "僅長休息",
+    "en": "Long breaks only",
+    "es": "Solo descansos largos",
+    "ru": "Только длинные перерывы",
+    "fr": "Pauses longues uniquement",
+    "vi": "Chỉ nghỉ dài",
+    "th": "เฉพาะพักยาว"
+  },
+  "breaks.sound.off": {
+    "zh-Hans": "关闭",
+    "zh-Hant": "關閉",
+    "en": "Off",
+    "es": "Desactivado",
+    "ru": "Выключено",
+    "fr": "Désactivé",
+    "vi": "Tắt",
+    "th": "ปิด"
+  },
   "common.cancel": {
     "zh-Hans": "取消",
     "zh-Hant": "取消",
@@ -1652,7 +1682,7 @@
   "theme.night": {
     "zh-Hans": "夜空",
     "zh-Hant": "夜空",
-    "en": "Night Sky",
+    "en": "Night sky",
     "es": "Cielo nocturno",
     "ru": "Ночное небо",
     "fr": "Ciel nocturne",
@@ -1669,6 +1699,16 @@
     "vi": "Biển",
     "th": "ทะเล"
   },
+  "theme.photo": {
+    "zh-Hans": "我的照片…",
+    "zh-Hant": "我的照片…",
+    "en": "My photo…",
+    "es": "Mi foto…",
+    "ru": "Моё фото…",
+    "fr": "Ma photo…",
+    "vi": "Ảnh của tôi…",
+    "th": "รูปภาพของฉัน…"
+  },
   "theme.random": {
     "zh-Hans": "随机",
     "zh-Hant": "隨機",
@@ -1678,6 +1718,16 @@
     "fr": "Aléatoire",
     "vi": "Ngẫu nhiên",
     "th": "สุ่ม"
+  },
+  "theme.softDesktop": {
+    "zh-Hans": "模糊桌面",
+    "zh-Hant": "模糊桌面",
+    "en": "Blurred desktop",
+    "es": "Escritorio difuminado",
+    "ru": "Размытый рабочий стол",
+    "fr": "Bureau flouté",
+    "vi": "Màn hình nền mờ",
+    "th": "เดสก์ท็อปแบบเบลอ"
   },
   "theme.sunset": {
     "zh-Hans": "晚霞",

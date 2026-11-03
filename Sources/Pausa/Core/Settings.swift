@@ -50,9 +50,9 @@ enum MenuBarDisplay: String, CaseIterable, Identifiable {
 }
 
 enum ThemeChoice: String, CaseIterable, Identifiable {
-    case forest, ocean, sunset, night, random
+    case forest, ocean, sunset, night, random, softDesktop, photo
     var id: String { rawValue }
-    /// The four break scenes; 随机 picks one of these per break.
+    /// The four break scenes; 随机 picks one of these per break (never 模糊桌面 or 我的照片…).
     static let scenes: [ThemeChoice] = [.forest, .ocean, .sunset, .night]
     /// Stored values from older versions. 跟随系统 ("system") was removed: those users get 随机, as do new installs.
     static func migrated(_ raw: String?) -> ThemeChoice {
@@ -66,7 +66,18 @@ enum ThemeChoice: String, CaseIterable, Identifiable {
         case .sunset: return L("theme.sunset")
         case .night: return L("theme.night")
         case .random: return L("theme.random")
+        case .softDesktop: return L("theme.softDesktop")
+        case .photo: return L("theme.photo")
         }
+    }
+}
+
+/// 提示音: which breaks play the start and end chime. Stored under "breakSound"; unknown → longOnly.
+enum BreakSound: String, CaseIterable, Identifiable {
+    case off, longOnly, all
+    var id: String { rawValue }
+    var title: String {
+        switch self { case .off: return L("breaks.sound.off"); case .longOnly: return L("breaks.sound.longOnly"); case .all: return L("breaks.sound.all") }
     }
 }
 
@@ -170,6 +181,7 @@ final class Settings: ObservableObject {
         return Config.allows(everyMin: v.shortEvery, count: v.count, line: hardLineMinutes)
     }
     @Published var longLengthMin: Int { didSet { save() } }
+    @Published var breakSound: BreakSound { didSet { if !Self.dryRun { d.set(breakSound.rawValue, forKey: "breakSound") } } }
     @Published var theme: ThemeChoice {
         didSet {
             if !Self.dryRun { d.set(theme.rawValue, forKey: "theme") }
@@ -262,6 +274,7 @@ final class Settings: ObservableObject {
         icon = IconChoice(rawValue: ud.string(forKey: "icon") ?? "") ?? .ink   // round 4 default; saved choice kept
         language = AppLanguage(rawValue: ud.string(forKey: "language") ?? "") ?? .system
         longLengthMin = pick("longLengthMin", Self.longLengthOptions, r.longLength)
+        breakSound = BreakSound(rawValue: ud.string(forKey: "breakSound") ?? "") ?? .longOnly   // default 仅长休息
         pauseForMeetings = ud.bool(forKey: "pauseForMeetings")
         pauseWhileTyping = ud.bool(forKey: "pauseWhileTyping")
         pauseForBrowserVideo = ud.bool(forKey: "pauseForBrowserVideo")
