@@ -227,8 +227,8 @@ enum DebugCLI {
                     tabs.select(.breaks)
                     check("休息: 880 (\(w.frame.height)), page \(page(.breaks)) > area \(w.contentLayoutRect.height) scrolls, top kept",
                           w.frame.height == 880 && page(.breaks) > w.contentLayoutRect.height && abs(w.frame.maxY - top) <= 0.5)
-                    // en 统计 is 839 at 500 wide (820 at 560, where the data-card line fits on one line).
-                    let statsWant: CGFloat? = ["zh-Hans": 806, "en": 839][lang], aboutWant: CGFloat? = ["zh-Hans": 448, "en": 462][lang]
+                    // Measured on macBowena at 500 wide, sample week loaded; same with a fresh defaults domain.
+                    let statsWant: CGFloat? = ["zh-Hans": 707, "en": 707][lang], aboutWant: CGFloat? = ["zh-Hans": 451, "en": 451][lang]
                     tabs.select(.stats)
                     check("统计: \(w.frame.height) (expected \(statsWant.map { "\(Int($0))" } ?? "-")), shown fully, top kept",
                           (statsWant.map { w.frame.height == $0 } ?? true) && page(.stats) <= w.contentLayoutRect.height && abs(w.frame.maxY - top) <= 0.5)
