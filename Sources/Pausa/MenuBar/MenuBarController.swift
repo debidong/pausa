@@ -772,6 +772,8 @@ struct AppearanceSection: View {
                     ForEach(ThemeChoice.scenes) { Text($0.title).tag($0) }
                     Divider()
                     Text(ThemeChoice.random.title).tag(ThemeChoice.random)
+                    Divider()
+                    Text(ThemeChoice.softDesktop.title).tag(ThemeChoice.softDesktop)
                 }
                 LabeledContent(L("appearance.previewBreak")) {
                     Button(L("common.preview"), action: onPreview)

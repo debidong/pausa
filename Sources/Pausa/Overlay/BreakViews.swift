@@ -319,6 +319,7 @@ struct LongBreakView: View {
     private func content(clockSize: CGFloat) -> some View {
         ZStack {
             if let backdrop { Image(nsImage: backdrop).resizable() }
+            else if theme == .softDesktop { Color.clear }   // 模糊桌面: the window's frosted layer shows through
             else { SceneryView(theme: theme, seed: seed, animate: animate, stillTime: stillTime, night: night || daypart != .day) }
             if daypart == .midnight { Color.black.opacity(Self.midnightDim).allowsHitTesting(false) }
             if !bare {

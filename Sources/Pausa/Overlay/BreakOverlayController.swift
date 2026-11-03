@@ -37,6 +37,9 @@ public final class BreakOverlayController {
     static var currentShortDim: Double {
         NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? shortDimDark : shortDim
     }
+    /// 模糊桌面 (long break, both appearances): worst case is a white web page behind the blur;
+    /// 0.55 keeps white text at 4.73:1 there. dayDim/nightDim are painting-only; midnightDim still applies.
+    static let softDesktopDim = 0.55
     private var longWindows: [NSWindow] = []
     /// Hold Space 1 s to skip, both break types (round 3 §4). Shared by all break windows.
     private let holdToSkip = HoldToSkip()
@@ -240,6 +243,7 @@ public final class BreakOverlayController {
         guard let cd = countdown else { return }
         let mouse = NSEvent.mouseLocation
         let primary = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
+        let tint = ThemeChoice.current == .softDesktop ? Self.softDesktopDim : Self.currentShortDim
         longWindows = NSScreen.screens.map { screen in
             let w = LongBreakWindow(contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
             w.setFrame(screen.frame, display: false)
@@ -259,7 +263,7 @@ public final class BreakOverlayController {
                                      onUrgent: onUrgent == nil ? nil : { [weak self] in self?.urgent() })
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
             let frame = NSRect(origin: .zero, size: screen.frame.size)
-            let base = Self.makeBlurView(frame: frame, tint: Self.currentShortDim)
+            let base = Self.makeBlurView(frame: frame, tint: tint)
             let host = NSHostingView(rootView: view)
             host.frame = frame
             host.autoresizingMask = [.width, .height]
