@@ -116,8 +116,9 @@ if [ -n "$BAD" ]; then
 fi
 # SwiftPM stamps the binary with sdk = deployment target (13.0), which makes AppKit
 # run it in old-look compatibility mode. Record the real SDK so macOS 26+ uses Liquid Glass.
-vtool -set-build-version macos 13.0 "$(xcrun --show-sdk-version)" -replace \
-  -output "$APP/Contents/MacOS/Pausa.tmp" "$APP/Contents/MacOS/Pausa" 2>/dev/null
+SDK_VERSION=$(xcrun --show-sdk-version) || { echo "error: xcrun cannot read the SDK version (xcode-select -p must point at Xcode, not the Command Line Tools)" >&2; exit 1; }
+vtool -set-build-version macos 13.0 "$SDK_VERSION" -replace \
+  -output "$APP/Contents/MacOS/Pausa.tmp" "$APP/Contents/MacOS/Pausa"
 mv "$APP/Contents/MacOS/Pausa.tmp" "$APP/Contents/MacOS/Pausa"
 # Drop local symbols and the debug map (release crash logs still symbolicate exported names).
 strip -x "$APP/Contents/MacOS/Pausa"
