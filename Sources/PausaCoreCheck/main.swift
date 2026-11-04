@@ -1529,11 +1529,25 @@ final class ChimeTests {
       let quiet: [Command] = [.resumeBreak(k, remaining: 10), .recorded(k, planned: 20, .skipped), .endBreak, .showWarning(k, secondsLeft: 30)]
       for sound in BreakSound.allCases {
         let on = sound == .all || (sound == .longOnly && k == .long)
-        XCTAssertEqual(chimes([start], sound), on ? [.start] : [])
-        XCTAssertEqual(chimes([done], sound), on ? [.end] : [])
+        XCTAssertEqual(chimes([start], sound), on ? [.start(k)] : [])
+        XCTAssertEqual(chimes([done], sound), on ? [.end(k)] : [])
         XCTAssertEqual(chimes(quiet, sound), [])
       }
     }
+  }
+
+  // Each value is its file name minus ".caf"; the break kind is part of it.
+  func testNames() {
+    XCTAssertEqual(Chime.allCases.map(\.name).sorted(),
+                   ["break-long-end", "break-long-start", "break-short-end", "break-short-start"])
+    XCTAssertEqual(chimes([.startBreak(.long, length: 300)], .all).map(\.name), ["break-long-start"])
+    XCTAssertEqual(chimes([.recorded(.long, planned: 300, .completed)], .all).map(\.name), ["break-long-end"])
+    XCTAssertEqual(chimes([.startBreak(.short, length: 20)], .all).map(\.name), ["break-short-start"])
+    XCTAssertEqual(chimes([.recorded(.short, planned: 20, .completed)], .all).map(\.name), ["break-short-end"])
+    // Default 仅长休息: short-break sounds stay silent; 全部: they play.
+    XCTAssertEqual(chimes([.startBreak(.short, length: 20), .recorded(.short, planned: 20, .completed)]), [])
+    XCTAssertEqual(chimes([.startBreak(.short, length: 20), .recorded(.short, planned: 20, .completed)], .all), [.shortStart, .shortEnd])
+    XCTAssertEqual(chimes([.startBreak(.short, length: 20)], .off), [])
   }
 
   func testDefaultIsLongOnly() {
@@ -1545,17 +1559,17 @@ final class ChimeTests {
   func testSilencing() {
     let start = Command.startBreak(.long, length: 300)
     for r in [PauseReason.meeting, .micInUse, .screenSharing] { XCTAssertEqual(chimes([start], .all, [r]), []) }
-    for r in [PauseReason.video, .fullscreen, .outsideHours] { XCTAssertEqual(chimes([start], .all, [r]), [.start]) }
+    for r in [PauseReason.video, .fullscreen, .outsideHours] { XCTAssertEqual(chimes([start], .all, [r]), [.longStart]) }
     XCTAssertEqual(chimes([.recorded(.long, planned: 300, .completed)], .all, [.video, .meeting]), [])
   }
 
   // Through the real scheduler: only a new break and one that runs out chime.
   func testSchedulerPaths() {
     var s = Scheduler()
-    XCTAssertEqual(chimes(s.breakNow(.long, now: 0)), [.start])
-    XCTAssertEqual(chimes(s.tick(now: 300, reasons: [], inputIdle: 10)), [.end])          // countdown ran out
+    XCTAssertEqual(chimes(s.breakNow(.long, now: 0)), [.longStart])
+    XCTAssertEqual(chimes(s.tick(now: 300, reasons: [], inputIdle: 10)), [.longEnd])          // countdown ran out
     _ = s.breakNow(.long, now: 400)
-    XCTAssertEqual(chimes(s.finish(.completed, now: 700)), [.end])                       // overlay finished first
+    XCTAssertEqual(chimes(s.finish(.completed, now: 700)), [.longEnd])                       // overlay finished first
     _ = s.breakNow(.long, now: 800)
     XCTAssertEqual(chimes(s.away(.locked, seconds: 60, now: 900)), [])                     // .resumeBreak
     XCTAssertEqual(chimes(s.finish(.snoozed, now: 910)), [])
@@ -1648,7 +1662,7 @@ let phc = PhotoContrastTests()
 
 let cases: [(String, () -> Void)] = [
  ("photo.luminance", phc.testLuminance), ("photo.percentile95", phc.testPercentile), ("photo.extraDimFormula", phc.testExtraDimFormula), ("photo.textZone", phc.testTextZone), ("photo.measure", phc.testMeasure), ("photo.boxResize", phc.testBoxResize),
- ("chime.table", ct.testTable), ("chime.defaultLongOnly", ct.testDefaultIsLongOnly), ("chime.silencing", ct.testSilencing), ("chime.schedulerPaths", ct.testSchedulerPaths),
+ ("chime.table", ct.testTable), ("chime.names", ct.testNames), ("chime.defaultLongOnly", ct.testDefaultIsLongOnly), ("chime.silencing", ct.testSilencing), ("chime.schedulerPaths", ct.testSchedulerPaths),
  ("shortBreakAt20Min", t.testShortBreakAt20Min), ("everyThirdIsLong", t.testEveryThirdBreakIsLong), ("cycle.skipCounts", t.testSkippedBreakCountsTowardCycle), ("cycle.meetingCountsWhenLongNext", t.testMeetingCountsWhenLongIsNext), ("cycle.migration", t.testLegacyLongEveryMigration), ("cycle.ninetyCap", t.testCycleNinetyCap), ("hardLine.setting", t.testHardLineSetting), ("hardLine.sixtyMeeting", t.testSixtyLineMeetingEndsIntoLongBreak), ("cycle.countConversion", t.testNthCountConversion), ("menubar.ringStep", t.testRingStep),
  ("pausedTimeDoesNotCount", t.testPausedTimeDoesNotCount), ("meetingOutranksFullscreen", t.testMeetingOutranksFullscreen),
  ("meeting.longEarns", t.testLongMeetingEarnsLongBreak), ("meeting.nearLong", t.testShortMeetingNearLongEarnsLongBreak), ("meeting.resumes", t.testShortMeetingResumes),

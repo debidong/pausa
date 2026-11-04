@@ -1,7 +1,7 @@
 import AppKit
 import PausaCore
 
-/// 提示音 (spec §5): the two bundled sounds (Contents/Resources/sounds/, App/build-app.sh), loaded
+/// 提示音 (spec §5): the four bundled sounds (Chime.allCases, file = Chime.name + ".caf") (Contents/Resources/sounds/, App/build-app.sh), loaded
 /// once. Volume is fixed at 1.0: loudness is in the files, the system volume and mute do the rest.
 /// When to play is PausaCore's Chime.pick; a missing file just stays silent.
 final class BreakChime {
@@ -9,8 +9,8 @@ final class BreakChime {
 
     init() {
         var s: [Chime: NSSound] = [:]
-        for (c, name) in [(Chime.start, "break-start"), (.end, "break-end")] {
-            if let url = Self.url(name), let sound = NSSound(contentsOf: url, byReference: true) {
+        for c in Chime.allCases {
+            if let url = Self.url(c.name), let sound = NSSound(contentsOf: url, byReference: true) {
                 sound.volume = 1
                 s[c] = sound
             }
