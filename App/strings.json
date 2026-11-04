@@ -959,25 +959,45 @@
     "vi": "Không thể dùng ảnh này",
     "th": "ใช้รูปภาพนี้ไม่ได้"
   },
-  "pill.countdown": {
-    "zh-Hans": "%d 秒后休息",
-    "zh-Hant": "%d 秒後休息",
-    "en": "Break in %d s",
-    "es": "Descanso en %d s",
-    "ru": "Перерыв через %d с",
-    "fr": "Pause dans %d s",
-    "vi": "Nghỉ sau %d giây",
-    "th": "พักใน %d วินาที"
+  "pill.countdown.short": {
+    "zh-Hans": "短休息 · %d 秒后",
+    "zh-Hant": "短休息 · %d 秒後",
+    "en": "Short break in %d s",
+    "es": "Descanso corto en %d s",
+    "ru": "Короткий перерыв через %d с",
+    "fr": "Pause courte dans %d s",
+    "vi": "Nghỉ ngắn sau %d giây",
+    "th": "พักสั้นใน %d วินาที"
   },
-  "pill.typing": {
-    "zh-Hans": "输入结束后休息",
-    "zh-Hant": "輸入結束後休息",
-    "en": "Break After Typing",
-    "es": "Descanso al dejar de escribir",
-    "ru": "Перерыв после ввода",
-    "fr": "Pause après la saisie",
-    "vi": "Nghỉ sau khi gõ xong",
-    "th": "พักเมื่อพิมพ์เสร็จ"
+  "pill.countdown.long": {
+    "zh-Hans": "长休息 · %d 秒后",
+    "zh-Hant": "長休息 · %d 秒後",
+    "en": "Long break in %d s",
+    "es": "Descanso largo en %d s",
+    "ru": "Длинный перерыв через %d с",
+    "fr": "Pause longue dans %d s",
+    "vi": "Nghỉ dài sau %d giây",
+    "th": "พักยาวใน %d วินาที"
+  },
+  "pill.typing.short": {
+    "zh-Hans": "短休息 · 输入结束后",
+    "zh-Hant": "短休息 · 輸入結束後",
+    "en": "Short break after typing",
+    "es": "Descanso corto al dejar de escribir",
+    "ru": "Короткий перерыв после ввода",
+    "fr": "Pause courte après la saisie",
+    "vi": "Nghỉ ngắn sau khi gõ xong",
+    "th": "พักสั้นเมื่อพิมพ์เสร็จ"
+  },
+  "pill.typing.long": {
+    "zh-Hans": "长休息 · 输入结束后",
+    "zh-Hant": "長休息 · 輸入結束後",
+    "en": "Long break after typing",
+    "es": "Descanso largo al dejar de escribir",
+    "ru": "Длинный перерыв после ввода",
+    "fr": "Pause longue après la saisie",
+    "vi": "Nghỉ dài sau khi gõ xong",
+    "th": "พักยาวเมื่อพิมพ์เสร็จ"
   },
   "prebreak.postpone": {
     "zh-Hans": "稍后 %d 分钟",

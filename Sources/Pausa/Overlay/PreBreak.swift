@@ -178,8 +178,9 @@ enum PreBreakCopy {
         L(k == .short ? "prebreak.startsIn.short" : "prebreak.startsIn.long", n)
     }
     static var hardLine: String { Settings.shared.hardLineText }
-    static func pill(_ s: Int) -> String { L("pill.countdown", s) }
-    static var typing: String { L("pill.typing") }
+    /// The kind comes first and never changes while the digits tick: a glance at the pill tells short from long.
+    static func pill(_ k: BreakKind, _ s: Int) -> String { L(k == .short ? "pill.countdown.short" : "pill.countdown.long", s) }
+    static func typing(_ k: BreakKind) -> String { L(k == .short ? "pill.typing.short" : "pill.typing.long") }
 }
 
 /// Live model the views observe, so each tick redraws without rebuilding the windows.
@@ -364,7 +365,7 @@ struct CursorPill: View {
     @ObservedObject var model: PreBreakModel
     @Environment(\.colorScheme) private var scheme
     var body: some View {
-        Text(model.state.typingWait ? PreBreakCopy.typing : PreBreakCopy.pill(max(0, model.state.secondsLeft)))
+        Text(model.state.typingWait ? PreBreakCopy.typing(model.state.kind) : PreBreakCopy.pill(model.state.kind, max(0, model.state.secondsLeft)))
             .font(.system(size: 12, weight: .semibold).monospacedDigit())
             .foregroundColor(.primary)
             .lineLimit(1).fixedSize()
