@@ -143,6 +143,7 @@ public final class BreakOverlayController {
 
         RandomScene.roll()
         PhotoBackground.prepare(long: false)
+        SystemWallpaper.prepare(long: false)
         let cd = Countdown(total: duration) { [weak self] in self?.finish() }
         countdown = cd
 
@@ -197,19 +198,20 @@ public final class BreakOverlayController {
 
     private func presentLongScene(duration: TimeInterval, options: LongOptions, hasUrgent: Bool) {
         guard rendersWindows else { return }
+        sceneSeed = UInt64.random(in: 1...UInt64.max)
+        daypart = .current()
+        #if PAUSA_DEV
+        if let d = devDaypartOverride { daypart = d; devDaypartOverride = nil }
+        #endif
         RandomScene.roll()
         PhotoBackground.prepare(long: true)   // 我的照片…: decode now, or this break falls back to random
+        SystemWallpaper.prepare(long: true, seed: sceneSeed, night: Scenery.isNight() || daypart != .day)
         let cd = Countdown(total: duration) { [weak self] in self?.finish() }
         countdown = cd
 
         let front = NSWorkspace.shared.frontmostApplication
         if front?.processIdentifier != ProcessInfo.processInfo.processIdentifier { previousApp = front }
 
-        sceneSeed = UInt64.random(in: 1...UInt64.max)
-        daypart = .current()
-        #if PAUSA_DEV
-        if let d = devDaypartOverride { daypart = d; devDaypartOverride = nil }
-        #endif
         longQuote = RestQuotes.next(daypart)
         holdToSkip.cancel(animated: false)
         holdToSkip.onComplete = { [weak self] in self?.skip() }
@@ -326,11 +328,13 @@ public final class BreakOverlayController {
                 capsules.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
             } else { capsules = [] }
         case .long(let options, _, _, let onUrgent, _):
-            longWindows.forEach { $0.orderOut(nil) }
+            longWindows.forEach { $0.orderOut(nil); $0.contentView = nil }
+            SystemWallpaper.prepare(long: true, seed: sceneSeed, night: Scenery.isNight() || daypart != .day)
             buildLongWindows(options: options, hasUrgent: onUrgent != nil)
             longWindows.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
         case .preview:
-            longWindows.forEach { $0.orderOut(nil) }
+            longWindows.forEach { $0.orderOut(nil); $0.contentView = nil }
+            SystemWallpaper.prepare(long: true, seed: sceneSeed, night: Scenery.isNight() || daypart != .day)
             buildLongWindows(options: LongOptions(), hasUrgent: false)
             longWindows.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
         }
@@ -340,8 +344,12 @@ public final class BreakOverlayController {
         guard let cd = countdown else { return }
         let mouse = NSEvent.mouseLocation
         let primary = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
-        let tint = ThemeChoice.current == .softDesktop ? Self.softDesktopDim : Self.currentShortDim
+        let currentTheme = ThemeChoice.current
         longWindows = NSScreen.screens.map { screen in
+            let sid = SystemWallpaper.displayID(for: screen)
+            let usesSoftDesktop = currentTheme == .softDesktop ||
+                (currentTheme == .systemWallpaper && SystemWallpaper.usesSoftDesktopTint(for: sid, animate: !reduceMotion))
+            let tint = usesSoftDesktop ? Self.softDesktopDim : Self.currentShortDim
             let w = LongBreakWindow(contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
             w.setFrame(screen.frame, display: false)
             w.sharingType = .none
@@ -357,7 +365,8 @@ public final class BreakOverlayController {
                                      onSnooze: { [weak self] in self?.snooze($0) },
                                      seed: sceneSeed, daypart: daypart, hold: Self.holdFor(mustNotDefer: options.mustNotDefer, holdToSkip), quote: longQuote,
                                      show15: options.show15, can15: options.can15, locked: options.mustNotDefer,
-                                     onUrgent: hasUrgent ? { [weak self] in self?.urgent() } : nil)
+                                     onUrgent: hasUrgent ? { [weak self] in self?.urgent() } : nil,
+                                     screenID: sid)
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
             let frame = NSRect(origin: .zero, size: screen.frame.size)
             let base = Self.makeBlurView(frame: frame, tint: tint)
@@ -515,13 +524,13 @@ public final class BreakOverlayController {
 
     private func fadeOut(_ windows: [NSWindow], animated: Bool) {
         let d = animated ? Self.fadeOutDuration : 0
-        guard d > 0 else { windows.forEach { $0.orderOut(nil) }; return }
+        guard d > 0 else { windows.forEach { $0.orderOut(nil); $0.contentView = nil }; return }
         NSAnimationContext.runAnimationGroup({ ctx in
             ctx.duration = d
             ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
             windows.forEach { $0.animator().alphaValue = 0 }
         }, completionHandler: {
-            windows.forEach { $0.orderOut(nil) }
+            windows.forEach { $0.orderOut(nil); $0.contentView = nil }
         })
     }
 }

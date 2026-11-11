@@ -10,8 +10,8 @@ struct ThemePopUp: NSViewRepresentable {
     var selection: ThemeChoice
     var onPick: (ThemeChoice) -> Void
 
-    /// Menu order (spec §3.1): the four scenes, 随机, then 模糊桌面 and 我的照片….
-    static let layout: [ThemeChoice?] = ThemeChoice.scenes + [nil, .random, nil, .softDesktop, .photo]
+    /// Menu order: the four scenes, 随机, then 系统壁纸, 模糊桌面 and 我的照片….
+    static let layout: [ThemeChoice?] = ThemeChoice.scenes + [nil, .random, nil, .systemWallpaper, .softDesktop, .photo]
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
 
@@ -77,8 +77,10 @@ struct ThemePopUp: NSViewRepresentable {
         @MainActor @objc func picked(_ sender: NSPopUpButton) {
             guard let raw = sender.selectedItem?.representedObject as? String, let t = ThemeChoice(rawValue: raw) else { return }
             parent.onPick(t)
-            // 我的照片… only opens the panel: show the current theme until an import changes it.
-            if t == .photo { parent.fill(sender) }
+            // 我的照片… opens the panel, and 系统壁纸 may wait on TCC or deny: snap back until `selection` updates.
+            if t == .photo || (t == .systemWallpaper && Settings.shared.theme != .systemWallpaper) {
+                parent.fill(sender)
+            }
         }
     }
 }

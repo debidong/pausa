@@ -1719,6 +1719,56 @@
     "vi": "Ngày mai %@",
     "th": "พรุ่งนี้ %@"
   },
+  "systemWallpaper.openPrivacy": {
+    "zh-Hans": "打开系统设置",
+    "zh-Hant": "打開系統設定",
+    "en": "Open System Settings",
+    "es": "Abrir Ajustes del Sistema",
+    "ru": "Открыть Системные настройки",
+    "fr": "Ouvrir Réglages Système",
+    "vi": "Mở Cài đặt Hệ thống",
+    "th": "เปิดการตั้งค่าระบบ"
+  },
+  "systemWallpaper.permission.body": {
+    "zh-Hans": "请在「系统设置 › 隐私与安全性 › 文件与文件夹」中允许 Pausa 访问该文件夹，或改用「我的照片…」导入单张图片。",
+    "zh-Hant": "請前往「系統設定 › 隱私權與安全性 › 檔案與資料夾」允許 Pausa 存取該資料夾，或改用「我的照片…」匯入單張圖片。",
+    "en": "Allow Pausa in System Settings › Privacy & Security › Files and Folders, or import an image via My photo….",
+    "es": "Permite a Pausa en Ajustes del Sistema › Privacidad y seguridad › Archivos y carpetas, o importa una imagen con Mi foto….",
+    "ru": "Разрешите доступ для Pausa в «Системные настройки › Конфиденциальность и безопасность › Файлы и папки» или выберите файл через «Моё фото…».",
+    "fr": "Autorisez Pausa dans Réglages Système › Confidentialité et sécurité › Fichiers et dossiers, ou importez une image via Ma photo….",
+    "vi": "Hãy cấp quyền cho Pausa trong Cài đặt Hệ thống › Quyền riêng tư & Bảo mật › Tệp và thư mục, hoặc nhập ảnh qua Ảnh của tôi….",
+    "th": "อนุญาต Pausa ใน การตั้งค่าระบบ › ความเป็นส่วนตัวและความปลอดภัย › ไฟล์และโฟลเดอร์ หรือนำเข้ารูปภาพผ่าน รูปภาพของฉัน…"
+  },
+  "systemWallpaper.permission.title": {
+    "zh-Hans": "需要文件夹访问权限才能读取当前系统壁纸",
+    "zh-Hant": "需要資料夾存取權限才能讀取目前的系統桌布",
+    "en": "Folder access is needed to read your current wallpaper",
+    "es": "Se necesita acceso a la carpeta para leer tu fondo actual",
+    "ru": "Нужен доступ к папке для чтения текущих обоев",
+    "fr": "L'accès au dossier est requis pour lire votre fond d'écran actuel",
+    "vi": "Cần quyền truy cập thư mục để đọc hình nền hiện tại",
+    "th": "ต้องได้รับสิทธิ์เข้าถึงโฟลเดอร์เพื่ออ่านภาพพื้นหลังปัจจุบัน"
+  },
+  "systemWallpaper.photos.body": {
+    "zh-Hans": "来自系统「照片」的壁纸受 macOS 沙盒保护。你可以通过「我的照片…」导入喜欢的图片，或使用「模糊桌面」。",
+    "zh-Hant": "來自系統「照片」的桌布受 macOS 沙盒保護。你可以透過「我的照片…」匯入喜歡的圖片，或使用「模糊桌面」。",
+    "en": "Wallpapers from Photos are isolated by macOS. Choose an image via My photo… or use Blurred desktop.",
+    "es": "macOS aísla los fondos procedentes de Fotos. Elige una imagen con Mi foto… o usa Escritorio difuminado.",
+    "ru": "Обои из приложения «Фото» изолированы macOS. Выберите снимок через «Моё фото…» или используйте «Размытый рабочий стол».",
+    "fr": "Les fonds d'écran issus de Photos sont isolés par macOS. Choisissez une image via Ma photo… ou utilisez Bureau flouté.",
+    "vi": "Hình nền từ ứng dụng Ảnh được macOS cô lập. Hãy chọn ảnh qua Ảnh của tôi… hoặc dùng Màn hình nền mờ.",
+    "th": "macOS แยกส่วนภาพพื้นหลังจากแอปรูปภาพ โปรดเลือกรูปผ่าน รูปภาพของฉัน… หรือใช้ เดสก์ท็อปแบบเบลอ"
+  },
+  "systemWallpaper.photos.title": {
+    "zh-Hans": "无法直接读取系统「照片」图库壁纸",
+    "zh-Hant": "無法直接讀取系統「照片」圖庫桌布",
+    "en": "Can't read wallpapers from the Photos library directly",
+    "es": "No se puede leer directamente un fondo de la fototeca",
+    "ru": "Не удаётся напрямую прочитать обои из медиатеки «Фото»",
+    "fr": "Impossible de lire directement un fond d'écran de la photothèque",
+    "vi": "Không thể đọc trực tiếp hình nền từ thư viện Ảnh",
+    "th": "ไม่สามารถอ่านภาพพื้นหลังจากคลังรูปภาพโดยตรงได้"
+  },
   "theme.forest": {
     "zh-Hans": "森林",
     "zh-Hant": "森林",
@@ -1788,6 +1838,16 @@
     "fr": "Coucher de soleil",
     "vi": "Hoàng hôn",
     "th": "แสงเย็น"
+  },
+  "theme.systemWallpaper": {
+    "zh-Hans": "系统壁纸",
+    "zh-Hant": "系統桌布",
+    "en": "System wallpaper",
+    "es": "Fondo del sistema",
+    "ru": "Обои системы",
+    "fr": "Fond d'écran système",
+    "vi": "Hình nền hệ thống",
+    "th": "ภาพพื้นหลังระบบ"
   },
   "unit.count": {
     "zh-Hans": "%d 次",

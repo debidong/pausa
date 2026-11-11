@@ -305,6 +305,9 @@ struct LongBreakView: View {
     /// Hero mock (DEV): draw this image instead of the scenery; `bare` hides all UI over it.
     var backdrop: NSImage? = nil
     var bare = false
+    /// Display ID of the screen hosting this window (for per-display 系统壁纸 resolution).
+    var screenID: CGDirectDisplayID? = nil
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var timeText: String {
         let s = Int((fixedRemaining ?? countdown.remaining).rounded(.up))
@@ -321,6 +324,22 @@ struct LongBreakView: View {
         ZStack {
             if let backdrop { Image(nsImage: backdrop).resizable() }
             else if theme == .softDesktop { Color.clear }   // 模糊桌面: the window's frosted layer shows through
+            else if theme == .systemWallpaper {
+                switch SystemWallpaper.backdrop(for: screenID) {
+                case .video(let url, let poster, let extraDim):
+                    if animate && !reduceMotion {
+                        AerialVideoBackdrop(url: url, poster: poster, extraDim: extraDim, night: night || daypart != .day)
+                    } else if let poster {
+                        PhotoBackdrop(image: poster, extraDim: extraDim, night: night || daypart != .day)
+                    } else {
+                        Color.clear
+                    }
+                case .image(let img, let extraDim):
+                    PhotoBackdrop(image: img, extraDim: extraDim, night: night || daypart != .day)
+                case .softDesktop:
+                    Color.clear
+                }
+            }
             else if theme == .photo, let photo = PhotoBackground.image(px: SceneryArt.override ?? SceneryArt.targetPixels) {
                 PhotoBackdrop(image: photo, extraDim: PhotoBackground.extraDim, night: night || daypart != .day)   // 我的照片
             }

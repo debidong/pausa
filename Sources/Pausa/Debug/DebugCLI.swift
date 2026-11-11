@@ -321,7 +321,9 @@ enum DebugCLI {
             check("random never picked as a scene", !seen.contains(.random))
             check("system -> random", ThemeChoice.migrated("system") == .random)
             check("ocean kept", ThemeChoice.migrated("ocean") == .ocean)
-            check("missing -> random", ThemeChoice.migrated(nil) == .random)
+            check("systemWallpaper kept", ThemeChoice.migrated("systemWallpaper") == .systemWallpaper)
+            check("missing safe -> systemWallpaper", ThemeChoice.migrated(nil, systemWallpaperSafe: true) == .systemWallpaper)
+            check("missing restricted -> random", ThemeChoice.migrated(nil, systemWallpaperSafe: false) == .random)
             check("invalid -> random", ThemeChoice.migrated("bogus") == .random)
             print(ok ? "RANDOMTHEME PASS" : "RANDOMTHEME FAIL"); exit(ok ? 0 : 1)
         }

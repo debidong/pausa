@@ -50,14 +50,16 @@ enum MenuBarDisplay: String, CaseIterable, Identifiable {
 }
 
 enum ThemeChoice: String, CaseIterable, Identifiable {
-    case forest, ocean, sunset, night, random, softDesktop, photo
+    case forest, ocean, sunset, night, random, systemWallpaper, softDesktop, photo
     var id: String { rawValue }
-    /// The four break scenes; 随机 picks one of these per break (never 模糊桌面 or 我的照片…).
+    /// The four break scenes; 随机 picks one of these per break (never 系统壁纸, 模糊桌面 or 我的照片…).
     static let scenes: [ThemeChoice] = [.forest, .ocean, .sunset, .night]
-    /// Stored values from older versions. 跟随系统 ("system") was removed: those users get 随机, as do new installs.
-    static func migrated(_ raw: String?) -> ThemeChoice {
+    /// Stored values from older versions. 跟随系统 ("system") was removed: those users get 随机.
+    /// Fresh installs (`raw == nil`) default to 系统壁纸 when accessible without a TCC prompt, else 随机.
+    static func migrated(_ raw: String?, systemWallpaperSafe: Bool = true) -> ThemeChoice {
+        guard let raw else { return systemWallpaperSafe ? .systemWallpaper : .random }
         if raw == "system" { return .random }
-        return ThemeChoice(rawValue: raw ?? "") ?? .random   // default for new installs and unknown values
+        return ThemeChoice(rawValue: raw) ?? .random
     }
     var title: String {
         switch self {
@@ -66,6 +68,7 @@ enum ThemeChoice: String, CaseIterable, Identifiable {
         case .sunset: return L("theme.sunset")
         case .night: return L("theme.night")
         case .random: return L("theme.random")
+        case .systemWallpaper: return L("theme.systemWallpaper")
         case .softDesktop: return L("theme.softDesktop")
         case .photo: return L("theme.photo")
         }
@@ -276,7 +279,23 @@ final class Settings: ObservableObject {
         }
         shortEveryMin = every
         shortsBeforeLong = count
-        theme = ThemeChoice.migrated(ud.string(forKey: DefaultsKey.theme))
+        let isolated = defaults != nil || Self.dryRun
+        let rawTheme = ud.string(forKey: DefaultsKey.theme)
+        let wallpaperSafe: Bool = {
+            if rawTheme != nil { return true }
+            if SystemWallpaper.probeOverride != nil || !isolated {
+                return SystemWallpaper.canDefaultWithoutPermissionPrompt(defaults: ud)
+            }
+            return true
+        }()
+        let initialTheme = ThemeChoice.migrated(rawTheme, systemWallpaperSafe: wallpaperSafe)
+        theme = initialTheme
+        if rawTheme == nil && (!isolated || SystemWallpaper.probeOverride != nil) {
+            ud.set(initialTheme.rawValue, forKey: DefaultsKey.theme)
+        }
+        if initialTheme == .systemWallpaper && !isolated {
+            SystemWallpaper.prewarmInBackground()
+        }
         showInDock = ud.bool(forKey: DefaultsKey.showInDock)
         menuBarDisplay = MenuBarDisplay(rawValue: ud.string(forKey: DefaultsKey.menuBarDisplay) ?? "") ?? .progressRing   // saved choices are kept; fresh installs get the ring
         appearance = AppearanceMode(rawValue: ud.string(forKey: DefaultsKey.appearance) ?? "") ?? .system

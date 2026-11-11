@@ -16,11 +16,11 @@ extension ThemeChoice {
         case .ocean: return .systemTeal
         case .sunset: return .systemOrange
         case .night: return .systemIndigo
-        case .random, .softDesktop, .photo: return .controlAccentColor   // not one fixed scene; controls use the system accent
+        case .random, .systemWallpaper, .softDesktop, .photo: return .controlAccentColor   // not one fixed scene; controls use the system accent
         }
     }
 
-    var accent: Color { [.random, .softDesktop, .photo].contains(self) ? .accentColor : Color(nsColor: accentNS) }
+    var accent: Color { [.random, .systemWallpaper, .softDesktop, .photo].contains(self) ? .accentColor : Color(nsColor: accentNS) }
 
     /// The scene on screen: the chosen theme, or for 随机 the scene rolled for this break. 我的照片…
     /// whose file can't be read when the break opens shows the rolled scene too (§3.7).
@@ -37,9 +37,9 @@ enum RandomScene {
     static var current: ThemeChoice {
         ThemeChoice(rawValue: PausaDefaults.store.string(forKey: key) ?? "") ?? .forest
     }
-    /// Call when a break starts. No-op unless 随机 or 我的照片… is selected (the photo's fallback, §3.7).
+    /// Call when a break starts. No-op unless 随机, 系统壁纸 or 我的照片… is selected (the fallbacks).
     static func roll() {
-        guard [.random, .photo].contains(Settings.shared.theme) else { return }
+        guard [.random, .systemWallpaper, .photo].contains(Settings.shared.theme) else { return }
         let next = pick(after: current)
         PausaDefaults.store.set(next.rawValue, forKey: key)
     }
@@ -179,7 +179,7 @@ enum Scenery {
         case .ocean: return sea(&r)
         case .sunset: return dusk(&r)
         case .night: return night(&r)
-        case .random, .softDesktop, .photo: return neutral(&r)   // never painted on screen; kept for debug renders
+        case .random, .systemWallpaper, .softDesktop, .photo: return neutral(&r)   // never painted on screen; kept for debug renders
         }
     }
 
@@ -561,7 +561,7 @@ struct SceneryArt {
         case .ocean: return [("ocean-layer", 0.60, true), ("ocean-glints-layer", 0.22, false)]
         case .sunset: return [("dusk-layer", 0.58, true)]
         case .night: return [("night-layer", 0.22, false)]
-        case .random, .softDesktop, .photo: return []
+        case .random, .systemWallpaper, .softDesktop, .photo: return []
         }
     }
 

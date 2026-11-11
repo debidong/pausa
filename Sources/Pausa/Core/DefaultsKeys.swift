@@ -24,6 +24,7 @@ enum DefaultsKey {
     static let theme = "theme"
     static let randomSceneLast = "randomSceneLast"
     static let photoExtraDim = "photoExtraDim"
+    static let systemWallpaperAuthorizedBuckets = "systemWallpaperAuthorizedBuckets"
     static let appearance = "appearance"
     static let menuBarDisplay = "menuBarDisplay"
     static let icon = "icon"

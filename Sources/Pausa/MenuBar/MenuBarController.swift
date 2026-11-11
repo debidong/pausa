@@ -711,7 +711,13 @@ struct AppearanceSection: View {
                 // and only a successful import sets it (PhotoBackground.choose, spec §3.1).
                 LabeledContent(L("appearance.theme")) {
                     ThemePopUp(selection: settings.theme) { new in
-                        if new == .photo { PhotoBackground.choose(in: NSApp.keyWindow) } else { settings.theme = new }
+                        if new == .photo {
+                            PhotoBackground.choose(in: NSApp.keyWindow)
+                        } else if new == .systemWallpaper {
+                            SystemWallpaper.selectFromMenu(in: NSApp.keyWindow, settings: settings)
+                        } else {
+                            settings.theme = new
+                        }
                     }.fixedSize()
                 }
                 LabeledContent(L("appearance.previewBreak")) {
