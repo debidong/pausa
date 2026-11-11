@@ -160,7 +160,7 @@
       flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
-      gap: 0.65rem 1.5rem;
+      gap: 0.55rem 1.1rem;
       padding-bottom: 0.75rem;
       border-bottom: 1px solid var(--line-soft);
       margin-bottom: 0.85rem;
@@ -170,14 +170,14 @@
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.45rem 1rem;
+      gap: 0.45rem 0.85rem;
     }
 
     .ctrl-group {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.35rem 0.85rem;
+      gap: 0.35rem 0.72rem;
     }
 
     .ctrl-label {
@@ -230,7 +230,7 @@
       background: var(--line);
     }
 
-    /* Real Painted Scenery & Break Overlay Stage */
+    /* Native macOS Wallpaper & Break Overlay Stage */
     .break-stage {
       position: relative;
       isolation: isolate;
@@ -244,12 +244,19 @@
       -webkit-user-select: none;
       --pt: 0.8px;
       --clock-size: calc(96 * var(--pt));
+      --extra-dim: 0.32;
       --scene-dim: 0.12;
       --midnight-dim: 0;
       --text-fill: 0.68;
       --text-backing: 0.36;
       --rim-alpha: 0.34;
     }
+
+    .break-stage[data-scene="tahoe"]    { --extra-dim: 0.32; }
+    .break-stage[data-scene="sonoma"]   { --extra-dim: 0.00; }
+    .break-stage[data-scene="coast"]    { --extra-dim: 0.32; }
+    .break-stage[data-scene="twilight"] { --extra-dim: 0.11; }
+    .break-stage[data-scene="graphic"]  { --extra-dim: 0.32; }
 
     .break-stage[data-daypart="evening"] {
       --scene-dim: 0.35;
@@ -261,12 +268,6 @@
       --text-fill: 0.22;
       --text-backing: 0.30;
       --rim-alpha: 0.12;
-    }
-
-    /* Dedicated night painting already has night luminance; only add extra dim at midnight */
-    .break-stage[data-scene="night"][data-daypart="day"],
-    .break-stage[data-scene="night"][data-daypart="evening"] {
-      --scene-dim: 0.08;
     }
 
     .scene-stack {
@@ -304,6 +305,7 @@
       to   { transform: scale(1.035) translate3d(0.6%, 0, 0); }
     }
 
+    .shade-contrast,
     .shade-daypart,
     .shade-midnight,
     .shade-short {
@@ -315,6 +317,7 @@
       transition: opacity 0.7s ease;
     }
 
+    .shade-contrast { opacity: var(--extra-dim); }
     .shade-daypart { opacity: var(--scene-dim); }
     .shade-midnight { opacity: var(--midnight-dim); }
     .shade-short { opacity: 0; }
@@ -1091,13 +1094,13 @@
 
         <div class="stage-wrap">
           <div class="stage-bar" role="toolbar" aria-label="Break screen controls">
-            <div class="ctrl-group" aria-label="Scene">
-              <span class="ctrl-label">Scene</span>
-              <button type="button" class="ctrl-btn" data-scene-btn="ocean" aria-pressed="true">ocean</button>
-              <button type="button" class="ctrl-btn" data-scene-btn="forest" aria-pressed="false">forest</button>
-              <button type="button" class="ctrl-btn" data-scene-btn="sunset" aria-pressed="false">sunset</button>
-              <button type="button" class="ctrl-btn" data-scene-btn="night" aria-pressed="false">night</button>
-              <button type="button" class="ctrl-btn" data-scene-btn="ink" aria-pressed="false">ink</button>
+            <div class="ctrl-group" aria-label="Wallpaper">
+              <span class="ctrl-label">Wallpaper</span>
+              <button type="button" class="ctrl-btn" data-scene-btn="tahoe" aria-pressed="true">tahoe</button>
+              <button type="button" class="ctrl-btn" data-scene-btn="sonoma" aria-pressed="false">sonoma</button>
+              <button type="button" class="ctrl-btn" data-scene-btn="coast" aria-pressed="false">coast</button>
+              <button type="button" class="ctrl-btn" data-scene-btn="twilight" aria-pressed="false">dusk</button>
+              <button type="button" class="ctrl-btn" data-scene-btn="graphic" aria-pressed="false">graphic</button>
             </div>
 
             <div class="ctrl-cluster">
@@ -1117,15 +1120,16 @@
             </div>
           </div>
 
-          <div class="break-stage" id="break-stage" data-scene="ocean" data-daypart="day" data-mode="long" tabindex="0" aria-label="Interactive Pausa break preview">
+          <div class="break-stage" id="break-stage" data-scene="tahoe" data-daypart="day" data-mode="long" tabindex="0" aria-label="Interactive Pausa break preview">
             <div class="scene-stack" aria-hidden="true">
-              <img class="scene-img is-active" data-scene-img="ocean" src="./assets/scene-ocean.jpg" width="1728" height="1080" alt="">
-              <img class="scene-img" data-scene-img="forest" src="./assets/scene-forest.jpg" width="1728" height="1080" loading="lazy" alt="">
-              <img class="scene-img" data-scene-img="sunset" src="./assets/scene-sunset.jpg" width="1728" height="1080" loading="lazy" alt="">
-              <img class="scene-img" data-scene-img="night" src="./assets/scene-night.jpg" width="1728" height="1080" loading="lazy" alt="">
-              <img class="scene-img" data-scene-img="ink" src="./assets/scene-ink.jpg" width="1728" height="1080" loading="lazy" alt="">
+              <img class="scene-img is-active" data-scene-img="tahoe" src="./assets/wall-tahoe.webp" width="1728" height="1080" alt="">
+              <img class="scene-img" data-scene-img="sonoma" src="./assets/wall-sonoma.webp" width="1728" height="1080" loading="lazy" alt="">
+              <img class="scene-img" data-scene-img="coast" src="./assets/wall-coast.webp" width="1728" height="1080" loading="lazy" alt="">
+              <img class="scene-img" data-scene-img="twilight" src="./assets/wall-twilight.webp" width="1728" height="1080" loading="lazy" alt="">
+              <img class="scene-img" data-scene-img="graphic" src="./assets/wall-graphic.webp" width="1728" height="1080" loading="lazy" alt="">
             </div>
 
+            <div class="shade-contrast" aria-hidden="true"></div>
             <div class="shade-daypart" aria-hidden="true"></div>
             <div class="shade-midnight" aria-hidden="true"></div>
             <div class="shade-short" aria-hidden="true"></div>
@@ -1160,7 +1164,7 @@
           </div>
 
           <div class="stage-foot">
-            <span id="stage-caption">Painted in-app with a GPU Kuwahara oil shader. Hold the skip capsule (or hold Space while focused) for 2 seconds to skip.</span>
+            <span id="stage-caption">Mirrors your macOS wallpaper or live Aerial video—automatically dimmed so white text stays legible.</span>
             <button type="button" class="quote-cycle" id="quote-cycle">↻ another prompt</button>
           </div>
         </div>
@@ -1185,7 +1189,7 @@
           <div class="metric">
             <span class="k">Long break</span>
             <span class="v">5<span class="unit">min / 60 min</span></span>
-            <span class="s">Every third break opens a painted landscape—or your own photo, measured and dimmed automatically so white text stays legible. Snooze 5 or 15 minutes while your budget lasts.</span>
+            <span class="s">Every third break mirrors your macOS wallpaper or live Aerial video—or a built-in scene or custom photo—measured and dimmed automatically so white text stays legible.</span>
           </div>
           <div class="metric">
             <span class="k">Hard line</span>
@@ -1405,7 +1409,7 @@
 
       const CAPTIONS = {
         long: {
-          day: "Painted in-app with a GPU Kuwahara oil shader. Hold the skip capsule (or hold Space while focused) for 2 seconds to skip.",
+          day: "Mirrors your macOS wallpaper or live Aerial video—automatically dimmed so white text stays legible.",
           evening: "After 18:00, Pausa dims the canvas to evening luminance and shifts prompts toward winding down.",
           midnight: "Between 23:00 and 05:59, midnight mode drops screen brightness and nudges you to get some sleep."
         },
@@ -1426,7 +1430,7 @@
       const resetBtn = document.getElementById("stage-reset");
       const urgentBtn = document.getElementById("urgent-btn");
 
-      let scene = "ocean";
+      let scene = "tahoe";
       let daypart = (() => {
         const h = new Date().getHours();
         if (h >= 23 || h < 6) return "midnight";

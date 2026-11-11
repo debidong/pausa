@@ -1,40 +1,15 @@
-<p align="center">
-  <img src="App/logo/icon-watercolor-fullbleed@1024.png" width="128" alt="Pausa icon">
-</p>
+# Pausa 🪷
 
-<h1 align="center">Pausa</h1>
+Did you know you have the right to look away from your screen? The Constitution doesn't say so, but your eyes do. Pausa reminds you to rest every once in a while, and stays quiet when you're in a meeting, watching a video, or sharing your screen. *Better use Pausa!*
 
-<p align="center">
-  Did you know you have the right to look away from your screen? The Constitution doesn't say so, but your eyes do. Pausa reminds you to rest, every once in a while. In a meeting? Watching a video? Sharing your screen? Pausa stays quiet. It's on your side. And it's free.
-</p>
+**[Website & Interactive Preview →](https://debidong.github.io/pausa/)** · **[Download for macOS (`.dmg`)](https://github.com/debidong/pausa/releases/latest)**
 
-<p align="center">
-  <b>Better use Pausa!</b>
-</p>
+[![Pausa break screen over macOS Lake Tahoe wallpaper — try the interactive preview at debidong.github.io/pausa](docs/images/hero.jpg)](https://debidong.github.io/pausa/)
 
-<p align="center">
-  <a href="https://github.com/debidong/pausa/releases/latest"><img src="https://img.shields.io/github/v/release/debidong/pausa?label=download" alt="Download"></a>
-  <img src="https://img.shields.io/badge/macOS-13%2B-black" alt="macOS 13+">
-  <img src="https://img.shields.io/badge/Apple%20silicon%20%26%20Intel-universal-black" alt="Universal">
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-PolyForm%20Shield-blue" alt="License"></a>
-</p>
+macOS 13+ · Universal (`arm64` & `x86_64`) · Zero privacy permissions · Free.
 
-<p align="center">
-  <img src="docs/images/hero.png" width="100%" alt="Pausa's long-break screen over five backgrounds, with a glass clock and message in the center and a &quot;Hold Space to skip&quot; button at the bottom.">
-</p>
+For interactive break previews, zero-permission auto-pause details, and first-launch setup instructions, visit **[debidong.github.io/pausa](https://debidong.github.io/pausa/)**.
 
-## Install
+---
 
-1. Download `Pausa-x.y.z.dmg` from [Releases](https://github.com/debidong/pausa/releases/latest) and drag Pausa to **Applications**.
-2. Open it. macOS will block it the first time, because Pausa isn't signed with an Apple Developer certificate.
-3. Go to **System Settings › Privacy & Security**, scroll to **Security**, and click **Open Anyway**.
-
-That's the only time you'll need to do this.
-
-## Contributing
-
-PRs are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) first; you'll sign the [CLA](CLA.md) in your first PR.
-
-## License
-
-Source-available under [PolyForm Shield 1.0.0](LICENSE). Free to use, including at work. Just don't use the code to build a competing product.
+PRs welcome — read [CONTRIBUTING.md](CONTRIBUTING.md) and [CLA.md](CLA.md) first. Source-available under [PolyForm Shield 1.0.0](LICENSE) (free to use at home or at work; not for building a competing product).
