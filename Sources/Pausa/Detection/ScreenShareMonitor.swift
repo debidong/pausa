@@ -7,6 +7,7 @@ import CoreGraphics
 /// fcBowena with the §9 commands; tune the constants then.
 enum ScreenShareMonitor {
     enum Kind: Equatable { case sharing(app: NSRunningApplication), recording(app: NSRunningApplication) }
+    enum Match<Owner: Equatable>: Equatable { case sharing(Owner), recording(Owner) }
 
     /// Instance-owned persistence state for the Chromium share bar so background detector ticks
     /// never race on unprotected global variables.
@@ -64,38 +65,59 @@ enum ScreenShareMonitor {
             return nil
         }
         let byPID = snap.appsByPID
-        let screens = snap.displayBounds
-        var barSeen: NSRunningApplication?
-        var result: Kind?
-
-        for w in list {
-            guard let pid = (w[kCGWindowOwnerPID as String] as? NSNumber).map({ pid_t($0.int32Value) }),
+        let candidates: [(owner: NSRunningApplication, bundleID: String, layer: Int, bounds: CGRect)] = list.compactMap { w in
+            guard let pid = (w[kCGWindowOwnerPID as String] as? NSNumber).map({ pid_t($0.int32Value) })
+                    ?? (w[kCGWindowOwnerPID as String] as? pid_t),
                   let app = byPID[pid], let bid = app.bundleIdentifier,
                   let bd = w[kCGWindowBounds as String] as? NSDictionary,
-                  let r = CGRect(dictionaryRepresentation: bd) else { continue }
-            let layer = (w[kCGWindowLayer as String] as? NSNumber)?.intValue ?? 0
+                  let r = CGRect(dictionaryRepresentation: bd) else { return nil }
+            let layer = (w[kCGWindowLayer as String] as? NSNumber)?.intValue
+                ?? (w[kCGWindowLayer as String] as? Int) ?? 0
+            return (owner: app, bundleID: bid, layer: layer, bounds: r)
+        }
+        switch evaluate(windows: candidates, screens: snap.displayBounds, inMeeting: inMeeting, tracker: &tracker, now: now) {
+        case .sharing(let app)?: return .sharing(app: app)
+        case .recording(let app)?: return .recording(app: app)
+        case nil: return nil
+        }
+    }
+
+    static func evaluate<Owner: Equatable>(
+        windows: [(owner: Owner, bundleID: String, layer: Int, bounds: CGRect)],
+        screens: [CGRect],
+        inMeeting: Bool,
+        tracker: inout Tracker,
+        now: TimeInterval
+    ) -> Match<Owner>? {
+        var barSeen: Owner?
+        var result: Match<Owner>?
+
+        for w in windows {
+            let bid = w.bundleID
+            let layer = w.layer
+            let r = w.bounds
             let small = r.width < 700 && r.height < 120 && r.width > 40
 
             // Recorders: running alone is not enough; need a floating control/selection window.
             if recorderBundleIDs.contains(bid), layer > 0, small, result == nil {
-                result = .recording(app: app)
+                result = .recording(w.owner)
             }
             // Meeting apps put a floating share toolbar / border above normal windows while sharing.
             if meetingBundleIDs.contains(bid), layer > 0, inMeeting {
                 let border = screens.contains { abs($0.width - r.width) < 8 && abs($0.height - r.height) < 8 }
-                if small || border { result = .sharing(app: app) }
+                if small || border { result = .sharing(w.owner) }
             }
             // Chromium "正在共享 · 停止共享 · 隐藏" bar: small, bottom-centred, floating (§9 ①).
             if chromiumBrowsers.contains(bid), layer > 0, r.height >= 30, r.height <= 80, r.width < 700,
                let s = screens.first(where: { $0.intersects(r) }),
                abs(r.midX - s.midX) < 80, s.maxY - r.maxY < 140 {
-                barSeen = app
+                barSeen = w.owner
             }
         }
 
         if tracker.acceptBrowserBar(seen: barSeen != nil, inMeeting: inMeeting, now: now),
            let b = barSeen, result == nil {
-            result = .sharing(app: b)
+            result = .sharing(b)
         }
         return result
     }

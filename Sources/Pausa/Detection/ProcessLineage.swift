@@ -40,7 +40,9 @@ enum ProcessLineage {
     /// The .app bundle path containing `path` (outermost "X.app" wins, so
     /// ".../Google Chrome.app/.../Google Chrome Helper (GPU).app/..." maps to Chrome).
     static func outerAppBundle(_ path: String) -> String? {
-        guard let r = path.range(of: ".app/") ?? path.range(of: ".app", options: .backwards) else { return nil }
-        return String(path[..<r.lowerBound]) + ".app"
+        if let r = path.range(of: ".app/") {
+            return String(path[..<r.lowerBound]) + ".app"
+        }
+        return path.hasSuffix(".app") ? path : nil
     }
 }

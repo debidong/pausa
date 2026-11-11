@@ -55,6 +55,8 @@ jobs:
           "$BIN" --debug-quotes-selftest
           "$BIN" --debug-selftest-random-theme
           "$BIN" --debug-selftest-spacehold
+          "$BIN" --debug-selftest-settings-window
+          "$BIN" --debug-selftest-settings-minh "$RUNNER_TEMP/minh"
 
       - name: Package single-arch app & verify AppIntents metadata
         run: |

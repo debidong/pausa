@@ -172,8 +172,12 @@ enum MicUserMonitor {
 
     /// Best app to name for a meeting: a known meeting app, then a browser, then anything.
     static func meetingApp(_ users: [NSRunningApplication] = appsUsingInput()) -> NSRunningApplication? {
-        return users.first { ScreenShareMonitor.meetingBundleIDs.contains($0.bundleIdentifier ?? "") }
-            ?? users.first { BrowserVideoMonitor.browserBundleIDs.contains($0.bundleIdentifier ?? "") }
+        pickMeetingOwner(users, bundleID: { $0.bundleIdentifier })
+    }
+
+    static func pickMeetingOwner<Owner>(_ users: [Owner], bundleID: (Owner) -> String?) -> Owner? {
+        users.first { ScreenShareMonitor.meetingBundleIDs.contains(bundleID($0) ?? "") }
+            ?? users.first { BrowserVideoMonitor.browserBundleIDs.contains(bundleID($0) ?? "") }
             ?? users.first
     }
 }

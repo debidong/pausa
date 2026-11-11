@@ -153,6 +153,7 @@ enum DebugCLI {
             let key = "PausaSettingsFrame.selftest"
             NSWindow.removeFrame(usingName: key)
             MainActor.assumeIsolated {
+                NSApplication.shared.setActivationPolicy(.prohibited)
                 var ok = true
                 func check(_ n: String, _ c: Bool) { print(c ? "ok   \(n)" : "FAIL \(n)"); ok = ok && c }
                 SettingsNav.shared.page = .breaks   // dry run: not persisted
@@ -220,21 +221,29 @@ enum DebugCLI {
                     let now = cal.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 15))!
                     let data = StatsSnapshot.rows(StatsSnapshot.example, now: now, cal: cal)
                     m.frozen = true; m.calendar = cal; m.now = { now }; m.load = { (data.0, data.1, nil) }; m.reload()
-                    let vis = (w.screen ?? NSScreen.main)!.visibleFrame
+                    let vis = (w.screen ?? NSScreen.main)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 2000, height: 2000)
+                    SettingsTabsController.visibleHeightOverride = 1200   // isolate from small laptop / CI virtual displays
                     w.setFrame(NSRect(x: vis.minX + 50, y: vis.maxY - 40 - 600, width: 500, height: 600), display: false)
-                    let top = w.frame.maxY, lang = AppLanguage.current.rawValue
+                    let top = w.frame.maxY
                     @MainActor func page(_ p: SettingsPage) -> CGFloat { SettingsView.contentHeight(.shared, p, width: w.contentLayoutRect.width) }
+                    @MainActor func expectedFitted(_ p: SettingsPage) -> CGFloat {
+                        let chrome = w.frame.height - w.contentLayoutRect.height
+                        return max(SettingsTabsController.minimumFrame(w).height,
+                                   min(chrome + page(p) + 1, SettingsTabsController.maxFittedHeight))
+                    }
                     tabs.select(.breaks)
                     check("休息: 880 (\(w.frame.height)), page \(page(.breaks)) > area \(w.contentLayoutRect.height) scrolls, top kept",
                           w.frame.height == 880 && page(.breaks) > w.contentLayoutRect.height && abs(w.frame.maxY - top) <= 0.5)
-                    // Measured on macBowena at 500 wide, sample week loaded; same with a fresh defaults domain.
-                    let statsWant: CGFloat? = ["zh-Hans": 707, "en": 707][lang], aboutWant: CGFloat? = ["zh-Hans": 451, "en": 451][lang]
                     tabs.select(.stats)
-                    check("统计: \(w.frame.height) (expected \(statsWant.map { "\(Int($0))" } ?? "-")), shown fully, top kept",
-                          (statsWant.map { w.frame.height == $0 } ?? true) && page(.stats) <= w.contentLayoutRect.height && abs(w.frame.maxY - top) <= 0.5)
+                    let statsExp = expectedFitted(.stats)
+                    check("统计: \(w.frame.height) (expected \(Int(statsExp))), shown fully, top kept",
+                          abs(w.frame.height - statsExp) <= 0.5 && w.frame.height < SettingsTabsController.maxFittedHeight
+                          && page(.stats) <= w.contentLayoutRect.height && abs(w.frame.maxY - top) <= 0.5)
                     tabs.select(.about)
-                    check("关于: \(w.frame.height) (expected \(aboutWant.map { "\(Int($0))" } ?? "-")), top kept",
-                          (aboutWant.map { w.frame.height == $0 } ?? true) && abs(w.frame.maxY - top) <= 0.5)
+                    let aboutExp = expectedFitted(.about)
+                    check("关于: \(w.frame.height) (expected \(Int(aboutExp))), shown fully, top kept",
+                          abs(w.frame.height - aboutExp) <= 0.5 && w.frame.height < SettingsTabsController.maxFittedHeight
+                          && page(.about) <= w.contentLayoutRect.height && abs(w.frame.maxY - top) <= 0.5)
                     SettingsTabsController.visibleHeightOverride = 520
                     tabs.select(.stats)
                     check("520 pt screen: 统计 capped at 520 (\(w.frame.height)), scrolls", w.frame.height == 520 && page(.stats) > w.contentLayoutRect.height)

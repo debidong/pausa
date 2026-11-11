@@ -371,7 +371,7 @@ final class AppController {
 
     /// Break screen 「休息延后 N 分钟」: a snooze brings the break back in snoozeLength (5 min);
     /// 15 adds the rest from the shared postpone allowance.
-    private func snooze(minutes: Int) {
+    func snooze(minutes: Int) {
         finish(.snoozed)
         let extra = Double(minutes) * 60 - scheduler.config.snoozeLength
         if extra > 0, scheduler.canPostpone(by: extra) { postpone(by: extra) }

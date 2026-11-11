@@ -231,17 +231,21 @@ final class Updater: NSObject, SPUUpdaterDelegate {
         }
     }
 
-    func updater(_ updater: SPUUpdater, shouldPostponeRelaunchForUpdate item: SUAppcastItem,
-                 untilInvokingBlock installHandler: @escaping () -> Void) -> Bool {
+    func shouldPostponeRelaunch(version: String?, untilInvoking installHandler: @escaping () -> Void) -> Bool {
         if canInstallNow() {
             log.info("relaunch not postponed")
             transition(.installProceeded)
             return false
         }
         log.info("relaunch postponed: overlay on screen")
-        transition(.readyToRelaunch(fallbackVersion: item.displayVersionString))
+        transition(.readyToRelaunch(fallbackVersion: version))
         deferredInstall = .delegateRelaunch(installHandler)
         return true
+    }
+
+    func updater(_ updater: SPUUpdater, shouldPostponeRelaunchForUpdate item: SUAppcastItem,
+                 untilInvokingBlock installHandler: @escaping () -> Void) -> Bool {
+        shouldPostponeRelaunch(version: item.displayVersionString, untilInvoking: installHandler)
     }
 
     func updaterWillRelaunchApplication(_ updater: SPUUpdater) {

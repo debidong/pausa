@@ -102,7 +102,12 @@ final class MenuBarController: NSObject {
     /// the same text in a panel at the top right, just under the menu bar, no arrow. 8 s, click closes.
     /// An item pushed behind the notch still reports itself visible and on screen.
     static func underNotch(_ f: NSRect, on s: NSScreen) -> Bool {
-        guard #available(macOS 12, *), let l = s.auxiliaryTopLeftArea, let r = s.auxiliaryTopRightArea else { return false }
+        guard #available(macOS 12, *) else { return false }
+        return underNotch(f, leftArea: s.auxiliaryTopLeftArea, rightArea: s.auxiliaryTopRightArea)
+    }
+
+    static func underNotch(_ f: NSRect, leftArea l: NSRect?, rightArea r: NSRect?) -> Bool {
+        guard let l, let r else { return false }
         return f.maxX > l.maxX && f.minX < r.minX
     }
 

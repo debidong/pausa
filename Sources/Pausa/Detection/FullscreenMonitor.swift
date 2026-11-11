@@ -55,27 +55,41 @@ enum FullscreenMonitor {
     }
     private static let categoryCache = CategoryCache()
 
+    static func isGameCategory(_ category: String?) -> Bool {
+        guard let cat = category else { return false }
+        return cat.hasPrefix("public.app-category.") && cat.contains("games")
+    }
+
     static func isGame(_ app: NSRunningApplication) -> Bool {
         guard let url = app.bundleURL else { return false }
         let key = url.path
         categoryCache.lock.lock(); defer { categoryCache.lock.unlock() }
         if let v = categoryCache.map[key] { return v }
-        let cat = (Bundle(url: url)?.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String) ?? ""
-        let v = cat.hasPrefix("public.app-category.") && cat.contains("games")
+        let cat = Bundle(url: url)?.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String
+        let v = isGameCategory(cat)
         categoryCache.map[key] = v
         return v
     }
 
     static func frontmostCoversDisplay(pid: pid_t, snapshot: DetectionSnapshot? = nil) -> Bool {
         let snap = snapshot ?? DetectionSnapshot()
-        let list = snap.onScreenWindows
-        let displays = snap.displayBounds
-        for w in list {
-            guard (w[kCGWindowOwnerPID as String] as? pid_t) == pid,
-                  let layer = w[kCGWindowLayer as String] as? Int, layer >= 0, layer < Int(CGWindowLevelForKey(.mainMenuWindow)),
+        return windowCoversAnyDisplay(pid: pid, windows: snap.onScreenWindows, displays: snap.displayBounds)
+    }
+
+    static func windowCoversAnyDisplay(pid: pid_t, windows: [[String: Any]], displays: [CGRect]) -> Bool {
+        let maxLayer = Int(CGWindowLevelForKey(.mainMenuWindow))
+        for w in windows {
+            let owner = (w[kCGWindowOwnerPID as String] as? NSNumber).map { pid_t($0.int32Value) }
+                ?? (w[kCGWindowOwnerPID as String] as? pid_t)
+            let layer = (w[kCGWindowLayer as String] as? NSNumber)?.intValue
+                ?? (w[kCGWindowLayer as String] as? Int)
+            guard owner == pid,
+                  let layer, layer >= 0, layer < maxLayer,
                   let bd = w[kCGWindowBounds as String] as? NSDictionary,
                   let rect = CGRect(dictionaryRepresentation: bd) else { continue }
-            if let alpha = w[kCGWindowAlpha as String] as? Double, alpha < 0.1 { continue }
+            let alpha = (w[kCGWindowAlpha as String] as? NSNumber)?.doubleValue
+                ?? (w[kCGWindowAlpha as String] as? Double)
+            if let alpha, alpha < 0.1 { continue }
             for d in displays where rect.insetBy(dx: -1, dy: -1).contains(d) { return true }
         }
         return false

@@ -230,7 +230,7 @@ public final class PauseDetector: ObservableObject {
         add(dn, Notification.Name("com.apple.screenIsUnlocked"), .screenLocked, false)
     }
 
-    private func setAway(_ kind: AwayKind, _ begins: Bool) {
+    func setAway(_ kind: AwayKind, _ begins: Bool) {
         let wasAway = !awayKinds.isEmpty
         if begins { awayKinds.insert(kind) } else { awayKinds.remove(kind) }
         let nowAway = !awayKinds.isEmpty
