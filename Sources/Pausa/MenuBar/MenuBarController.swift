@@ -45,7 +45,7 @@ final class MenuBarController: NSObject {
         dockSub = app.settings.$showInDock.receive(on: RunLoop.main).sink { [weak self] on in
             self?.applyDock(on)
         }
-        updateSub = UpdateModel.shared.$status.receive(on: RunLoop.main).sink { [weak self] _ in
+        updateSub = UpdateModel.shared.$phase.receive(on: RunLoop.main).sink { [weak self] _ in
             DispatchQueue.main.async { self?.refresh() }
         }
         refresh()
@@ -188,8 +188,9 @@ final class MenuBarController: NSObject {
         st.manualPaused = app.manualPaused
         st.autoPaused = app.isPaused && !app.manualPaused
         st.update = UpdateModel.shared.readyVersion
-        st.canInstall = !onBreak
-        UpdateModel.shared.canInstall = !onBreak
+        let canInstall = !app.blocksRelaunch
+        st.canInstall = canInstall
+        UpdateModel.shared.canInstall = canInstall
         return st
     }
 
@@ -202,8 +203,10 @@ final class MenuBarController: NSObject {
             // Original (pre-round-4) ring: pie fills toward the next break, dashed when paused.
             if !lastTitle.isEmpty { lastTitle = ""; item.button?.title = "" }
             let paused = app.isPaused
-            var warning = false
-            if case .warning = app.scheduler.phase { warning = true }
+            let warning: Bool = switch app.scheduler.effectiveMode {
+            case .warning, .deferred: true
+            default: false
+            }
             let step = ringStep(fraction: app.scheduler.next.fraction, paused: paused)
             let key = "\(paused)-\(warning)-\(step)-\(app.settings.theme.rawValue)"
             guard key != lastIconKey else { return }

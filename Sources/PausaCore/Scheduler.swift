@@ -4,9 +4,9 @@ import Foundation
 // monotonic time (seconds, including sleep) and current signals. Everything
 // that can go wrong with timing lives here, so it is all unit-testable.
 
-public enum BreakKind: String, Codable, Equatable { case short, long }
+public enum BreakKind: String, Codable, Equatable, Sendable { case short, long }
 
-public enum PauseReason: Hashable, Comparable {
+public enum PauseReason: Hashable, Comparable, Sendable {
   // order = display priority
   case meeting, screenSharing   // "holds": person still at the screen, never interrupted on screen
   case micInUse                 // hold: mic alone, no camera / meeting app (2-hour recheck applies)
@@ -17,7 +17,7 @@ public enum PauseReason: Hashable, Comparable {
 
 /// A soft reason to push a due break back a little (design §0 R1). Sources only say what they
 /// are and how long they may defer one break; the scheduler owns all timing (one shared budget).
-public enum DeferralKind: Hashable {
+public enum DeferralKind: Hashable, Sendable {
   case typing, focusApp, focusMode
   case microphone   // mic on, not yet long enough to count as a meeting
   /// Firm: holds even past the shared budget and the hard line, for at most its own cap. Only
@@ -25,7 +25,7 @@ public enum DeferralKind: Hashable {
   var firm: Bool { self == .microphone }
 }
 
-public struct Deferral: Hashable {
+public struct Deferral: Hashable, Sendable {
   public var kind: DeferralKind
   public var cap: Double                 // per-break cap for this source, seconds
   public var kinds: Set<BreakKind>       // which breaks it may defer (focus mode short-only by default)
@@ -42,11 +42,11 @@ public struct Deferral: Hashable {
   }
 }
 
-public enum AwayKind { case locked }   // lid-close, sleep, screen lock. Input idle is not away (Steve, 2026-10-20)
+public enum AwayKind: Sendable { case locked }   // lid-close, sleep, screen lock. Input idle is not away (Steve, 2026-10-20)
 
-public enum BreakOutcome { case completed, skipped, snoozed }
+public enum BreakOutcome: Sendable { case completed, skipped, snoozed }
 
-public struct Config: Equatable {
+public struct Config: Equatable, Sendable {
   /// One break interval; every `longEveryNth` break is a long one (that break counts as the Nth).
   public var breakEvery: Double = 20 * 60
   public var longEveryNth: Int = 3
@@ -98,11 +98,26 @@ public struct Config: Equatable {
   }
 }
 
-public enum Phase: Equatable {
+/// Sub-state while a break is due (`remaining <= 0`) and held back by a soft deferral or typing grace.
+public enum DeferralSubstate: Equatable, Sendable {
+  case source(DeferralKind)
+  case typingGrace(since: Double)
+
+  /// True when the cursor pill should show the "waiting for typing to pause" prompt.
+  public var showsTypingPill: Bool {
+    switch self {
+    case .source(.typing), .source(.microphone), .typingGrace: return true
+    case .source(.focusApp), .source(.focusMode): return false
+    }
+  }
+}
+
+public enum Phase: Equatable, Sendable {
   case working
-  case warning(BreakKind)                   // heads-up shown, break imminent
-  case onBreak(BreakKind, endsAt: Double)
-  case paused(PauseReason)                  // highest-priority reason
+  case warning(BreakKind, cardOpened: Bool)        // heads-up shown, break imminent
+  case deferred(BreakKind, DeferralSubstate)       // due (remaining <= 0), waiting on deferral or typing pause
+  case onBreak(BreakKind, endsAt: Double, planned: Double)
+  case paused(PauseReason)                         // highest-priority reason
 }
 
 public enum Command: Equatable {
@@ -114,30 +129,80 @@ public enum Command: Equatable {
 }
 
 public struct Scheduler {
-  public var config: Config
-  public private(set) var phase: Phase = .working {
-    // The panel's "already opened" memory lives only as long as the warning does.
-    didSet { if case .warning = phase {} else { cardOpened = false } }
+  /// Physical session presence: locking the screen or sleeping freezes work accumulation.
+  public enum Presence: Equatable, Sendable {
+    case active
+    case away(since: Double)
   }
+
+  /// Permanent user-initiated reminder pause ("暂停提醒"), storing wall-clock start seconds.
+  public enum ManualPauseState: Equatable, Codable, Sendable {
+    case none
+    case paused(sinceWall: Double)
+  }
+
+  /// Single derived top-level operating mode with priority defined in one place.
+  public enum EffectiveMode: Equatable, Sendable {
+    case manualPaused(sinceWall: Double, isAway: Bool)
+    case away(since: Double)
+    case onBreak(BreakKind, endsAt: Double, planned: Double)
+    case autoPaused(PauseReason)
+    case warning(BreakKind, cardOpened: Bool)
+    case deferred(BreakKind, DeferralSubstate)
+    case working
+  }
+
+  public var config: Config
+  public private(set) var phase: Phase = .working
+  public private(set) var presence: Presence = .active
+  public private(set) var manualPause: ManualPauseState = .none
 
   // Active work time since the last break (any kind), and breaks since the last long one.
   private(set) var sinceBreak: Double = 0
   private(set) var breaksSinceLong = 0
   private var lastTick: Double?
-  private var dueSince: Double?
   private var snoozes = 0
-  private var breakLength: Double?             // set length of the break on screen, for stats
-  private var meetingSince: Double?            // any hold (meeting / screen share / video) started
+  private var holdStartedAt: Double?             // any hold (meeting / screen share / video) started
   private var sinceLongDone: Double = 0          // active time since last *completed* long break
   private var deferUsed: Double = 0              // shared budget used for the current due break
   private var deferBySource: [DeferralKind: Double] = [:]
-  public private(set) var deferring: DeferralKind?   // for the menu bar, nil when not deferring
-  private var cardOpened = false      // the pre-break panel has been up during this warning
-  private var typingWaiting = false   // set by the last tick: due, and waiting for typing / the mic to stop
   static let holds: Set<PauseReason> = [.meeting, .micInUse, .screenSharing, .video, .fullscreen]
   static let boundedHolds: Set<PauseReason> = [.video, .fullscreen]
 
   public init(config: Config = Config()) { self.config = config }
+
+  public var isAway: Bool {
+    if case .away = presence { return true }
+    return false
+  }
+
+  public var isManuallyPaused: Bool {
+    if case .paused = manualPause { return true }
+    return false
+  }
+
+  /// Active soft/firm deferral source for the menu bar, derived directly from `phase`.
+  public var deferring: DeferralKind? {
+    if case .deferred(_, .source(let kind)) = phase { return kind }
+    return nil
+  }
+
+  /// Authoritative top-level mode combining `manualPause`, `presence`, and `phase`.
+  public var effectiveMode: EffectiveMode {
+    if case .paused(let sinceWall) = manualPause {
+      return .manualPaused(sinceWall: sinceWall, isAway: isAway)
+    }
+    if case .away(let since) = presence {
+      return .away(since: since)
+    }
+    switch phase {
+    case .onBreak(let k, let endsAt, let planned): return .onBreak(k, endsAt: endsAt, planned: planned)
+    case .paused(let r):                           return .autoPaused(r)
+    case .warning(let k, let opened):              return .warning(k, cardOpened: opened)
+    case .deferred(let k, let sub):                return .deferred(k, sub)
+    case .working:                                 return .working
+    }
+  }
 
   /// Seconds until the next break and which one, for the menu bar.
   public var next: (kind: BreakKind, remaining: Double, fraction: Double) {
@@ -195,13 +260,17 @@ public struct Scheduler {
 
   public mutating func tick(now: Double, reasons inReasons: Set<PauseReason>, deferrals: [Deferral],
                             inputIdle: Double) -> [Command] {
+    if case .away = presence { return [] }
+    if case .paused = manualPause {
+      manualPauseTick(now: now)
+      return []
+    }
+
     let dt = lastTick.map { max(0, now - $0) } ?? 0
     lastTick = now
     var reasons = inReasons
-    deferring = nil
-    typingWaiting = false
 
-    if case .onBreak(_, let endsAt) = phase {
+    if case .onBreak(_, let endsAt, _) = phase {
       if now >= endsAt { return finish(.completed, now: now) }
       return []
     }
@@ -221,19 +290,18 @@ public struct Scheduler {
       // screen sharing keep waiting (no overlay on someone else's screen); the break follows after.
       if due && !reasons.isDisjoint(with: Self.boundedHolds) && (deferUsed >= budget || mustNotDefer(kind)) {
         reasons.subtract(Self.boundedHolds)
-        if reasons.isDisjoint(with: Self.holds) { meetingSince = nil }   // forced, not "ended": no make-up
+        if reasons.isDisjoint(with: Self.holds) { holdStartedAt = nil }   // forced, not "ended": no make-up
       }
     }
     if !reasons.isDisjoint(with: Self.holds) {
-      if meetingSince == nil { meetingSince = now }
-    } else if let start = meetingSince {
-      meetingSince = nil
+      if holdStartedAt == nil { holdStartedAt = now }
+    } else if let start = holdStartedAt {
+      holdStartedAt = nil
       meetingEnded(lasted: now - start)
     }
 
     if let top = reasons.min() {
       phase = .paused(top)
-      dueSince = nil
       return []
     }
     if case .paused = phase { phase = .working }
@@ -242,12 +310,15 @@ public struct Scheduler {
     sinceLongDone += dt
 
     let (kind, remaining, _) = next
-    if remaining > config.warnLead { phase = .working; dueSince = nil; return [] }
+    if remaining > config.warnLead { phase = .working; return [] }
     if remaining > 0 {
-      var cmds: [Command] = []
-      if phase != .warning(kind) { phase = .warning(kind); cmds = [.showWarning(kind, secondsLeft: remaining)] }
-      if Int(remaining.rounded(.up)) >= PreBreakState.minOpenSeconds { cardOpened = true }
-      return cmds
+      let opensNow = Int(remaining.rounded(.up)) >= PreBreakState.minOpenSeconds
+      if case .warning(let prevKind, let wasOpen) = phase, prevKind == kind {
+        if opensNow && !wasOpen { phase = .warning(kind, cardOpened: true) }
+        return []
+      }
+      phase = .warning(kind, cardOpened: opensNow)
+      return [.showWarning(kind, secondsLeft: remaining)]
     }
 
     // Due. Soft deferrals share one budget; each is also limited by its own cap.
@@ -262,28 +333,30 @@ public struct Scheduler {
     if !usable.isEmpty {
       deferUsed += dt
       for d in usable { deferBySource[d.kind, default: 0] += dt }
-      deferring = usable.contains { $0.kind == .typing } ? .typing : usable[0].kind
-      typingWaiting = deferring == .typing || deferring == .microphone
+      let chosen: DeferralKind = usable.contains { $0.kind == .typing } ? .typing : usable[0].kind
+      phase = .deferred(kind, .source(chosen))
       return []
     }
 
     // Wait for a pause in typing, but not forever (R19, R21): the wait comes out of the shared
     // budget, and stops when the budget is spent or the hard line is reached.
-    let since = dueSince ?? now
-    dueSince = since
+    let since: Double
+    if case .deferred(let prevKind, .typingGrace(let prevSince)) = phase, prevKind == kind {
+      since = prevSince
+    } else {
+      since = now
+    }
     if !hard && deferUsed < budget && inputIdle < config.typingIdle && now - since < config.typingGrace {
       deferUsed += dt
-      typingWaiting = true
+      phase = .deferred(kind, .typingGrace(since: since))
       return []
     }
-    dueSince = nil
     return startBreak(kind, now: now)
   }
 
   private mutating func startBreak(_ kind: BreakKind, now: Double) -> [Command] {
     let length = config.length(kind)
-    phase = .onBreak(kind, endsAt: now + length)
-    breakLength = length
+    phase = .onBreak(kind, endsAt: now + length, planned: length)
     return [.startBreak(kind, length: length)]
   }
 
@@ -291,7 +364,7 @@ public struct Scheduler {
 
   /// User skipped, snoozed, or the overlay finished.
   public mutating func finish(_ outcome: BreakOutcome, now: Double) -> [Command] {
-    guard case .onBreak(let kind, _) = phase else { return [] }
+    guard case .onBreak(let kind, _, let planned) = phase else { return [] }
     // Past the hard line the long break can't be skipped or snoozed, whatever the UI shows.
     if kind == .long && outcome != .completed && mustNotDefer(.long) { return [] }
     phase = .working
@@ -315,9 +388,27 @@ public struct Scheduler {
       result = .skipped
       reset(kind, done: false)
     }
-    let planned = breakLength ?? config.length(kind)
-    breakLength = nil
     return (result.map { [.recorded(kind, planned: planned, $0)] } ?? []) + [.endBreak]
+  }
+
+  /// Screen locked or Mac going to sleep: freeze all work/hard-line accumulation until `exitAway`.
+  public mutating func enterAway(now: Double) {
+    if case .away = presence { return }
+    presence = .away(since: now)
+    lastTick = now
+  }
+
+  /// Screen unlocked or Mac woke up: settle break/reset credit for the away span without clearing `manualPause`.
+  @discardableResult
+  public mutating func exitAway(_ kind: AwayKind, now: Double) -> [Command] {
+    let secs: Double
+    if case .away(let since) = presence {
+      secs = max(0, now - since)
+    } else {
+      secs = 0
+    }
+    presence = .active
+    return away(kind, seconds: secs, now: now)
   }
 
   /// The machine was away (locked or lid closed) for `seconds`.
@@ -331,43 +422,82 @@ public struct Scheduler {
     case .locked:
       // Screen off: none of this time is work, and it rests the eyes.
       lastTick = now
-      if case .onBreak(let k, let endsAt) = phase {
+      if case .onBreak(let k, let endsAt, _) = phase {
         if now >= endsAt { return finish(.completed, now: now) }
         return [.resumeBreak(k, remaining: endsAt - now)]
       }
-      if seconds >= config.longLength { reset(.long, done: true); sinceLongDone = 0; clearDeferral() }
-      else if seconds >= config.shortLength { snoozes = 0; sinceBreak = 0 }   // eyes rested, cycle unchanged
+      if seconds >= config.longLength {
+        reset(.long, done: true); sinceLongDone = 0; clearDeferral()
+        clearTransientPhase()
+      } else if seconds >= config.shortLength {
+        snoozes = 0; sinceBreak = 0   // eyes rested, cycle unchanged
+        clearTransientPhase()
+      }
     }
     return []
+  }
+
+  private mutating func clearTransientPhase() {
+    switch phase {
+    case .warning, .deferred: phase = .working
+    case .working, .onBreak, .paused: break
+    }
   }
 
   /// 「紧急暂停提醒」 (spec-hardline §5.2): the one way out of a long break past the hard line,
   /// where `finish` refuses skip and snooze. Ends the long break on screen, or the one the pre-break
   /// panel announces at the line, as skipped: one stats row, the long break stays owed and nothing
-  /// is reset that a skip keeps (sinceLongDone runs on). The caller then pauses reminders.
-  /// Anywhere else (no long break up, or not at the line) it does nothing.
-  public mutating func urgentPause(now: Double) -> [Command] {
+  /// is reset that a skip keeps (sinceLongDone runs on). When `wallNow` is supplied, enters `manualPause`.
+  public mutating func urgentPause(now: Double, wallNow: Double? = nil) -> [Command] {
     let cmds: [Command]
     switch phase {
-    case .onBreak(.long, _) where mustNotDefer(.long):
-      cmds = [.recorded(.long, planned: breakLength ?? config.longLength, .skipped), .endBreak]
-      breakLength = nil
-    case .warning(.long) where atHardLine:
+    case .onBreak(.long, _, let planned) where mustNotDefer(.long):
+      cmds = [.recorded(.long, planned: planned, .skipped), .endBreak]
+    case .warning(.long, _) where atHardLine, .deferred(.long, _) where atHardLine:
       cmds = [.recorded(.long, planned: config.longLength, .skipped)]
     default:
+      if let wallNow {
+        manualPause = .paused(sinceWall: wallNow)
+        lastTick = now
+      }
       return []
     }
     phase = .working
-    dueSince = nil
     clearDeferral()
     reset(.long, done: false)
+    if let wallNow {
+      manualPause = .paused(sinceWall: wallNow)
+      lastTick = now
+    }
     return cmds
   }
 
+  /// Menu 「暂停提醒」: settles any break on screen (normal skip, or urgent skip at the hard line)
+  /// and transitions into `manualPause`.
+  public mutating func pauseManually(wallNow: Double, now: Double) -> [Command] {
+    var cmds: [Command] = []
+    if case .onBreak = phase {
+      cmds = finish(.skipped, now: now)
+      if cmds.isEmpty { cmds = urgentPause(now: now) }
+    } else {
+      clearTransientPhase()
+    }
+    manualPause = .paused(sinceWall: wallNow)
+    lastTick = now
+    return cmds
+  }
+
+  /// Menu 「恢复提醒」: clears `manualPause` and enforces the hard line if reached while paused.
+  public mutating func resumeManually(now: Double) -> [Command] {
+    manualPause = .none
+    return manualPauseEnded(now: now)
+  }
+
   /// 暂停提醒 (Steve, round 7b; permanent since spec-hardline): no reminders at all, but the time since the last long break
-  /// keeps counting. Only a locked screen counts as a long break taken (away), not input idle
+  /// keeps counting while present. Only a locked screen counts as a long break taken (away), not input idle
   /// (Steve, 2026-10-20). The short clock and the postpone budget (deferUsed) are untouched.
   public mutating func manualPauseTick(now: Double) {
+    if case .away = presence { return }
     let dt = lastTick.map { max(0, now - $0) } ?? 0
     lastTick = now
     if case .onBreak = phase { return }
@@ -380,24 +510,36 @@ public struct Scheduler {
     lastTick = now
     if case .onBreak = phase { return [] }
     guard sinceLongDone >= config.hardLine else { return [] }
-    dueSince = nil
     return startBreak(.long, now: now)
   }
 
   /// What survives a quit / relaunch (design: persistence). Wall clock, not monotonic: the
   /// monotonic clock restarts with the process, so the gap is measured with `Date`.
-  public struct Saved: Codable, Equatable {
+  public struct Saved: Codable, Equatable, Sendable {
     public var sinceLongDone: Double
     public var deferUsed: Double
     public var sinceBreak: Double
     public var breaksSinceLong: Int
     public var savedAt: Double              // wall clock, seconds since 1970
+    public var manualPausedSince: Double?   // wall clock when manually paused, nil otherwise
+
+    public init(sinceLongDone: Double, deferUsed: Double, sinceBreak: Double,
+                breaksSinceLong: Int, savedAt: Double, manualPausedSince: Double? = nil) {
+      self.sinceLongDone = sinceLongDone
+      self.deferUsed = deferUsed
+      self.sinceBreak = sinceBreak
+      self.breaksSinceLong = breaksSinceLong
+      self.savedAt = savedAt
+      self.manualPausedSince = manualPausedSince
+    }
   }
 
   /// Snapshot for UserDefaults. A running break is saved as not taken (it never completed).
   public func saved(wallClock: Double) -> Saved {
-    Saved(sinceLongDone: sinceLongDone, deferUsed: deferUsed,
-          sinceBreak: sinceBreak, breaksSinceLong: breaksSinceLong, savedAt: wallClock)
+    let mp: Double? = if case .paused(let sinceWall) = manualPause { sinceWall } else { nil }
+    return Saved(sinceLongDone: sinceLongDone, deferUsed: deferUsed,
+                 sinceBreak: sinceBreak, breaksSinceLong: breaksSinceLong,
+                 savedAt: wallClock, manualPausedSince: mp)
   }
 
   /// At launch: pick up where the last run stopped. The time the app was not running is treated
@@ -411,8 +553,9 @@ public struct Scheduler {
     deferBySource = [:]
     sinceBreak = s.sinceBreak
     breaksSinceLong = max(0, s.breaksSinceLong)
-    dueSince = nil
     snoozes = 0
+    presence = .active
+    manualPause = s.manualPausedSince.map { .paused(sinceWall: $0) } ?? .none
     phase = .working
     away(.locked, seconds: max(0, wallClock - s.savedAt), now: now)
   }
@@ -423,7 +566,7 @@ public struct Scheduler {
   /// A Pausa 时段 window just opened: start the day's counters fresh.
   public mutating func startFresh(now: Double) {
     if case .onBreak = phase { return }
-    sinceBreak = 0; breaksSinceLong = 0; snoozes = 0; dueSince = nil
+    sinceBreak = 0; breaksSinceLong = 0; snoozes = 0
     sinceLongDone = 0; clearDeferral()
     lastTick = now
     phase = .working
@@ -461,8 +604,17 @@ public struct Scheduler {
     guard seconds > 0, canPostpone(by: seconds) else { return false }
     sinceBreak -= seconds
     deferUsed += seconds
-    if case .warning = phase { phase = .working }
-    dueSince = nil
+    switch phase {
+    case .warning, .deferred:
+      let (kind, rem, _) = next
+      if rem > config.warnLead {
+        phase = .working
+      } else if rem > 0 {
+        phase = .warning(kind, cardOpened: Int(rem.rounded(.up)) >= PreBreakState.minOpenSeconds)
+      }
+    case .working, .onBreak, .paused:
+      break
+    }
     return true
   }
 
@@ -470,9 +622,8 @@ public struct Scheduler {
   /// screen. `finish` needs a running break, so the announcement phase has its own entry point.
   /// Only a short break in the warning phase; anything else does nothing. Counts as a skip.
   public mutating func skipUpcoming(now: Double) -> [Command] {
-    guard phase == .warning(.short) else { return [] }
+    guard case .warning(.short, _) = phase else { return [] }
     phase = .working
-    dueSince = nil
     clearDeferral()
     reset(.short, done: false)
     return [.recorded(.short, planned: config.shortLength, .skipped)]
@@ -480,27 +631,40 @@ public struct Scheduler {
 
   /// What the pre-break panel and cursor pill show right now, or nil when neither does. Derived
   /// from the scheduler's state on every read, so it can never lag behind `postpone`, `breakNow`,
-  /// `skipUpcoming` or a pause. Paused, on a break, or more than `warnLead` away: nil.
+  /// `skipUpcoming` or a pause. Paused, away, on a break, or more than `warnLead` away: nil.
   public var preBreak: PreBreakState? {
+    if case .paused = manualPause { return nil }
+    if case .away = presence { return nil }
     switch phase {
-    case .paused, .onBreak: return nil
-    case .working, .warning: break
+    case .working, .paused, .onBreak:
+      return nil
+    case .warning(let kind, let cardOpened):
+      let (nextKind, remaining, _) = next
+      guard nextKind == kind, remaining > 0, remaining <= config.warnLead else { return nil }
+      let left = max(0, Int(remaining.rounded(.up)))
+      return makePreBreakState(
+        kind: kind, secondsLeft: left, typingWait: false,
+        showCard: cardOpened || left >= PreBreakState.minOpenSeconds,
+        showPill: left <= PreBreakState.pillSeconds)
+    case .deferred(let kind, let substate) where substate.showsTypingPill:
+      return makePreBreakState(
+        kind: kind, secondsLeft: 0, typingWait: true,
+        showCard: false, showPill: true)
+    case .deferred:
+      return nil
     }
-    let (kind, remaining, _) = next
-    let left = max(0, Int(remaining.rounded(.up)))
-    let warning = phase == .warning(kind) && remaining > 0 && remaining <= config.warnLead
-    let typingWait = typingWaiting && remaining <= 0
-    guard warning || typingWait else { return nil }
+  }
+
+  private func makePreBreakState(kind: BreakKind, secondsLeft: Int, typingWait: Bool,
+                                 showCard: Bool, showPill: Bool) -> PreBreakState {
     let hard = atHardLine
     let snooze: PreBreakState.Snooze
     if hard { snooze = .hidden }
     else if canPostpone(by: config.snoozeLength) { snooze = .available(minutes: Int(config.snoozeLength / 60)) }
     else { snooze = .usedUp }
     return PreBreakState(
-      kind: kind, secondsLeft: left, snooze: snooze, canSkip: kind == .short, atHardLine: hard,
-      typingWait: typingWait,
-      showCard: warning && (cardOpened || left >= PreBreakState.minOpenSeconds),
-      showPill: (warning && left <= PreBreakState.pillSeconds) || typingWait)
+      kind: kind, secondsLeft: secondsLeft, snooze: snooze, canSkip: kind == .short, atHardLine: hard,
+      typingWait: typingWait, showCard: showCard, showPill: showPill)
   }
 
   /// Menu bar "立即休息".

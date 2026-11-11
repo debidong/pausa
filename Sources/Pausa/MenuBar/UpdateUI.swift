@@ -1,60 +1,50 @@
 import SwiftUI
 import Combine
 
-/// What the update UI shows, as plain values: the Settings → 关于 row and the popover line both read it.
-/// Fed by `Updater` (live) or set by hand for offscreen renders.
+/// What the update UI shows, projected directly from `UpdatePhase`: Settings → 关于 and the popover both read it.
 @MainActor
 final class UpdateModel: ObservableObject {
     static let shared = UpdateModel()
 
-    @Published var status: UpdateStatus = .idle
-    /// The last finished check found nothing. Cleared when a new check starts.
-    @Published var upToDate = false
-    /// False while a break is on screen: installing would relaunch mid-break.
+    @Published var phase: UpdatePhase = .idle
+    /// False while a break or full-screen preview is on screen: installing would relaunch mid-overlay.
     @Published var canInstall = true
 
     var check: () -> Void = {}
     var install: () -> Void = {}
 
-    /// Hook to the live updater. `canInstallNow` is re-read whenever the popover refreshes.
+    /// Hook to the live updater. `canInstall` is kept current as overlays appear and clear.
     func bind(_ u: Updater) {
-        status = u.status
-        u.onStatus = { [weak self] s in
-            self?.status = s
-            if s == .checking { self?.upToDate = false }
+        phase = u.phase
+        u.onPhaseChange = { [weak self] next in
+            self?.phase = next
         }
-        u.onState = { [weak self] st in
-            switch st {
-            case .upToDate: self?.upToDate = true
-            case .checking: self?.upToDate = false
-            default: break
-            }
-        }
-        check = { [weak self] in self?.upToDate = false; u.checkForUpdates() }
+        check = { u.checkForUpdates() }
         install = { u.installNow() }
     }
 
     /// Version waiting for a restart, if any. The popover line appears only then.
     var readyVersion: String? {
-        if case .ready(let v) = status, !v.isEmpty { return v }
+        if case .readyToInstall(let v) = phase, !v.isEmpty { return v }
         return nil
     }
 
     var busy: Bool {
-        switch status {
-        case .checking, .downloading: return true
-        default: return false
+        switch phase {
+        case .checking, .downloading, .installing: return true
+        case .idle, .upToDate, .readyToInstall, .failed: return false
         }
     }
 
     /// The status line under 「检查更新」; nil when there is nothing to say yet.
     var statusText: String? {
-        switch status {
+        switch phase {
+        case .idle: return nil
         case .checking: return L("update.checking")
+        case .upToDate: return L("update.upToDate")
         case .downloading(let v): return v.isEmpty ? L("update.checking") : L("update.downloading", v)
-        case .ready(let v): return L("update.ready", v)
-        case .error: return L("update.failed")   // feed unreachable etc.; reason is logged (app.pausa/update)
-        case .idle: return upToDate ? L("update.upToDate") : nil
+        case .readyToInstall(let v), .installing(let v): return L("update.ready", v)
+        case .failed: return L("update.failed")   // feed unreachable etc.; reason is logged (app.pausa/update)
         }
     }
 }
@@ -85,7 +75,7 @@ struct UpdateRow: View {
         }
     }
     private var line: String {
-        if model.readyVersion != nil, !model.canInstall { return L("update.ready", model.readyVersion!) + " · " + L("update.afterBreak") }
+        if let v = model.readyVersion, !model.canInstall { return L("update.ready", v) + " · " + L("update.afterBreak") }
         return model.statusText ?? L("update.auto")
     }
 }

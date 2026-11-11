@@ -300,17 +300,21 @@ enum IntervalMenuSnapshot {
 
 /// `Pausa --render-update-ui DIR [--lang xx]`: the 关于 page and popover in every update state, offscreen.
 enum UpdateUISnapshot {
-    static let states: [(String, UpdateStatus, Bool, Bool)] = [
-        ("1-idle", .idle, false, true), ("2-checking", .checking, false, true), ("3-uptodate", .idle, true, true),
-        ("4-downloading", .downloading(version: "0.2.0"), false, true), ("5-ready", .ready(version: "0.2.0"), false, true),
-        ("6-ready-onbreak", .ready(version: "0.2.0"), false, false), ("7-error", .error("offline"), false, true),
+    static let states: [(String, UpdatePhase, Bool)] = [
+        ("1-idle", .idle, true),
+        ("2-checking", .checking, true),
+        ("3-uptodate", .upToDate, true),
+        ("4-downloading", .downloading(version: "0.2.0"), true),
+        ("5-ready", .readyToInstall(version: "0.2.0"), true),
+        ("6-ready-onbreak", .readyToInstall(version: "0.2.0"), false),
+        ("7-error", .failed(message: "offline"), true),
     ]
     @MainActor static func write(to dir: String) {
         NSApplication.shared.setActivationPolicy(.prohibited)
         let m = UpdateModel.shared
         let lang = AppLanguage.current.rawValue
-        for (tag, st, ok, can) in states {
-            m.status = st; m.upToDate = ok; m.canInstall = can
+        for (tag, phase, can) in states {
+            m.phase = phase; m.canInstall = can
             for (name, ap) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
                 let h = SettingsView.contentHeight(.shared, .about)
                 SettingsSnapshot.draw(AnyView(SettingsView(settings: .shared, page: .about).scrollDisabled(true)),

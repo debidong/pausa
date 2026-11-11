@@ -9,7 +9,7 @@ import PausaCore
 final class AppController {
     private(set) var scheduler: PausaCore.Scheduler
     let detector: PauseDetector
-    let overlay = BreakOverlayController()
+    let overlay: BreakOverlayController
     let preBreak = PreBreakController()
     /// 提示音: sounds loaded once, at launch.
     let chime = BreakChime()
@@ -27,11 +27,14 @@ final class AppController {
     private var pauseCap = PauseCap()
     private var rawReasons: Set<PauseReason> = []
     private(set) var reasons: [PausaCore.PauseReason: String] = [:]   // reason -> full 「已暂停：…」 line
-    /// 暂停提醒 (spec-hardline: no expiry): when it was pressed, nil when not paused. Kept in UserDefaults
-    /// ("manualPaused" + "manualPausedSince", wall clock) so a quit or restart doesn't drop it.
-    private(set) var manualPausedSince: Date?
-    var manualPaused: Bool { manualPausedSince != nil }
-    private var awaySince: Double?
+    /// 暂停提醒 (spec-hardline: no expiry): projected directly from `scheduler.manualPause`.
+    var manualPausedSince: Date? {
+        if case .paused(let sinceWall) = scheduler.manualPause {
+            return Date(timeIntervalSince1970: sinceWall)
+        }
+        return nil
+    }
+    var manualPaused: Bool { scheduler.isManuallyPaused }
     private var timer: Timer?
     private var bag: Set<AnyCancellable> = []
     private var hoursGate = HoursGate()
@@ -39,8 +42,8 @@ final class AppController {
     /// Wall-clock calendar that follows time-zone / locale changes.
     private var cal: Calendar { Calendar.autoupdatingCurrent }
     var onChange: (() -> Void)?
-    /// A break just ended (completed, skipped, snoozed): lets the updater run a held install.
-    var onBreakEnded: (() -> Void)?
+    /// Fired whenever a break or full-screen preview clears, letting `Updater` run any held install.
+    var onOverlayCleared: (() -> Void)?
     private var lastSave: Double = 0
 
     init(settings: Settings = .shared,
@@ -52,6 +55,7 @@ final class AppController {
          showUI: Bool = true) {
         self.settings = settings
         self.detector = detector ?? PauseDetector(defaults: defaults, clock: clock)
+        self.overlay = BreakOverlayController(rendersWindows: showUI)
         self.log = log
         self.clock = clock
         self.injectedDefaults = defaults
@@ -60,10 +64,12 @@ final class AppController {
         scheduler = PausaCore.Scheduler(config: settings.config)
 
         restoreState()
-        let ud = defaults ?? PausaDefaults.store
-        if ud.bool(forKey: DefaultsKey.manualPaused) {
-            let t = ud.double(forKey: DefaultsKey.manualPausedSince)
-            manualPausedSince = t > 0 ? Date(timeIntervalSince1970: t) : clock.wallNow()
+
+        self.overlay.onPresentationEnded = { [weak self] in
+            guard let self else { return }
+            self.refreshPreBreak()
+            self.onChange?()
+            if !self.blocksRelaunch { self.onOverlayCleared?() }
         }
 
         self.detector.$reasons.sink { [weak self] r in
@@ -190,42 +196,59 @@ final class AppController {
     private func wallClock() -> Double { clock.wallNow().timeIntervalSince1970 }
 
     private func restoreState() {
-        guard let data = store.data(forKey: DefaultsKey.schedulerState),
-              let saved = try? JSONDecoder().decode(PausaCore.Scheduler.Saved.self, from: data) else { return }
-        scheduler.restore(saved, wallClock: wallClock(), now: clock.continuousNow())
+        let now = clock.continuousNow()
+        let wall = wallClock()
+        if let data = store.data(forKey: DefaultsKey.schedulerState),
+           let saved = try? JSONDecoder().decode(PausaCore.Scheduler.Saved.self, from: data) {
+            scheduler.restore(saved, wallClock: wall, now: now)
+        }
+        // Forward migration from pre-0.6.3 split manualPaused keys into Scheduler.Saved.
+        if store.object(forKey: DefaultsKey.manualPaused) != nil {
+            if store.bool(forKey: DefaultsKey.manualPaused), !scheduler.isManuallyPaused {
+                let t = store.double(forKey: DefaultsKey.manualPausedSince)
+                let sinceWall = t > 0 ? t : wall
+                _ = scheduler.pauseManually(wallNow: sinceWall, now: now)
+            }
+            store.removeObject(forKey: DefaultsKey.manualPaused)
+            store.removeObject(forKey: DefaultsKey.manualPausedSince)
+            saveState()
+        }
     }
 
-    /// Called every minute from tick(), on quit, and right before an update relaunch.
+    /// Called every minute from tick(), on manual-pause toggles, on quit, and right before an update relaunch.
     func saveState() {
         guard let data = try? JSONEncoder().encode(scheduler.saved(wallClock: wallClock())) else { return }
         store.set(data, forKey: DefaultsKey.schedulerState)
         lastSave = clock.continuousNow()
     }
 
-    /// True while a break is on screen: update installs wait until it ends.
+    /// True while a scheduled break is active in the scheduler.
     var isOnBreak: Bool { if case .onBreak = scheduler.phase { return true }; return false }
+
+    /// True while any break or full-screen preview is up: blocks Sparkle relaunches.
+    var blocksRelaunch: Bool { isOnBreak || overlay.presentation.isPresenting }
 
     // MARK: driving the scheduler
 
     func tick() {
         let now = clock.continuousNow()
         if now - lastSave >= 60 { saveState() }
-        if manualPaused {   // until 恢复提醒; a lock resets the clock (away) but doesn't end the pause
-            let idle = inputIdleProvider()
-            scheduler.manualPauseTick(now: now)
-            if showUI { preBreak.update(nil, removal: .animated) }
-            trackWork(now: now, idle: idle, inHours: awaySince == nil && !outsideHours, holding: false)   // 暂停提醒 is still work; a lock is not
-            onChange?()   // refresh every tick; the 「提醒已暂停 N 分钟」 text itself only changes each whole minute
-            return
-        }
-        if awaySince != nil { return }
+        if scheduler.isAway { return }
 
         let active = !outsideHours
+        let idle = inputIdleProvider()
+        if scheduler.isManuallyPaused {   // until 恢复提醒; away freezes the clock without ending the pause
+            _ = scheduler.tick(now: now, reasons: [], deferrals: [], inputIdle: idle)
+            refreshPreBreak()
+            trackWork(now: now, idle: idle, inHours: active, holding: false)   // 暂停提醒 while present is still work
+            onChange?()   // refresh every tick; 「提醒已暂停 N 分钟」 updates each whole minute
+            return
+        }
+
         if hoursGate.update(active) { scheduler.startFresh(now: now) }   // a window just opened
         var rs = pauseCap.filter(Set(reasons.keys), now: now)   // 2 h cap (video/fullscreen drop)
         if !active { rs.insert(.outsideHours) }
 
-        let idle = inputIdleProvider()
         // No input is not rest, and not getting up either: only a locked screen counts (away).
         apply(scheduler.tick(now: now, reasons: rs, deferrals: detector.allDeferrals, inputIdle: idle))
         trackWork(now: now, idle: idle, inHours: active, holding: !rs.isDisjoint(with: Self.holds))
@@ -285,20 +308,18 @@ final class AppController {
             defer { if chimes && showUI { chime.play(for: c, sound: settings.breakSound, reasons: chimeReasons) } }   // after the overlay is up
             switch c {
             case .showWarning:
-                break   // 面板由 `scheduler.preBreak` 驱动 (refreshPreBreak below); the menu bar icon reflects .warning on the next refresh
+                break   // 面板由 `effectivePreBreak` 驱动 (refreshPreBreak below); the menu bar icon reflects .warning on the next refresh
             case .recorded(let kind, let planned, let result):
                 log.append(BreakRecord(start: breakStart ?? clock.wallNow(), kind: kind, planned: planned, result: result))
                 breakStart = nil
                 onStatsChanged?()
             case .startBreak(.short, let len):
                 breakStart = clock.wallNow()
-                guard showUI else { break }
                 overlay.showShort(duration: len,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
                                   onFinish: { [weak self] in self?.finish(.completed) })
             case .startBreak(.long, let len):
                 breakStart = clock.wallNow()
-                guard showUI else { break }
                 overlay.showLong(duration: len,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },
                                  onSkip: { [weak self] in self?.finish(.skipped) },
@@ -308,12 +329,10 @@ final class AppController {
                                  mustNotDefer: scheduler.longMustNotDefer,
                                  onUrgent: { [weak self] in self?.urgentPause() })
             case .resumeBreak(.short, let left):
-                guard showUI else { break }
                 overlay.showShort(duration: left,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
                                   onFinish: { [weak self] in self?.finish(.completed) })
             case .resumeBreak(.long, let left):
-                guard showUI else { break }
                 overlay.showLong(duration: left,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },
                                  onSkip: { [weak self] in self?.finish(.skipped) },
@@ -323,21 +342,26 @@ final class AppController {
                                  mustNotDefer: scheduler.longMustNotDefer,
                                  onUrgent: { [weak self] in self?.urgentPause() })
             case .endBreak:
-                if showUI { overlay.dismiss() }
-                onBreakEnded?()
+                let wasPresenting = overlay.presentation.isPresenting
+                overlay.dismiss()
+                if !wasPresenting, !blocksRelaunch { onOverlayCleared?() }
             }
         }
         refreshPreBreak(immediate: cmds.contains { if case .startBreak = $0 { return true }; if case .resumeBreak = $0 { return true }; return false })
         onChange?()
     }
 
+    /// Current pre-break UI state after masking user switches and suppressing while a full-screen preview is up.
+    var effectivePreBreak: PreBreakState? {
+        guard overlay.presentation != .preview else { return nil }
+        return scheduler.preBreak?.masked(panel: settings.showPreBreakPanel, pointer: settings.showPreBreakPill)
+    }
+
     /// Hand the scheduler's current pre-break state to the panel. A break that just started removes it at once;
-    /// anything else retracts it. Manual pause and away show nothing (spec 7.4).
+    /// anything else retracts it. Manual pause, away, and `.preview` show nothing.
     private func refreshPreBreak(immediate: Bool = false) {
         guard showUI else { return }
-        let hidden = manualPaused || awaySince != nil
-        let shown = hidden ? nil : scheduler.preBreak?.masked(panel: settings.showPreBreakPanel, pointer: settings.showPreBreakPill)
-        preBreak.update(shown, removal: immediate ? .immediate : .animated)
+        preBreak.update(effectivePreBreak, removal: immediate ? .immediate : .animated)
     }
 
     /// Wall-clock start of the break on screen, for its stats row (the scheduler runs on a monotonic clock).
@@ -379,18 +403,12 @@ final class AppController {
         switch e {
         case .start:
             endWork(at: now)
-            awaySince = now
-            if timer != nil, !manualPaused {
-                timer?.invalidate(); timer = nil
-            }
-            if showUI {
-                overlay.dismiss(animated: false)
-                preBreak.update(nil, removal: .immediate)
-            }
+            scheduler.enterAway(now: now)
+            timer?.invalidate(); timer = nil
+            overlay.dismiss(animated: false)
+            if showUI { preBreak.update(nil, removal: .immediate) }
         case .end:
-            let secs = awaySince.map { now - $0 } ?? 0
-            awaySince = nil
-            apply(scheduler.away(.locked, seconds: secs, now: now), chime: false)
+            apply(scheduler.exitAway(.locked, now: now), chime: false)
             if timer == nil, wasTimerStarted { startTickTimer() }
             tick()
         }
@@ -406,65 +424,50 @@ final class AppController {
     /// Popover +5分 / +15分: push the next break back within the shared budget (greyed out otherwise).
     func postpone(by seconds: Double) { scheduler.postpone(by: seconds); refreshPreBreak(); onChange?() }
 
-    /// Settings "预览": 5 s of the long-break scene. Never touches the scheduler. Chimes like a real
-    /// long break: start now, end when the 5 s run out. The end sound lives only in onFinish, which only
-    /// the overlay's countdown calls; skip, snooze and dismiss stop the countdown and clear onFinish first.
+    /// Settings "预览": 5 s of the long-break scene in explicit `.preview` mode. Never mutates `scheduler`,
+    /// blocks Sparkle relaunches, suppresses pre-break panels while visible, and chimes only on natural completion.
     func previewLong() {
-        if case .onBreak = scheduler.phase { return }
-        guard showUI else { return }
-        overlay.showLong(duration: 5, onSnooze: { _ in }, onSkip: {},
-                         onFinish: { [weak self] in
-                             guard let self else { return }
-                             self.chime.play(for: .recorded(.long, planned: 5, .completed), sound: self.settings.breakSound, reasons: self.chimeReasons)
-                         })
-        chime.play(for: .startBreak(.long, length: 5), sound: settings.breakSound, reasons: chimeReasons)
+        if isOnBreak { return }
+        overlay.showPreview(duration: 5, onFinish: { [weak self] in
+            guard let self, self.showUI else { return }
+            self.chime.play(for: .recorded(.long, planned: 5, .completed), sound: self.settings.breakSound, reasons: self.chimeReasons)
+        })
+        refreshPreBreak(immediate: true)
+        onChange?()
+        if showUI {
+            chime.play(for: .startBreak(.long, length: 5), sound: settings.breakSound, reasons: chimeReasons)
+        }
     }
 
     /// What the detector sees right now, unfiltered by the 自动暂停 switches: a call is a call.
     var chimeReasons: Set<PausaCore.PauseReason> { Set(rawReasons.map(\.core)) }
 
-    /// Menu 暂停提醒: no record of its own. A break on screen ends as skipped (one row); past the hard
-    /// line skip is refused, so it takes the urgent exit instead (also one skipped row).
+    /// Menu 暂停提醒: settles any active break (skip or urgent skip at the hard line) and enters `manualPause`.
     func pause() {
-        let wasOnBreak = isOnBreak
-        setManualPause(clock.wallNow())
-        if wasOnBreak {
-            var cmds = scheduler.finish(.skipped, now: clock.continuousNow())
-            if cmds.isEmpty { cmds = scheduler.urgentPause(now: clock.continuousNow()) }
-            apply(cmds)
-        }
-        if showUI {
-            overlay.dismiss()
-            preBreak.update(nil, removal: .animated)
-        }
+        let cmds = scheduler.pauseManually(wallNow: wallClock(), now: clock.continuousNow())
+        saveState()
+        apply(cmds)
+        overlay.dismiss()
+        if showUI { preBreak.update(nil, removal: .animated) }
         onChange?()
     }
 
     /// 「紧急暂停提醒」 (long-break screen / pre-break panel, only at the hard line): end that long
     /// break as exactly one skip, then pause reminders as the menu does.
     func urgentPause() {
-        setManualPause(clock.wallNow())
-        apply(scheduler.urgentPause(now: clock.continuousNow()))
-        if showUI {
-            overlay.dismiss()
-            preBreak.update(nil, removal: .immediate)
-        }
+        let cmds = scheduler.urgentPause(now: clock.continuousNow(), wallNow: wallClock())
+        saveState()
+        apply(cmds)
+        overlay.dismiss()
+        if showUI { preBreak.update(nil, removal: .immediate) }
         onChange?()
     }
 
     func resume() {
-        setManualPause(nil)
-        // The pause counted toward the hard line; past it, the long break starts now.
-        apply(scheduler.manualPauseEnded(now: clock.continuousNow()))
+        let cmds = scheduler.resumeManually(now: clock.continuousNow())
+        saveState()
+        apply(cmds)
         onChange?()
-    }
-
-    private func setManualPause(_ since: Date?) {
-        manualPausedSince = since
-        let d = store
-        d.set(since != nil, forKey: DefaultsKey.manualPaused)
-        if let since { d.set(since.timeIntervalSince1970, forKey: DefaultsKey.manualPausedSince) }
-        else { d.removeObject(forKey: DefaultsKey.manualPausedSince) }
     }
 
     // MARK: what the menu shows
@@ -494,27 +497,33 @@ final class AppController {
     }
 
     var statusLine: String {
-        if let since = manualPausedSince {   // 「提醒已暂停 2 小时 10 分钟」, whole minutes; under a minute just 「提醒已暂停」
-            let minutes = (max(0, clock.wallNow().timeIntervalSince(since)) / 60).rounded(.down)
+        switch scheduler.effectiveMode {
+        case .manualPaused(let sinceWall, _):
+            // 「提醒已暂停 2 小时 10 分钟」, whole minutes; under a minute just 「提醒已暂停」
+            let minutes = (max(0, wallClock() - sinceWall) / 60).rounded(.down)
             return minutes < 1 ? L("status.paused") : L("status.pausedFor", StatsText.duration(minutes * 60))
-        }
-        if awaySince != nil { return L("status.away") }
-        if case .paused(.outsideHours) = scheduler.phase {
+        case .away:
+            return L("status.away")
+        case .autoPaused(.outsideHours):
             guard let next = nextWindowStart else { return L("status.outsideHours") }
             return L("status.nextStart", Self.whenText(next, cal: cal))
+        case .autoPaused(let top):
+            if let t = StatusPick.line(source: currentPauseSource?.statusText,
+                                       autoStatus: autoPauseStatus?.title, reason: reasons[top]) { return t }
+            let n = scheduler.next
+            return L(n.kind == .long ? "status.longIn" : "status.shortIn", Self.clock(n.remaining))
+        case .onBreak(let k, _, _):
+            return k == .long ? L("status.onLongBreak") : L("status.onShortBreak")
+        case .deferred, .warning, .working:
+            if let t = StatusPick.line(source: nil, autoStatus: autoPauseStatus?.title, reason: nil) { return t }
+            let n = scheduler.next
+            return L(n.kind == .long ? "status.longIn" : "status.shortIn", Self.clock(n.remaining))
         }
-        var reasonText: String?
-        if case .paused(let top) = scheduler.phase { reasonText = reasons[top] }
-        if let t = StatusPick.line(source: currentPauseSource?.statusText,
-                                   autoStatus: autoPauseStatus?.title, reason: reasonText) { return t }
-        if case .onBreak(let k, _) = scheduler.phase { return k == .long ? L("status.onLongBreak") : L("status.onShortBreak") }
-        let n = scheduler.next
-        return L(n.kind == .long ? "status.longIn" : "status.shortIn", Self.clock(n.remaining))
     }
 
     /// Source holding the current pause (Mitchell: icon from `bundleID`). nil = not auto-paused.
     var currentPauseSource: PauseSource? {
-        if case .paused(let top) = scheduler.phase { return pauseSource(for: top) }
+        if case .autoPaused(let top) = scheduler.effectiveMode { return pauseSource(for: top) }
         return nil
     }
     private func pauseSource(for r: PausaCore.PauseReason) -> PauseSource? {
@@ -526,9 +535,10 @@ final class AppController {
     }
 
     var isPaused: Bool {
-        if manualPaused || awaySince != nil { return true }
-        if case .paused = scheduler.phase { return true }
-        return false
+        switch scheduler.effectiveMode {
+        case .manualPaused, .away, .autoPaused: return true
+        case .onBreak, .warning, .deferred, .working: return false
+        }
     }
 
     /// "9:00" today, "明天 9:00" tomorrow, else "周一 9:00" (app language).

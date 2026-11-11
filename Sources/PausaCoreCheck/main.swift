@@ -594,7 +594,7 @@ final class DeferralTests {
     let t0 = startAt(&s, from: 0, to: 9000) ?? -1
     XCTAssertEqual(s.finish(.skipped, now: t0), [])      // core refuses, not just the UI
     XCTAssertEqual(s.finish(.snoozed, now: t0), [])
-    if case .onBreak(.long, _) = s.phase {} else { XCTAssertTrue(false) }
+    if case .onBreak(.long, _, _) = s.phase {} else { XCTAssertTrue(false) }
     XCTAssertEqual(s.finish(.completed, now: t0 + 300), [.recorded(.long, planned: 300, .completed), .endBreak])
     XCTAssertEqual(s.sinceLastLongBreak, 0)
   }
@@ -610,7 +610,7 @@ final class DeferralTests {
     _ = s.breakNow(.long, now: 1000)                       // 300 s break, ends at 1300
     let cmds = s.away(.locked, seconds: 10, now: 1010)
     XCTAssertEqual(cmds, [.resumeBreak(.long, remaining: 290)])
-    if case .onBreak(.long, let e) = s.phase { XCTAssertEqual(e, 1300, accuracy: 0.001) } else { XCTAssertTrue(false) }
+    if case .onBreak(.long, let e, _) = s.phase { XCTAssertEqual(e, 1300, accuracy: 0.001) } else { XCTAssertTrue(false) }
     XCTAssertEqual(s.tick(now: 1300, reasons: [], inputIdle: 10), [.recorded(.long, planned: 300, .completed), .endBreak])
     XCTAssertEqual(s.sinceLastLongBreak, 0)
   }
@@ -735,7 +735,7 @@ final class ManualPauseTests {
     var s = Scheduler()
     _ = s.breakNow(.long, now: 0)
     XCTAssertEqual(s.urgentPause(now: 1), [])
-    XCTAssertEqual(s.phase, .onBreak(.long, endsAt: 300))
+    XCTAssertEqual(s.phase, .onBreak(.long, endsAt: 300, planned: 300))
     var sh = Scheduler()
     _ = sh.breakNow(.short, now: 0)
     XCTAssertEqual(sh.urgentPause(now: 1), [])
@@ -743,7 +743,7 @@ final class ManualPauseTests {
     var t = 0.0
     while t < 1180 { _ = w.tick(now: t, reasons: [], inputIdle: 10); t += 1 }   // short announced
     XCTAssertEqual(w.urgentPause(now: t), [])
-    XCTAssertEqual(w.phase, .warning(.short))
+    XCTAssertEqual(w.phase, .warning(.short, cardOpened: true))
   }
   /// The pre-break panel at the line (60-minute line, long break due at 60): the urgent exit ends the
   /// announced long break as one skip, and the panel goes.
@@ -754,10 +754,10 @@ final class ManualPauseTests {
     while t < 3600 {
       _ = s.tick(now: t, reasons: [], inputIdle: 10)
       if case .onBreak = s.phase { _ = s.finish(.completed, now: t) }
-      if case .warning(.long) = s.phase { break }
+      if case .warning(.long, _) = s.phase { break }
       t += 1
     }
-    XCTAssertEqual(s.phase, .warning(.long))
+    XCTAssertEqual(s.phase, .warning(.long, cardOpened: true))
     XCTAssertTrue(s.preBreak?.atHardLine == true)
     XCTAssertTrue(s.preBreak?.snooze == .hidden)
     XCTAssertEqual(s.urgentPause(now: t), [.recorded(.long, planned: 300, .skipped)])
@@ -1435,7 +1435,7 @@ final class PreBreakTests {
     while t < 6000 && longs == 0 {
       for cmd in tick(&s, t) { if case .startBreak(.long, _) = cmd { longs += 1 } }
       if case .onBreak = s.phase, longs == 0 { _ = s.finish(.completed, now: t) }
-      if case .warning(.long) = s.phase, let p = s.preBreak { last = p }
+      if case .warning(.long, _) = s.phase, let p = s.preBreak { last = p }
       t += 1
     }
     XCTAssertEqual(longs, 1)
@@ -1451,7 +1451,7 @@ final class PreBreakTests {
     while t < 3700 && p == nil {
       _ = tick(&s, t)
       if case .onBreak = s.phase { _ = s.finish(.completed, now: t) }
-      if case .warning(.long) = s.phase { p = s.preBreak }
+      if case .warning(.long, _) = s.phase { p = s.preBreak }
       t += 1
     }
     XCTAssertEqual(p?.kind, .long)
@@ -1500,13 +1500,13 @@ final class PreBreakTests {
     while t < 3700 {   // the long break's announcement can't be skipped
       _ = tick(&l, t)
       if case .onBreak = l.phase { _ = l.finish(.completed, now: t) }
-      if case .warning(.long) = l.phase { break }
+      if case .warning(.long, _) = l.phase { break }
       t += 1
     }
     let before = l.sinceBreak
     XCTAssertEqual(l.skipUpcoming(now: t), [])
     XCTAssertEqual(l.sinceBreak, before)
-    XCTAssertEqual(l.phase, .warning(.long))
+    XCTAssertEqual(l.phase, .warning(.long, cardOpened: true))
   }
 
   func testNoPanelOnBreakOrBreakNow() {

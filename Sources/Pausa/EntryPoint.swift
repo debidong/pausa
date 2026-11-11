@@ -18,10 +18,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         Settings.shared.appearance.apply()
         controller = AppController()
         StatsModel.shared.bind(controller)
-        // Sparkle hooks: never relaunch mid-break; persist the scheduler right before relaunching.
-        updater.canInstallNow = { [weak self] in !(self?.controller.isOnBreak ?? false) }
+        // Sparkle hooks: never relaunch mid-break or mid-preview; persist the scheduler right before relaunching.
+        updater.canInstallNow = { [weak self] in !(self?.controller.blocksRelaunch ?? false) }
         updater.willRelaunch = { [weak self] in self?.controller.endWork(); self?.controller.saveState() }
-        controller.onBreakEnded = { [weak self] in self?.updater.breakEnded() }
+        controller.onOverlayCleared = { [weak self] in self?.updater.retryHeldInstall() }
         UpdateModel.shared.bind(updater)
         menuBar = MenuBarController(app: controller)
         updater.start()   // scheduled checks (SUScheduledCheckInterval); silent

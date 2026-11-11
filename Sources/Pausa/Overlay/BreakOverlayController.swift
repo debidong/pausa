@@ -18,19 +18,59 @@ public final class BreakOverlayController {
         public static var spaceKey: String { L("key.space") }
     }
 
-    private enum Mode {
-        case short
-        case long(onSnooze: (Int) -> Void, onSkip: () -> Void)
+    /// Public presentation state of the break overlay, including the 5 s Settings preview.
+    public enum Presentation: Equatable, Sendable {
+        case hidden
+        case shortBreak
+        case longBreak(mustNotDefer: Bool)
+        case preview
+
+        public var isPresenting: Bool { self != .hidden }
     }
 
-    private var mode: Mode?
+    public struct LongOptions: Equatable, Sendable {
+        public var show15: Bool
+        public var can15: Bool
+        public var mustNotDefer: Bool
+        public init(show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false) {
+            self.show15 = show15
+            self.can15 = can15
+            self.mustNotDefer = mustNotDefer
+        }
+    }
+
+    private enum Session {
+        case hidden
+        case short(onSkip: (() -> Void)?, onFinish: (() -> Void)?)
+        case long(options: LongOptions,
+                  onSnooze: (Int) -> Void,
+                  onSkip: () -> Void,
+                  onUrgent: (() -> Void)?,
+                  onFinish: (() -> Void)?)
+        case preview(onFinish: (() -> Void)?)
+
+        var projection: Presentation {
+            switch self {
+            case .hidden: return .hidden
+            case .short: return .shortBreak
+            case .long(let opt, _, _, _, _): return .longBreak(mustNotDefer: opt.mustNotDefer)
+            case .preview: return .preview
+            }
+        }
+    }
+
+    private var session: Session = .hidden {
+        didSet { presentation = session.projection }
+    }
+
+    public private(set) var presentation: Presentation = .hidden
+    /// Fired when an active overlay (short break, long break, or preview) returns to `.hidden`.
+    public var onPresentationEnded: (() -> Void)?
+
+    private let rendersWindows: Bool
     private var countdown: Countdown?
-    private var onFinish: (() -> Void)?
     private var dimWindows: [NSWindow] = []
     private var capsules: [NSPanel] = []
-    private var onShortSkip: (() -> Void)?
-    /// 「紧急暂停提醒」 on a long break past the hard line (spec-hardline §5.2).
-    private var onUrgent: (() -> Void)?
     /// Tint over the short-break blur; a bit stronger in Dark mode.
     static let shortDim = 0.25
     static let shortDimDark = 0.32
@@ -41,16 +81,18 @@ public final class BreakOverlayController {
     /// 0.55 keeps white text at 4.73:1 there. dayDim/nightDim are painting-only; midnightDim still applies.
     static let softDesktopDim = 0.55
     private var longWindows: [NSWindow] = []
-    /// Hold Space 1 s to skip, both break types (round 3 §4). Shared by all break windows.
+    /// Hold Space to skip, both break types (round 3 §4). Shared by all break windows.
     private let holdToSkip = HoldToSkip()
-    private var show15 = true, can15 = true
     private var previousApp: NSRunningApplication?
     private var screenObserver: NSObjectProtocol?
 
-    public init() {
-        screenObserver = NotificationCenter.default.addObserver(
-            forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
-        ) { [weak self] _ in self?.screensChanged() }
+    public init(rendersWindows: Bool = true) {
+        self.rendersWindows = rendersWindows
+        if rendersWindows {
+            screenObserver = NotificationCenter.default.addObserver(
+                forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
+            ) { [weak self] _ in self?.screensChanged() }
+        }
     }
 
     deinit {
@@ -73,15 +115,18 @@ public final class BreakOverlayController {
     private func installKeyMonitor() {
         if keyMonitor != nil { return }
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .keyUp]) { [weak self] e in
-            guard let self, self.mode != nil else { return e }
-            let hold: HoldToSkip? = { if case .long = self.mode { return Self.holdFor(mustNotDefer: self.mustNotDefer, self.holdToSkip) }; return self.holdToSkip }()
+            guard let self, self.presentation.isPresenting else { return e }
+            let hold: HoldToSkip? = {
+                if case .longBreak(let locked) = self.presentation {
+                    return Self.holdFor(mustNotDefer: locked, self.holdToSkip)
+                }
+                return self.holdToSkip
+            }()
             return SpaceHold.handle(e, hold: hold, shownAt: self.shownAt) ? nil : e
         }
     }
     private func removeKeyMonitor() { if let m = keyMonitor { NSEvent.removeMonitor(m); keyMonitor = nil } }
     private var shownAt: TimeInterval = 0
-    /// Past the hard line: no postpone buttons and Space can't skip (no progress, no beep).
-    private var mustNotDefer = false
     private var reduceMotion: Bool { NSWorkspace.shared.accessibilityDisplayShouldReduceMotion }
     /// Fade-in for every break window (round 3b §1).
     static let fadeInDuration: TimeInterval = 0.5
@@ -92,12 +137,12 @@ public final class BreakOverlayController {
 
     /// Capsule near the cursor + slight dim. `onFinish` fires when time is up.
     public func showShort(duration: TimeInterval, onSkip: (() -> Void)? = nil, onFinish: (() -> Void)? = nil) {
+        tearDownActiveOverlay(animated: false)
+        session = .short(onSkip: onSkip, onFinish: onFinish)
+        guard rendersWindows else { return }
+
         RandomScene.roll()
         PhotoBackground.prepare(long: false)
-        dismiss(animated: false)
-        mode = .short
-        self.onFinish = onFinish
-        self.onShortSkip = onSkip
         let cd = Countdown(total: duration) { [weak self] in self?.finish() }
         countdown = cd
 
@@ -121,7 +166,7 @@ public final class BreakOverlayController {
         cd.start()
     }
 
-    // MARK: Long break
+    // MARK: Long break & preview
 
     /// Full-screen break on every display. The user leaves via the postpone buttons, holding
     /// Space, or the countdown. `show15` / `can15`: round 3 §7.
@@ -131,13 +176,29 @@ public final class BreakOverlayController {
                          onFinish: (() -> Void)? = nil,
                          show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false,
                          onUrgent: (() -> Void)? = nil) {
+        tearDownActiveOverlay(animated: false)
+        let options = LongOptions(show15: show15, can15: can15, mustNotDefer: mustNotDefer)
+        session = .long(options: options,
+                        onSnooze: onSnooze,
+                        onSkip: onSkip,
+                        onUrgent: mustNotDefer ? onUrgent : nil,
+                        onFinish: onFinish)
+        presentLongScene(duration: duration, options: options, hasUrgent: mustNotDefer && onUrgent != nil)
+    }
+
+    /// 5 s Settings preview of the long-break scene. Explicit `.preview` state blocks mid-preview Sparkle
+    /// relaunches and suppresses pre-break panels without mutating `Scheduler`.
+    public func showPreview(duration: TimeInterval = 5, onFinish: (() -> Void)? = nil) {
+        tearDownActiveOverlay(animated: false)
+        let options = LongOptions(show15: true, can15: true, mustNotDefer: false)
+        session = .preview(onFinish: onFinish)
+        presentLongScene(duration: duration, options: options, hasUrgent: false)
+    }
+
+    private func presentLongScene(duration: TimeInterval, options: LongOptions, hasUrgent: Bool) {
+        guard rendersWindows else { return }
         RandomScene.roll()
         PhotoBackground.prepare(long: true)   // 我的照片…: decode now, or this break falls back to random
-        dismiss(animated: false)
-        self.show15 = show15; self.can15 = can15; self.mustNotDefer = mustNotDefer
-        mode = .long(onSnooze: onSnooze, onSkip: onSkip)
-        self.onFinish = onFinish
-        self.onUrgent = mustNotDefer ? onUrgent : nil
         let cd = Countdown(total: duration) { [weak self] in self?.finish() }
         countdown = cd
 
@@ -152,7 +213,7 @@ public final class BreakOverlayController {
         longQuote = RestQuotes.next(daypart)
         holdToSkip.cancel(animated: false)
         holdToSkip.onComplete = { [weak self] in self?.skip() }
-        buildLongWindows()
+        buildLongWindows(options: options, hasUrgent: hasUrgent)
         longWindows.forEach { $0.alphaValue = 0 }   // no full-opacity frame before the fade-in
         fadeIn(longWindows, short: false)
         NSApp.activate(ignoringOtherApps: true)
@@ -161,55 +222,85 @@ public final class BreakOverlayController {
         cd.start()
     }
 
-    /// Hide whatever is showing. Does not call any callback.
+    /// Hide whatever is showing and return to `.hidden`. Does not invoke completion/skip callbacks.
     public func dismiss(animated: Bool = true) {
-        guard mode != nil else { return }
+        guard presentation.isPresenting else { return }
+        tearDownActiveOverlay(animated: animated)
+        session = .hidden
+        onPresentationEnded?()
+    }
+
+    private func tearDownActiveOverlay(animated: Bool) {
+        guard presentation.isPresenting else { return }
         holdToSkip.cancel(animated: false)
         removeKeyMonitor()
         countdown?.stop(); countdown = nil
-        mode = nil
-        onFinish = nil
-        onShortSkip = nil
-        onUrgent = nil
         let windows = dimWindows + longWindows + capsules
         dimWindows = []; longWindows = []; capsules = []
-        fadeOut(windows, animated: animated)
-        restorePreviousApp()   // short and long: key focus goes back to the app in front before the break
+        if rendersWindows {
+            fadeOut(windows, animated: animated)
+            restorePreviousApp()   // short and long: key focus goes back to the app in front before the break
+        }
     }
 
     // MARK: internals
 
+    func completeCurrentSessionForTesting() { finish() }
+    func skipCurrentSessionForTesting() {
+        switch session {
+        case .short: skipShort()
+        case .long, .preview: skip()
+        case .hidden: break
+        }
+    }
+
     private func finish() {
-        let cb = onFinish
+        let cb: (() -> Void)? = switch session {
+        case .short(_, let f), .long(_, _, _, _, let f), .preview(let f): f
+        case .hidden: nil
+        }
         dismiss()
         cb?()
     }
 
-    /// Space held 1 s: undim immediately, then let the scheduler start the next interval.
+    /// Space held: undim immediately, then let the scheduler start the next interval.
     private func skipShort() {
         holdToSkip.cancel(animated: false)
-        guard case .short = mode else { return }
-        let cb = onShortSkip
+        guard case .short(let onSkip, _) = session else { return }
         dismiss(animated: false)
-        cb?()
+        onSkip?()
     }
 
     private func snooze(_ minutes: Int) {
-        guard case .long(let onSnooze, _) = mode else { return }
-        dismiss(); onSnooze(minutes)
+        switch session {
+        case .long(_, let onSnooze, _, _, _):
+            dismiss()
+            onSnooze(minutes)
+        case .preview:
+            dismiss()
+        case .short, .hidden:
+            break
+        }
     }
 
     private func skip() {
         holdToSkip.cancel(animated: false)
-        guard case .long(_, let onSkip) = mode else { return }
-        dismiss(); onSkip()
+        switch session {
+        case .long(_, _, let onSkip, _, _):
+            dismiss()
+            onSkip()
+        case .preview:
+            dismiss()
+        case .short, .hidden:
+            break
+        }
     }
 
     /// 「紧急暂停提醒」: off the screen at once, then the app pauses reminders.
     private func urgent() {
-        guard case .long = mode, let cb = onUrgent else { return }
+        guard case .long(_, _, _, let onUrgent?, _) = session else { return }
         dismiss(animated: false)
-        cb()
+        onUrgent()
     }
 
     private func restorePreviousApp() {
@@ -220,12 +311,12 @@ public final class BreakOverlayController {
     }
 
     private func screensChanged() {
-        guard let mode else { return }
-        switch mode {
+        switch session {
+        case .hidden:
+            return
         case .short:
             dimWindows.forEach { $0.orderOut(nil) }
             dimWindows = NSScreen.screens.map(makeDimWindow)
-        dimWindows.forEach { $0.alphaValue = 0 }
             dimWindows.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
             capsules.forEach { $0.orderOut(nil) }
             let mouse = NSEvent.mouseLocation
@@ -234,14 +325,18 @@ public final class BreakOverlayController {
                 capsules = [makeCapsule(countdown: cd, on: screen), makeShortControls(countdown: cd, on: screen)]
                 capsules.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
             } else { capsules = [] }
-        case .long:
+        case .long(let options, _, _, let onUrgent, _):
             longWindows.forEach { $0.orderOut(nil) }
-            buildLongWindows()
+            buildLongWindows(options: options, hasUrgent: onUrgent != nil)
+            longWindows.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
+        case .preview:
+            longWindows.forEach { $0.orderOut(nil) }
+            buildLongWindows(options: LongOptions(), hasUrgent: false)
             longWindows.forEach { $0.alphaValue = 1; $0.orderFrontRegardless() }
         }
     }
 
-    private func buildLongWindows() {
+    private func buildLongWindows(options: LongOptions, hasUrgent: Bool) {
         guard let cd = countdown else { return }
         let mouse = NSEvent.mouseLocation
         let primary = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
@@ -249,7 +344,7 @@ public final class BreakOverlayController {
         longWindows = NSScreen.screens.map { screen in
             let w = LongBreakWindow(contentRect: screen.frame, styleMask: [.borderless], backing: .buffered, defer: false)
             w.setFrame(screen.frame, display: false)
-        w.sharingType = .none
+            w.sharingType = .none
             w.level = .screenSaver
             w.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary, .ignoresCycle]
             w.isOpaque = false
@@ -257,12 +352,12 @@ public final class BreakOverlayController {
             w.hasShadow = false
             w.isReleasedWhenClosed = false
             w.animationBehavior = .none
-            w.hold = Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip)
+            w.hold = Self.holdFor(mustNotDefer: options.mustNotDefer, holdToSkip)
             let view = LongBreakView(countdown: cd, showControls: screen == primary,
                                      onSnooze: { [weak self] in self?.snooze($0) },
-                                     seed: sceneSeed, daypart: daypart, hold: Self.holdFor(mustNotDefer: mustNotDefer, holdToSkip), quote: longQuote,
-                                     show15: show15, can15: can15, locked: mustNotDefer,
-                                     onUrgent: onUrgent == nil ? nil : { [weak self] in self?.urgent() })
+                                     seed: sceneSeed, daypart: daypart, hold: Self.holdFor(mustNotDefer: options.mustNotDefer, holdToSkip), quote: longQuote,
+                                     show15: options.show15, can15: options.can15, locked: options.mustNotDefer,
+                                     onUrgent: hasUrgent ? { [weak self] in self?.urgent() } : nil)
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
             let frame = NSRect(origin: .zero, size: screen.frame.size)
             let base = Self.makeBlurView(frame: frame, tint: tint)
