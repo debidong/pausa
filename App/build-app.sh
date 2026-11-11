@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 ARCHS="${ARCHS:-arm64 x86_64}"
 SLICES=""
 # DEV=1 also compiles the DEV-only tools (Sources/Pausa/Debug/HeroMock.swift).
-FLAGS=""; if [ "${DEV:-}" = 1 ]; then FLAGS="-Xswiftc -DPAUSA_DEV"; fi
+FLAGS="${SWIFT_BUILD_FLAGS:-}"; if [ "${DEV:-}" = 1 ]; then FLAGS="$FLAGS -Xswiftc -DPAUSA_DEV"; fi
 for a in $ARCHS; do
   swift build -c release $FLAGS --product Pausa --triple "$a-apple-macosx13.0" --scratch-path ".build/arch-$a"
   SLICES="$SLICES $(swift build -c release $FLAGS --triple "$a-apple-macosx13.0" --scratch-path ".build/arch-$a" --show-bin-path)/Pausa"
@@ -96,13 +96,36 @@ fi
 FIRST_ARCH=$(echo "$ARCHS" | awk '{print $1}')
 CONST_LIST="$ICONTMP/swiftconstvalues.filelist"
 SRC_LIST="$ICONTMP/sources.filelist"
-find Sources/Pausa -name '*.swift' > "$SRC_LIST"
-find ".build/arch-$FIRST_ARCH" -name '*.swiftconstvalues' \
-  | grep -E '/Pausa(-[^/]*)?\.build/(Objects-normal/|[^/]+\.swiftconstvalues$)' > "$CONST_LIST"
-[ -s "$CONST_LIST" ] || { echo "error: no .swiftconstvalues found for Pausa in .build/arch-$FIRST_ARCH" >&2; exit 1; }
 SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
 TOOLCHAIN_DIR=$(dirname "$(dirname "$(xcrun --find swiftc)")")
 XCODE_BUILD=$(xcodebuild -version | awk '/Build version/ {print $NF}')
+find Sources/Pausa -name '*.swift' > "$SRC_LIST"
+find ".build/arch-$FIRST_ARCH" -name '*.swiftconstvalues' \
+  | grep -E '/Pausa(-[^/]*)?\.build/(Objects-normal/|[^/]+\.swiftconstvalues$)' > "$CONST_LIST" || true
+if [ ! -s "$CONST_LIST" ]; then
+  # SwiftPM's native build system (Xcode <= 26.x) does not emit .swiftconstvalues automatically;
+  # extract them directly from FocusFilter.swift against the already-built PausaCore & Sparkle modules.
+  PROTO_JSON="$ICONTMP/appintents-protocols.json"
+  cat > "$PROTO_JSON" <<'JSON'
+["AnyResolverProviding","AppEntity","AppEnum","AppExtension","AppIntent","AppIntentsPackage","AppShortcutProviding","AppShortcutsProvider","AppUnionValue","AppUnionValueCasesProviding","DynamicOptionsProvider","EntityQuery","ExtensionPointDefining","IntentValueQuery","Resolver","TransientEntity","_AssistantIntentsProvider","_GenerativeFunctionExtractable","_IntentValueRepresentable"]
+JSON
+  OTHER_SRCS=$(grep -v '/FocusFilter\.swift$' "$SRC_LIST")
+  DEV_DEF=""; if [ "${DEV:-}" = 1 ]; then DEV_DEF="-D PAUSA_DEV"; fi
+  FW_DIR=$(dirname "$FW_SRC")
+  xcrun --sdk macosx swiftc \
+    -frontend -c -o "$ICONTMP/FocusFilter.o" \
+    -emit-const-values-path "$ICONTMP/FocusFilter.swiftconstvalues" \
+    -const-gather-protocols-file "$PROTO_JSON" \
+    -primary-file Sources/Pausa/Core/FocusFilter.swift \
+    $OTHER_SRCS \
+    $DEV_DEF \
+    -module-name Pausa -parse-as-library \
+    -target "$FIRST_ARCH-apple-macosx13.0" \
+    -sdk "$SDK_PATH" \
+    -I "$BIN_DIR/Modules" -I "$BIN_DIR" \
+    -F "$BIN_DIR" -F "$FW_DIR"
+  echo "$ICONTMP/FocusFilter.swiftconstvalues" > "$CONST_LIST"
+fi
 xcrun --sdk macosx appintentsmetadataprocessor \
   --output "$RES" \
   --toolchain-dir "$TOOLCHAIN_DIR" \
