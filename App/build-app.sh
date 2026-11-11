@@ -31,6 +31,12 @@ rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS"
 cp App/Info.plist "$APP/Contents/Info.plist"
 cp "$BIN" "$APP/Contents/MacOS/Pausa"
+if [ -z "${VERSION:-}" ]; then
+  VERSION=$(git describe --tags --abbrev=0 2>/dev/null | sed 's/^v//' || true)
+fi
+if [ -z "${BUILD:-}" ]; then
+  BUILD=$(git rev-list --count HEAD 2>/dev/null || true)
+fi
 if [ -n "${VERSION:-}" ]; then /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$APP/Contents/Info.plist"; fi
 if [ -n "${BUILD:-}" ]; then /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" "$APP/Contents/Info.plist"; fi
 if [ "${DEV:-}" = 1 ]; then
@@ -83,7 +89,37 @@ for s in 16 32 128 256 512; do
   sips -z $((s*2)) $((s*2)) "$FULL" --out "$SET/icon_${s}x${s}@2x.png" >/dev/null
 done
 iconutil -c icns "$SET" -o "$RES/AppIcon.icns"
-cp "$RES/AppIcon.icns" App/AppIcon.icns     # keep the generated icon in the repo
+if [ "${UPDATE_REPO_ICON:-}" = 1 ]; then
+  cp "$RES/AppIcon.icns" App/AppIcon.icns   # refresh tracked icon only on explicit request
+fi
+# Extract AppIntents metadata so macOS System Settings › Focus › Add Filter discovers PausaFocusFilter.
+FIRST_ARCH=$(echo "$ARCHS" | awk '{print $1}')
+CONST_LIST="$ICONTMP/swiftconstvalues.filelist"
+SRC_LIST="$ICONTMP/sources.filelist"
+find Sources/Pausa -name '*.swift' > "$SRC_LIST"
+find ".build/arch-$FIRST_ARCH" -name '*.swiftconstvalues' \
+  | grep -E '/Pausa(-[^/]*)?\.build/(Objects-normal/|[^/]+\.swiftconstvalues$)' > "$CONST_LIST"
+[ -s "$CONST_LIST" ] || { echo "error: no .swiftconstvalues found for Pausa in .build/arch-$FIRST_ARCH" >&2; exit 1; }
+SDK_PATH=$(xcrun --sdk macosx --show-sdk-path)
+TOOLCHAIN_DIR=$(dirname "$(dirname "$(xcrun --find swiftc)")")
+XCODE_BUILD=$(xcodebuild -version | awk '/Build version/ {print $NF}')
+xcrun --sdk macosx appintentsmetadataprocessor \
+  --output "$RES" \
+  --toolchain-dir "$TOOLCHAIN_DIR" \
+  --module-name Pausa \
+  --sdk-root "$SDK_PATH" \
+  --xcode-version "${XCODE_BUILD:-17A000}" \
+  --platform-family macOS \
+  --deployment-target 13.0 \
+  --target-triple "$FIRST_ARCH-apple-macosx13.0" \
+  --binary-file "$APP/Contents/MacOS/Pausa" \
+  --source-file-list "$SRC_LIST" \
+  --swift-const-vals-list "$CONST_LIST" \
+  --compile-time-extraction
+grep -q "PausaFocusFilter" "$RES/Metadata.appintents/extract.actionsdata" || {
+  echo "error: PausaFocusFilter missing from Metadata.appintents/extract.actionsdata" >&2
+  exit 1
+}
 rm -rf "$ICONTMP"
 # About card art (scripts/make-about-pond.py).
 cp App/about/about-pond-light.jpg App/about/about-pond-dark.jpg "$RES/"

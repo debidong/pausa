@@ -1,5 +1,9 @@
 .build/
+.swiftpm/
 *.zip
+*.dmg
 *.tgz
+*.pem
+sparkle_ed_private_key.txt
 .DS_Store
 /build/

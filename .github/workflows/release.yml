@@ -28,6 +28,13 @@ jobs:
         run: |
           [ -n "$SPARKLE_ED_PRIVATE_KEY" ] || { echo "::error::Secret SPARKLE_ED_PRIVATE_KEY is not set (see docs/release.md)"; exit 1; }
 
+      - name: Pre-release quality gates
+        run: |
+          python3 scripts/check-strings.py
+          plutil -lint App/Info.plist
+          swift test
+          swift run PausaCoreCheck
+
       - name: Version
         run: |
           echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
@@ -36,7 +43,7 @@ jobs:
       - name: Build universal (arm64 + x86_64, ad-hoc signed)
         run: App/build-app.sh
 
-      - name: Verify universal binary
+      - name: Verify universal binary & AppIntents metadata
         run: |
           set -eu
           A=build/Pausa.app
@@ -45,6 +52,9 @@ jobs:
           SP="$A/Contents/Frameworks/Sparkle.framework/Versions/B"
           check "$SP/Sparkle"; check "$SP/Autoupdate"; check "$SP/Updater.app/Contents/MacOS/Updater"
           for x in "$SP"/XPCServices/*.xpc; do check "$x/Contents/MacOS/$(basename "$x" .xpc)"; done
+          grep -q "PausaFocusFilter" "$A/Contents/Resources/Metadata.appintents/extract.actionsdata"
+          [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$A/Contents/Info.plist")" = "$VERSION" ]
+          [ "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$A/Contents/Info.plist")" = "$BUILD" ]
           codesign --verify --deep --strict "$A"
 
       - name: Zip
@@ -63,12 +73,9 @@ jobs:
           hdiutil create -volname "Pausa" -srcfolder "$STAGE" -fs HFS+ -format UDZO -ov "build/$DMG"
           echo "DMG=$DMG" >> "$GITHUB_ENV"
 
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "build/$DMG" "build/$ZIP" --title "Pausa $VERSION" --generate-notes
-
-      - name: EdDSA sign and update appcast.xml on gh-pages
+      # Sign and generate appcast.xml BEFORE creating the GitHub Release so a signing or XML error
+      # aborts cleanly before any release assets are published.
+      - name: Sign archive & prepare appcast.xml
         env:
           SPARKLE_ED_PRIVATE_KEY: ${{ secrets.SPARKLE_ED_PRIVATE_KEY }}
         run: |
@@ -81,9 +88,18 @@ jobs:
             (cd "$PAGES" && git checkout --orphan gh-pages && git rm -rfq .)
           fi
           scripts/update-appcast.sh "build/$ZIP" "$VERSION" "$BUILD" "$URL" "$PAGES/appcast.xml"
+          echo "PAGES=$PAGES" >> "$GITHUB_ENV"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" "build/$DMG" "build/$ZIP" --title "Pausa $VERSION" --generate-notes
+
+      - name: Publish appcast.xml to gh-pages
+        run: |
           cd "$PAGES"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add appcast.xml
           git commit -m "appcast: $VERSION"
-          git push origin HEAD:gh-pages
+          git push origin HEAD:gh-pages || (git pull --rebase origin gh-pages && git push origin HEAD:gh-pages)

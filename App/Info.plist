@@ -21,13 +21,14 @@
 		<string>ru</string>
 		<string>fr</string>
 		<string>vi</string>
+		<string>th</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>Pausa</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.3.1</string>
+	<string>0.6.2</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
 	<key>LSApplicationCategoryType</key>
