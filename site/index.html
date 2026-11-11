@@ -1,0 +1,1726 @@
+<!DOCTYPE html>
+<html lang="en" id="top">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pausa — Rest reminders for macOS</title>
+  <meta name="description" content="Pausa reminds you to look away from your Mac every once in a while, and stays quiet during meetings, videos, and screen sharing. No privacy permissions. Free.">
+  <meta property="og:title" content="Pausa — Rest reminders for macOS">
+  <meta property="og:description" content="When it's time, it asks you to rest your eyes. Stays quiet in meetings, videos, and full-screen apps. Zero permissions required.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://debidong.github.io/pausa/">
+  <meta property="og:image" content="https://debidong.github.io/pausa/assets/og.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#000000">
+  <link rel="icon" href="./favicon.svg?v=2" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fira+Code:wght@400;500&family=Instrument+Serif:ital@0;1&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./brand.css">
+  <style>
+    :root {
+      --site-width: min(1140px, calc(100% - 4rem));
+    }
+
+    .page {
+      display: flex;
+      flex-direction: column;
+      gap: 4.5rem;
+    }
+
+    .sec {
+      scroll-margin-top: 2.8rem;
+      min-width: 0;
+    }
+
+    .section-desc {
+      max-width: none;
+    }
+
+    .brand-lotus {
+      display: inline-block;
+      margin-left: 0.14em;
+      font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+      font-size: 0.56em;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 1;
+      transform: translateY(0.10em);
+    }
+
+    /* Lead & Download */
+    .hero-intro {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 196px;
+      gap: 1.25rem 2rem;
+      align-items: center;
+    }
+
+    .hero-copy {
+      min-width: 0;
+    }
+
+    .saul-art {
+      display: block;
+      width: 100%;
+      height: auto;
+      margin: -0.75rem 0 -0.9rem;
+      pointer-events: none;
+    }
+    .lead {
+      font-size: 1.18rem;
+      line-height: 1.62;
+      color: var(--ink);
+      letter-spacing: -0.015em;
+    }
+
+    .lead .tagline {
+      font-family: var(--brand-font);
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1.26em;
+      line-height: 1;
+      letter-spacing: 0.01em;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .cta-row {
+      margin-top: 1.4rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.85rem 1.35rem;
+    }
+
+    .dl-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.62rem 1.15rem;
+      background: var(--accent);
+      color: #000;
+      font-family: var(--font-sans);
+      font-size: 0.94rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .dl-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .dl-btn:active {
+      transform: none;
+    }
+
+    .dl-btn svg {
+      width: 15px;
+      height: 15px;
+      flex: none;
+    }
+
+    .dl-meta {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      letter-spacing: -0.01em;
+    }
+
+    .inline-links {
+      display: inline-flex;
+      align-items: center;
+      gap: 1rem;
+      font-size: 0.9rem;
+    }
+
+    .text-link {
+      color: var(--ink);
+      text-decoration: underline;
+      text-decoration-color: var(--line);
+      text-underline-offset: 0.24em;
+      transition: color 0.15s ease, text-decoration-color 0.15s ease;
+    }
+
+    .text-link:hover {
+      color: var(--accent);
+      text-decoration-color: var(--accent);
+    }
+
+    /* Interactive Stage Controls */
+    .stage-wrap {
+      margin-top: 2.2rem;
+    }
+
+    .stage-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem 1.5rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--line-soft);
+      margin-bottom: 0.85rem;
+    }
+
+    .ctrl-cluster {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem 1rem;
+    }
+
+    .ctrl-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.85rem;
+    }
+
+    .ctrl-label {
+      color: var(--faint);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-right: 0.15rem;
+    }
+
+    .ctrl-btn {
+      appearance: none;
+      margin: 0;
+      padding: 0.18rem 0;
+      border: 0;
+      border-bottom: 2px solid transparent;
+      background: none;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      line-height: 1.25;
+      cursor: pointer;
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .ctrl-btn:hover {
+      color: var(--ink);
+    }
+
+    .ctrl-btn[aria-pressed="true"] {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .ctrl-btn:focus-visible,
+    .dl-btn:focus-visible,
+    .signal-btn:focus-visible,
+    .glass-btn:focus-visible,
+    .stage-reset:focus-visible,
+    .quote-cycle:focus-visible,
+    .nav-arrow:focus-visible {
+      outline: 1.5px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    .ctrl-sep {
+      width: 1px;
+      height: 0.8rem;
+      background: var(--line);
+    }
+
+    /* Real Painted Scenery & Break Overlay Stage */
+    .break-stage {
+      position: relative;
+      isolation: isolate;
+      width: 100%;
+      aspect-ratio: 16 / 10;
+      overflow: hidden;
+      background: #0c141d;
+      border: 1px solid var(--line-soft);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Archivo", sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      --pt: 0.8px;
+      --clock-size: calc(96 * var(--pt));
+      --scene-dim: 0.12;
+      --midnight-dim: 0;
+      --text-fill: 0.68;
+      --text-backing: 0.36;
+      --rim-alpha: 0.34;
+    }
+
+    .break-stage[data-daypart="evening"] {
+      --scene-dim: 0.35;
+    }
+
+    .break-stage[data-daypart="midnight"] {
+      --scene-dim: 0.35;
+      --midnight-dim: 0.50;
+      --text-fill: 0.22;
+      --text-backing: 0.30;
+      --rim-alpha: 0.12;
+    }
+
+    /* Dedicated night painting already has night luminance; only add extra dim at midnight */
+    .break-stage[data-scene="night"][data-daypart="day"],
+    .break-stage[data-scene="night"][data-daypart="evening"] {
+      --scene-dim: 0.08;
+    }
+
+    .scene-stack {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      transition: filter 0.45s ease, transform 0.45s ease;
+    }
+
+    .break-stage[data-mode="short"] .scene-stack {
+      filter: blur(22px) saturate(82%);
+      transform: scale(1.08);
+    }
+
+    .scene-img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: 0;
+      transform: scale(1.03);
+      transition: opacity 0.65s ease;
+      pointer-events: none;
+      animation: horizon-drift 120s ease-in-out infinite alternate;
+    }
+
+    .scene-img.is-active {
+      opacity: 1;
+    }
+
+    @keyframes horizon-drift {
+      from { transform: scale(1.035) translate3d(-0.6%, 0, 0); }
+      to   { transform: scale(1.035) translate3d(0.6%, 0, 0); }
+    }
+
+    .shade-daypart,
+    .shade-midnight,
+    .shade-short {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      background: #000;
+      pointer-events: none;
+      transition: opacity 0.7s ease;
+    }
+
+    .shade-daypart { opacity: var(--scene-dim); }
+    .shade-midnight { opacity: var(--midnight-dim); }
+    .shade-short { opacity: 0; }
+
+    .break-stage[data-mode="short"] .shade-short {
+      opacity: 0.58;
+    }
+
+    .shade-bottom {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 30%;
+      z-index: 1;
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.38) 0%,
+        rgba(0, 0, 0, 0.14) 52%,
+        transparent 100%
+      );
+      pointer-events: none;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* Overlay Foreground */
+    .break-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: calc(36 * var(--pt));
+      text-align: center;
+      transition: opacity 0.4s ease;
+    }
+
+    .break-stage.is-dismissed .break-overlay {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Liquid Glass Typography (matches BreakViews.swift GlassClock) */
+    .glass-text {
+      position: relative;
+      display: inline-block;
+      isolation: isolate;
+      margin: 0;
+      color: rgba(255, 255, 255, var(--text-fill));
+      -webkit-text-stroke: 0.5px rgba(255, 255, 255, var(--rim-alpha));
+      font-weight: 600;
+      line-height: 1.18;
+      letter-spacing: -0.015em;
+    }
+
+    .glass-text::before,
+    .glass-text::after {
+      content: attr(data-text);
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      font: inherit;
+      letter-spacing: inherit;
+      line-height: inherit;
+      text-align: inherit;
+      white-space: inherit;
+    }
+
+    .glass-text::before {
+      z-index: -1;
+      color: rgba(0, 0, 0, var(--text-backing));
+      -webkit-text-stroke: 0;
+      filter: blur(0.06em);
+    }
+
+    .glass-text::after {
+      color: transparent;
+      -webkit-text-fill-color: transparent;
+      -webkit-text-stroke: 0;
+      background: linear-gradient(
+        166deg,
+        rgba(255, 255, 255, 0.46) 0%,
+        rgba(255, 255, 255, 0.12) 22%,
+        transparent 36%,
+        transparent 68%,
+        rgba(255, 255, 255, 0.20) 88%,
+        transparent 96%
+      );
+      background-clip: text;
+      -webkit-background-clip: text;
+    }
+
+    .break-stage[data-daypart="midnight"] .glass-text::after {
+      opacity: 0.32;
+    }
+
+    .break-clock {
+      margin: 0;
+      font-size: var(--clock-size);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .break-quote {
+      margin: calc(16 * var(--pt)) 0 0;
+      font-size: calc(var(--clock-size) / 3);
+      max-width: min(92%, calc(var(--clock-size) * 9.2));
+      text-wrap: balance;
+      cursor: pointer;
+    }
+
+    /* Short Break Left-to-Right Soft Wipe (ShortBreakCapsule) */
+    .short-prompt {
+      display: none;
+      margin: 0;
+      font-size: calc(var(--clock-size) * 0.7);
+      white-space: nowrap;
+      --wipe: -0.25;
+      -webkit-mask-image: linear-gradient(
+        90deg,
+        transparent calc(var(--wipe) * 100%),
+        #000 calc((var(--wipe) + 0.25) * 100%)
+      );
+      mask-image: linear-gradient(
+        90deg,
+        transparent calc(var(--wipe) * 100%),
+        #000 calc((var(--wipe) + 0.25) * 100%)
+      );
+    }
+
+    .break-stage[data-mode="short"] .break-clock,
+    .break-stage[data-mode="short"] .break-quote {
+      display: none;
+    }
+
+    .break-stage[data-mode="short"] .short-prompt {
+      display: block;
+    }
+
+    /* Bottom Controls (QuietButtonStyle + HoldCapsule) */
+    .break-controls {
+      position: absolute;
+      left: calc(16 * var(--pt));
+      right: calc(16 * var(--pt));
+      bottom: calc(36 * var(--pt));
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: calc(10 * var(--pt));
+    }
+
+    .glass-btn {
+      position: relative;
+      isolation: isolate;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: calc(5 * var(--pt));
+      margin: 0;
+      border: 0;
+      border-radius: 999px;
+      padding: calc(7.5 * var(--pt)) calc(16 * var(--pt));
+      font-family: inherit;
+      font-size: max(11px, calc(13.5 * var(--pt)));
+      font-weight: 500;
+      line-height: 1.2;
+      white-space: nowrap;
+      color: rgba(255, 255, 255, 0.92);
+      background: rgba(255, 255, 255, 0.13);
+      box-shadow:
+        inset 0 0.75px 0.75px rgba(255, 255, 255, 0.34),
+        inset 0 -0.5px 0.75px rgba(255, 255, 255, 0.14),
+        0 2px 8px rgba(0, 0, 0, 0.18);
+      backdrop-filter: blur(8px) saturate(135%);
+      -webkit-backdrop-filter: blur(8px) saturate(135%);
+      cursor: pointer;
+      touch-action: none;
+    }
+
+    .glass-btn:hover {
+      background: rgba(255, 255, 255, 0.19);
+    }
+
+    .glass-btn:active {
+      background: rgba(255, 255, 255, 0.24);
+    }
+
+    .glass-btn kbd {
+      display: inline-block;
+      padding: 1px 5px;
+      border-radius: 4px;
+      border: 0.75px solid rgba(255, 255, 255, 0.62);
+      font-family: inherit;
+      font-size: 0.9em;
+      line-height: 1.15;
+    }
+
+    .hold-fill {
+      position: absolute;
+      inset: 0;
+      z-index: -1;
+      background: rgba(255, 255, 255, 0.30);
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 0.25s ease-out;
+      pointer-events: none;
+    }
+
+    .hold-btn.is-holding .hold-fill {
+      transition: none;
+    }
+
+    .hardline-notice {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: calc(10 * var(--pt));
+    }
+
+    .hardline-copy {
+      margin: 0;
+      font-size: max(12px, calc(13.5 * var(--pt)));
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.88);
+      text-shadow: 0 1px 6px rgba(0, 0, 0, 0.45);
+    }
+
+    .break-stage[data-mode="short"] .snooze-btn {
+      display: none;
+    }
+
+    .break-stage[data-mode="hardline"] .snooze-btn,
+    .break-stage[data-mode="hardline"] .hold-btn {
+      display: none;
+    }
+
+    .break-stage[data-mode="hardline"] .hardline-notice {
+      display: flex;
+    }
+
+    /* Dismissed / Snoozed Feedback Overlay */
+    .stage-after {
+      position: absolute;
+      inset: 0;
+      z-index: 3;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      background: rgba(0, 0, 0, 0.62);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s ease;
+    }
+
+    .break-stage.is-dismissed .stage-after {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .stage-after p {
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 0.98rem;
+    }
+
+    .stage-reset {
+      appearance: none;
+      padding: 0.45rem 0.95rem;
+      border: 1px solid var(--line);
+      background: #000;
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+
+    .stage-reset:hover {
+      border-color: var(--accent);
+    }
+
+    .stage-foot {
+      margin-top: 0.75rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.5rem 1.5rem;
+      color: var(--muted);
+      font-size: 0.88rem;
+      line-height: 1.55;
+    }
+
+    .quote-cycle {
+      appearance: none;
+      padding: 0;
+      border: 0;
+      background: none;
+      color: var(--faint);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s ease;
+    }
+
+    .quote-cycle:hover {
+      color: var(--accent);
+    }
+
+    /* Rhythm Metrics (Square Fold Forecaster Style) */
+    .metrics {
+      margin-top: 1.65rem;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.8rem 2.2rem;
+    }
+
+    .metric {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .metric .k {
+      font-size: 0.94rem;
+      color: var(--ink);
+      font-weight: 500;
+    }
+
+    .metric .v {
+      margin-top: 0.18rem;
+      font-size: 2rem;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.035em;
+      line-height: 1.12;
+      color: var(--ink);
+    }
+
+    .metric .unit {
+      margin-left: 0.32rem;
+      font-size: 0.9rem;
+      letter-spacing: 0;
+      color: var(--muted);
+    }
+
+    .metric .s {
+      margin-top: 0.42rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.62;
+      text-wrap: pretty;
+    }
+
+    /* Rhythm Split: Prose + Real Stats Render */
+    .rhythm-split {
+      margin-top: 2.4rem;
+      padding-top: 2.2rem;
+      border-top: 1px solid var(--line-soft);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 330px;
+      gap: 2rem 3rem;
+      align-items: start;
+    }
+
+    .rhythm-points {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      gap: 1.35rem;
+    }
+
+    .rhythm-points li {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .rhythm-points strong {
+      font-size: 0.96rem;
+      font-weight: 500;
+      color: var(--ink);
+    }
+
+    .rhythm-points span {
+      color: var(--muted);
+      font-size: 0.91rem;
+      line-height: 1.65;
+      text-wrap: pretty;
+    }
+
+    .stats-shot {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 10px;
+      border: 1px solid var(--line-soft);
+    }
+
+    /* Zero-Permission Auto-Pause Interactive List + Real Popover */
+    .quiet-grid {
+      margin-top: 1.5rem;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 310px;
+      gap: 2rem 2.8rem;
+      align-items: start;
+    }
+
+    .signal-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      border-top: 1px solid var(--line-soft);
+    }
+
+    .signal-row {
+      border-bottom: 1px solid var(--line-soft);
+    }
+
+    .signal-btn {
+      appearance: none;
+      width: 100%;
+      margin: 0;
+      padding: 0.95rem 0 0.95rem 0.9rem;
+      border: 0;
+      border-left: 2px solid transparent;
+      background: none;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1.25rem;
+      cursor: pointer;
+      transition: border-color 0.15s ease;
+    }
+
+    .signal-btn:hover .signal-name {
+      color: var(--accent);
+    }
+
+    .signal-btn[aria-selected="true"] {
+      border-left-color: var(--accent);
+    }
+
+    .signal-btn[aria-selected="true"] .signal-name {
+      color: var(--accent);
+    }
+
+    .signal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 0.24rem;
+      min-width: 0;
+    }
+
+    .signal-name {
+      color: var(--ink);
+      font-family: var(--font-sans);
+      font-size: 0.96rem;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+
+    .signal-note {
+      color: var(--muted);
+      font-family: var(--font-sans);
+      font-size: 0.89rem;
+      line-height: 1.6;
+      text-wrap: pretty;
+    }
+
+    .signal-tag {
+      flex: none;
+      padding-top: 0.14rem;
+      color: var(--faint);
+      font-family: var(--font-mono);
+      font-size: 0.73rem;
+      white-space: nowrap;
+    }
+
+    .popover-stage {
+      position: sticky;
+      top: 2.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .popover-label {
+      color: var(--faint);
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .popover-shot {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+    }
+
+    .popover-caption {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.76rem;
+      line-height: 1.55;
+    }
+
+    /* Install Steps & Dashed Specs */
+    .steps {
+      list-style: none;
+      margin: 1.5rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 1.15rem;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 2.2rem minmax(0, 1fr);
+      align-items: baseline;
+      gap: 0.6rem;
+    }
+
+    .step-num {
+      color: var(--accent);
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      font-weight: 500;
+    }
+
+    .step-body {
+      color: var(--ink);
+      font-size: 0.95rem;
+      line-height: 1.68;
+      text-wrap: pretty;
+    }
+
+    .step-body strong {
+      font-weight: 600;
+    }
+
+    .step-body code {
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      color: var(--muted);
+    }
+
+    .specs {
+      margin-top: 2.2rem;
+      padding-top: 1.6rem;
+      border-top: 1px solid var(--line-soft);
+      display: grid;
+      gap: 0.78rem;
+    }
+
+    .slot {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr auto;
+      gap: 0.75rem 1rem;
+      align-items: center;
+    }
+
+    .slot .k {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+    }
+
+    .slot .blank {
+      border-bottom: 1px dashed var(--line-soft);
+      height: 0;
+    }
+
+    .slot .s {
+      color: var(--ink);
+      font-size: 0.9rem;
+      text-align: right;
+    }
+
+    /* Footer Note */
+    .foot-note {
+      margin-top: 2.4rem;
+      padding-top: 1.15rem;
+      border-top: 1px solid var(--ink);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.5rem;
+      color: var(--muted);
+      font-size: 0.86rem;
+      line-height: 1.6;
+    }
+
+    .nav-arrow {
+      flex: none;
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 16px;
+      line-height: 1;
+      padding: 0;
+      border: 0;
+      background: none;
+      cursor: pointer;
+      transition: color 0.18s ease;
+    }
+
+    .nav-arrow:hover {
+      color: var(--accent);
+    }
+
+    .nav-arrow-up {
+      display: inline-block;
+      transform: rotate(90deg);
+    }
+
+    @media (max-width: 920px) {
+      .metrics {
+        grid-template-columns: 1fr;
+        gap: 1.4rem;
+      }
+
+      .rhythm-split,
+      .quiet-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .stats-shot {
+        max-width: 360px;
+      }
+
+      .popover-stage {
+        position: static;
+        max-width: 320px;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        gap: 3.4rem;
+      }
+
+      .lead {
+        font-size: 1.06rem;
+      }
+
+      .hero-intro {
+        grid-template-columns: 1fr;
+        gap: 0.9rem;
+      }
+
+      .saul-art {
+        width: 148px;
+        margin: -0.2rem 0 -0.4rem;
+      }
+
+      .break-stage {
+        aspect-ratio: 4 / 3;
+      }
+
+      .break-overlay {
+        padding-bottom: calc(68 * var(--pt));
+      }
+
+      .break-controls {
+        bottom: calc(18 * var(--pt));
+        gap: 6px;
+      }
+
+      .glass-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+      }
+
+      .ctrl-sep {
+        display: none;
+      }
+
+      .signal-btn {
+        flex-direction: column;
+        gap: 0.3rem;
+      }
+
+      .signal-tag {
+        padding-top: 0;
+      }
+
+      .slot {
+        grid-template-columns: 1fr;
+        gap: 0.18rem;
+      }
+
+      .slot .blank {
+        display: none;
+      }
+
+      .slot .s {
+        text-align: left;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+      .dl-btn:hover {
+        transform: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="site">
+    <header class="sidebar">
+      <a class="brand" href="#top" aria-label="Pausa">
+        <span class="brand-row"><span class="brand-line">Pausa</span><span class="brand-lotus" aria-hidden="true">🪷</span></span>
+      </a>
+      <nav class="nav" aria-label="Primary">
+        <a class="nav-item active" href="#break" data-nav="break">break</a>
+        <a class="nav-item" href="#rhythm" data-nav="rhythm">rhythm</a>
+        <a class="nav-item" href="#quiet" data-nav="quiet">quiet</a>
+        <a class="nav-item" href="#install" data-nav="install">install</a>
+      </nav>
+    </header>
+
+    <main class="page">
+      <!-- 1. BREAK -->
+      <section class="sec" id="break" aria-label="Overview and break preview">
+        <div class="hero-intro">
+          <div class="hero-copy">
+            <p class="lead">
+              Did you know you have the right to look away from your screen? The Constitution doesn't say so, but your eyes do. Pausa reminds you to rest every once in a while, and stays quiet when you're in a meeting, watching a video, or sharing your screen. <em class="tagline">Better use Pausa!</em>
+            </p>
+
+            <div class="cta-row">
+              <a class="dl-btn" id="dl-btn" href="https://github.com/debidong/pausa/releases/latest">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M8 2.25v7.75M4.75 7L8 10.25 11.25 7M3 13.25h10"/>
+                </svg>
+                <span>Download for macOS</span>
+              </a>
+              <span class="dl-meta">macOS 13+ · Universal · Free</span>
+              <a class="text-link" href="https://github.com/debidong/pausa" target="_blank" rel="noreferrer">GitHub ↗</a>
+            </div>
+          </div>
+
+          <img class="saul-art" src="./assets/saul-point.webp" width="675" height="680" alt="Editorial illustration of a fast-talking lawyer in a yellow shirt and tie pointing at the viewer">
+        </div>
+
+        <div class="stage-wrap">
+          <div class="stage-bar" role="toolbar" aria-label="Break screen controls">
+            <div class="ctrl-group" aria-label="Scene">
+              <span class="ctrl-label">Scene</span>
+              <button type="button" class="ctrl-btn" data-scene-btn="ocean" aria-pressed="true">ocean</button>
+              <button type="button" class="ctrl-btn" data-scene-btn="forest" aria-pressed="false">forest</button>
+              <button type="button" class="ctrl-btn" data-scene-btn="sunset" aria-pressed="false">sunset</button>
+              <button type="button" class="ctrl-btn" data-scene-btn="night" aria-pressed="false">night</button>
+              <button type="button" class="ctrl-btn" data-scene-btn="ink" aria-pressed="false">ink</button>
+            </div>
+
+            <div class="ctrl-cluster">
+              <div class="ctrl-group" aria-label="Daypart">
+                <span class="ctrl-label">Time</span>
+                <button type="button" class="ctrl-btn" data-daypart-btn="day" aria-pressed="true">day</button>
+                <button type="button" class="ctrl-btn" data-daypart-btn="evening" aria-pressed="false">evening</button>
+                <button type="button" class="ctrl-btn" data-daypart-btn="midnight" aria-pressed="false">late night</button>
+              </div>
+              <span class="ctrl-sep" aria-hidden="true"></span>
+              <div class="ctrl-group" aria-label="Break mode">
+                <span class="ctrl-label">Mode</span>
+                <button type="button" class="ctrl-btn" data-mode-btn="long" aria-pressed="true">long</button>
+                <button type="button" class="ctrl-btn" data-mode-btn="short" aria-pressed="false">short</button>
+                <button type="button" class="ctrl-btn" data-mode-btn="hardline" aria-pressed="false">90m limit</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="break-stage" id="break-stage" data-scene="ocean" data-daypart="day" data-mode="long" tabindex="0" aria-label="Interactive Pausa break preview">
+            <div class="scene-stack" aria-hidden="true">
+              <img class="scene-img is-active" data-scene-img="ocean" src="./assets/scene-ocean.jpg" width="1728" height="1080" alt="">
+              <img class="scene-img" data-scene-img="forest" src="./assets/scene-forest.jpg" width="1728" height="1080" loading="lazy" alt="">
+              <img class="scene-img" data-scene-img="sunset" src="./assets/scene-sunset.jpg" width="1728" height="1080" loading="lazy" alt="">
+              <img class="scene-img" data-scene-img="night" src="./assets/scene-night.jpg" width="1728" height="1080" loading="lazy" alt="">
+              <img class="scene-img" data-scene-img="ink" src="./assets/scene-ink.jpg" width="1728" height="1080" loading="lazy" alt="">
+            </div>
+
+            <div class="shade-daypart" aria-hidden="true"></div>
+            <div class="shade-midnight" aria-hidden="true"></div>
+            <div class="shade-short" aria-hidden="true"></div>
+            <div class="shade-bottom" aria-hidden="true"></div>
+
+            <div class="break-overlay">
+              <p class="break-clock" id="break-clock"><span class="sr-only">4:47</span><span class="glass-text" aria-hidden="true" data-text="4:47">4:47</span></p>
+              <p class="break-quote" id="break-quote" title="Click for another rest prompt"><span class="sr-only">Look far. Then a little farther.</span><span class="glass-text" aria-hidden="true" data-text="Look far. Then a little farther.">Look far. Then a little farther.</span></p>
+              <p class="short-prompt" id="short-prompt"><span class="sr-only">Look far away</span><span class="glass-text" aria-hidden="true" data-text="Look far away">Look far away</span></p>
+
+              <div class="break-controls">
+                <button type="button" class="glass-btn snooze-btn" data-snooze="5">Snooze 5 Min</button>
+                <button type="button" class="glass-btn snooze-btn" data-snooze="15">Snooze 15 Min</button>
+                <button type="button" class="glass-btn hold-btn" id="hold-btn" aria-label="Hold Space or press and hold for 2 seconds to skip">
+                  <span class="hold-fill" id="hold-fill" aria-hidden="true"></span>
+                  <span>Hold</span>
+                  <kbd>Space</kbd>
+                  <span>to skip</span>
+                </button>
+
+                <div class="hardline-notice">
+                  <p class="hardline-copy">After 90 minutes, this long break can't be delayed.</p>
+                  <button type="button" class="glass-btn" id="urgent-btn">Urgent: pause reminders</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="stage-after" id="stage-after" aria-live="polite">
+              <p id="stage-after-msg">Break skipped — back to your screen.</p>
+              <button type="button" class="stage-reset" id="stage-reset">Show break again</button>
+            </div>
+          </div>
+
+          <div class="stage-foot">
+            <span id="stage-caption">Painted in-app with a GPU Kuwahara oil shader. Hold the skip capsule (or hold Space while focused) for 2 seconds to skip.</span>
+            <button type="button" class="quote-cycle" id="quote-cycle">↻ another prompt</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. RHYTHM -->
+      <section class="sec" id="rhythm" aria-labelledby="title-rhythm">
+        <div class="section-bar">
+          <h2 class="section-title" id="title-rhythm">Rhythm &amp; the 90-minute hard line</h2>
+          <span class="section-rule" aria-hidden="true"></span>
+        </div>
+        <p class="section-desc">
+          Rigid timers get quit on the first busy afternoon; infinitely snoozable timers get ignored all day. Pausa pairs a light 20-minute cadence with a finite snooze budget and one non-negotiable ceiling.
+        </p>
+
+        <div class="metrics">
+          <div class="metric">
+            <span class="k">Short break</span>
+            <span class="v">20<span class="unit">sec / 20 min</span></span>
+            <span class="s">A soft blurred veil across every connected display. Click-through so nothing underneath loses focus, wiping itself away left to right as the 20 seconds elapse.</span>
+          </div>
+          <div class="metric">
+            <span class="k">Long break</span>
+            <span class="v">5<span class="unit">min / 60 min</span></span>
+            <span class="s">Every third break opens a painted landscape—or your own photo, measured and dimmed automatically so white text stays legible. Snooze 5 or 15 minutes while your budget lasts.</span>
+          </div>
+          <div class="metric">
+            <span class="k">Hard line</span>
+            <span class="v">90<span class="unit">min ceiling</span></span>
+            <span class="s">Even when calls or snoozes push breaks back, continuous screen time stops at 90 minutes. Past the hard line, snooze and Space-to-skip step aside until you take the rest.</span>
+          </div>
+        </div>
+
+        <div class="rhythm-split">
+          <ul class="rhythm-points">
+            <li>
+              <strong>Heads-up before anything covers your screen</strong>
+              <span>A quiet top card and a small countdown pill near the pointer appear seconds before a break, so you can finish a thought or snooze without breaking stride.</span>
+            </li>
+            <li>
+              <strong>Waits until you stop typing or dragging</strong>
+              <span>If a break arrives mid-sentence or mid-drag, Pausa holds up to two minutes for a natural pause in keyboard and mouse input before fading in.</span>
+            </li>
+            <li>
+              <strong>Dims after dark and nudges you to bed</strong>
+              <span>Scenes soften at 18:00. After 23:00, the break screen drops to low-luminance midnight glass and switches its prompts to gentle reminders to close the lid.</span>
+            </li>
+            <li>
+              <strong>30-day local rhythm log</strong>
+              <span>Work spans and completed breaks stay strictly on your Mac. Breaks held automatically for meetings or videos never count against you as skipped.</span>
+            </li>
+          </ul>
+
+          <img class="stats-shot" src="./assets/stats-today-dark.png" width="1000" height="1418" loading="lazy" alt="Pausa Statistics tab in macOS Dark Mode showing 2 hours work time, 6 breaks taken, 11 minutes on break, and 7-day bar chart with per-break cuts.">
+        </div>
+      </section>
+
+      <!-- 3. QUIET -->
+      <section class="sec" id="quiet" aria-labelledby="title-quiet">
+        <div class="section-bar">
+          <h2 class="section-title" id="title-quiet">Zero-permission auto-pause</h2>
+          <span class="section-rule" aria-hidden="true"></span>
+        </div>
+        <p class="section-desc">
+          Pausa requests zero macOS TCC permissions—no Screen Recording, no Accessibility, no Input Monitoring, and zero network telemetry. It reads public system state and shows the exact reason right in the menu bar.
+        </p>
+
+        <div class="quiet-grid">
+          <ul class="signal-list" role="tablist" aria-label="Menu bar states">
+            <li class="signal-row">
+              <button type="button" class="signal-btn" role="tab" aria-selected="true" data-popover="./assets/popover-meeting.png" data-popover-caption="Zoom active · CoreAudio input + Camera hardware state">
+                <span class="signal-body">
+                  <span class="signal-name">Meetings &amp; voice calls</span>
+                  <span class="signal-note">Detects when a microphone or camera is actively used by Zoom, Teams, FaceTime, Discord, or WebRTC helper processes.</span>
+                </span>
+                <span class="signal-tag">CoreAudio · CMIO</span>
+              </button>
+            </li>
+            <li class="signal-row">
+              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-browser.png" data-popover-caption="Google Meet / WebRTC in Chrome · helper process attributed to parent app">
+                <span class="signal-body">
+                  <span class="signal-name">Browser meetings</span>
+                  <span class="signal-note">Walks the process tree from Chrome, Arc, Safari, or Edge audio helpers back to the outer browser bundle so web calls pause cleanly.</span>
+                </span>
+                <span class="signal-tag">proc_pidinfo</span>
+              </button>
+            </li>
+            <li class="signal-row">
+              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-video.png" data-popover-caption="Video playing in IINA · resumes 2 minutes after playback ends">
+                <span class="signal-body">
+                  <span class="signal-name">Video playback</span>
+                  <span class="signal-note">Watches display wake assertions held by media players and browsers; waits two minutes after a video ends before resuming breaks.</span>
+                </span>
+                <span class="signal-tag">IOPMAssertion</span>
+              </button>
+            </li>
+            <li class="signal-row">
+              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-fullscreen.png" data-popover-caption="Keynote slideshow covering display · pauses without Screen Recording">
+                <span class="signal-body">
+                  <span class="signal-name">Screen sharing, slideshows &amp; games</span>
+                  <span class="signal-note">Spots screen-sharing indicator windows, full-screen spaces, presentation decks, and macOS game-category apps—plus custom per-app rules and Focus Filters.</span>
+                </span>
+                <span class="signal-tag">CGWindowList · Focus</span>
+              </button>
+            </li>
+            <li class="signal-row">
+              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-hardline.png" data-popover-caption="Approaching 90 minutes of continuous screen time">
+                <span class="signal-body">
+                  <span class="signal-name">90-minute hard-line notice</span>
+                  <span class="signal-note">Warns ahead of time in the popover when accumulated deferrals reach the 90-minute continuous work limit.</span>
+                </span>
+                <span class="signal-tag">Scheduler</span>
+              </button>
+            </li>
+            <li class="signal-row">
+              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-countdown.png" data-popover-caption="Standard menu-bar popover · Break now, Snooze 5 Min, or manual pause">
+                <span class="signal-body">
+                  <span class="signal-name">Everyday countdown</span>
+                  <span class="signal-note">Lives quietly in the menu bar as a progress ring or timer, stepping out of the way automatically if hidden behind a MacBook notch.</span>
+                </span>
+                <span class="signal-tag">NSStatusItem</span>
+              </button>
+            </li>
+          </ul>
+
+          <div class="popover-stage" role="tabpanel" aria-live="polite">
+            <span class="popover-label">Real macOS popover</span>
+            <img class="popover-shot" id="popover-shot" src="./assets/popover-meeting.png" width="616" height="332" alt="Pausa menu bar popover in macOS Dark Mode">
+            <span class="popover-caption" id="popover-caption">Zoom active · CoreAudio input + Camera hardware state</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. INSTALL -->
+      <section class="sec" id="install" aria-labelledby="title-install">
+        <div class="section-bar">
+          <h2 class="section-title" id="title-install">Install &amp; specifications</h2>
+          <span class="section-rule" aria-hidden="true"></span>
+        </div>
+        <p class="section-desc">
+          Pausa is distributed directly as a universal disk image—free to use at home or at work, with no account and no background daemon.
+        </p>
+
+        <ol class="steps">
+          <li class="step">
+            <span class="step-num">01</span>
+            <span class="step-body">Download <a class="text-link" id="dl-inline" href="https://github.com/debidong/pausa/releases/latest">Pausa for macOS (<code>.dmg</code>)</a> and drag <strong>Pausa</strong> to <strong>Applications</strong>.</span>
+          </li>
+          <li class="step">
+            <span class="step-num">02</span>
+            <span class="step-body">Open <strong>Pausa</strong>. macOS blocks the first launch because the build is ad-hoc signed rather than notarized under a paid Apple Developer certificate.</span>
+          </li>
+          <li class="step">
+            <span class="step-num">03</span>
+            <span class="step-body">Open <strong>System Settings › Privacy &amp; Security</strong>, scroll to <strong>Security</strong>, and click <strong>Open Anyway</strong>. That is the only time you need to do this—subsequent updates verify via EdDSA-signed Sparkle feeds and install after breaks finish.</span>
+          </li>
+        </ol>
+
+        <div class="specs">
+          <div class="slot">
+            <span class="k">System</span>
+            <span class="blank" aria-hidden="true"></span>
+            <span class="s">macOS 13 Ventura or later (Liquid Glass on macOS 26+)</span>
+          </div>
+          <div class="slot">
+            <span class="k">Binary</span>
+            <span class="blank" aria-hidden="true"></span>
+            <span class="s">Universal (Apple silicon arm64 &amp; Intel x86_64)</span>
+          </div>
+          <div class="slot">
+            <span class="k">Privacy</span>
+            <span class="blank" aria-hidden="true"></span>
+            <span class="s">Zero permissions, zero analytics, local-only state</span>
+          </div>
+          <div class="slot">
+            <span class="k">Languages</span>
+            <span class="blank" aria-hidden="true"></span>
+            <span class="s">EN · 简体中文 · 繁體中文 · ES · FR · RU · VI · TH</span>
+          </div>
+          <div class="slot">
+            <span class="k">License</span>
+            <span class="blank" aria-hidden="true"></span>
+            <span class="s"><a class="text-link" href="https://github.com/debidong/pausa/blob/main/LICENSE" target="_blank" rel="noreferrer">PolyForm Shield 1.0.0</a> (source-available, free to use)</span>
+          </div>
+        </div>
+
+        <footer class="foot-note">
+          <span>If eye discomfort persists, see a doctor. Pausa is not a treatment.</span>
+          <a class="nav-arrow nav-arrow-up" href="#top" aria-label="back to top">←</a>
+        </footer>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (() => {
+      // Exact 36 English rest prompts from App/rest-quotes.json
+      const QUOTES = {
+        day: [
+          "Look far. Then a little farther.",
+          "The window beats the screen.",
+          "Find a bit of green. Your eyes remember it.",
+          "The sunlight's good. Go borrow a little.",
+          "Clouds are never in a hurry, and never late.",
+          "Drink some water. Your brain is mostly made of it.",
+          "The problem isn't going anywhere. It'll wait for you.",
+          "Stand up and stretch, as unapologetically as a cat.",
+          "Raise both arms like you just won something.",
+          "Drop your shoulders. Yes, like that.",
+          "You're not a houseplant. You're allowed to move.",
+          "You're doing better than you think."
+        ],
+        evening: [
+          "You've done plenty today. Rest a bit.",
+          "Stretch. Your shoulders will thank you.",
+          "Dim the screen. Your eyes are off the clock too.",
+          "Have some water. Nothing's running away.",
+          "It's dark out. Let your eyes find a faraway light.",
+          "Evenings are for going slow.",
+          "Take a little walk. Let dinner settle.",
+          "Today's you deserves a \"well done.\"",
+          "Make a warm tea. Maybe skip the coffee.",
+          "What's left will keep until tomorrow.",
+          "The night outside is quiet. You can be too.",
+          "Rub your shoulders. They carried a lot today."
+        ],
+        midnight: [
+          "Time to sleep. Tomorrow's problems can wait until tomorrow.",
+          "Turn it off and go to sleep now.",
+          "Sleeping now is the best gift to tomorrow's you.",
+          "It's late. Even the screen wants to sleep.",
+          "Leave the rest for tomorrow. Sleep now.",
+          "Lights off. Lie down. Close your eyes.",
+          "The world is asleep. Go join it.",
+          "Your pillow has been waiting for you.",
+          "That's all for today. Good night.",
+          "A good night's sleep comes first. Go now.",
+          "No more screens. Off to bed.",
+          "Tomorrow's you will thank you for sleeping now."
+        ]
+      };
+
+      const CAPTIONS = {
+        long: {
+          day: "Painted in-app with a GPU Kuwahara oil shader. Hold the skip capsule (or hold Space while focused) for 2 seconds to skip.",
+          evening: "After 18:00, Pausa dims the canvas to evening luminance and shifts prompts toward winding down.",
+          midnight: "Between 23:00 and 05:59, midnight mode drops screen brightness and nudges you to get some sleep."
+        },
+        short: "Short break (20 seconds every 20 minutes): blurs the screen click-through and wipes the prompt left to right as time passes.",
+        hardline: "Past 90 minutes of continuous screen time, Snooze and Space-to-skip step aside so a real rest finally happens."
+      };
+
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const stage = document.getElementById("break-stage");
+      const clockEl = document.getElementById("break-clock");
+      const quoteEl = document.getElementById("break-quote");
+      const shortEl = document.getElementById("short-prompt");
+      const captionEl = document.getElementById("stage-caption");
+      const quoteCycleBtn = document.getElementById("quote-cycle");
+      const holdBtn = document.getElementById("hold-btn");
+      const holdFill = document.getElementById("hold-fill");
+      const afterMsg = document.getElementById("stage-after-msg");
+      const resetBtn = document.getElementById("stage-reset");
+      const urgentBtn = document.getElementById("urgent-btn");
+
+      let scene = "ocean";
+      let daypart = (() => {
+        const h = new Date().getHours();
+        if (h >= 23 || h < 6) return "midnight";
+        if (h >= 18) return "evening";
+        return "day";
+      })();
+      let mode = "long";
+      let quoteIdx = { day: 0, evening: 0, midnight: 0 };
+      let remaining = 4 * 60 + 47;
+      let shortStart = performance.now();
+      let shortRaf = 0;
+      let dismissed = false;
+      let pointerInsideStage = false;
+
+      // Scale typography smoothly to stage height (matches LongBreakView.clockSize)
+      const syncScale = () => {
+        const h = stage.clientHeight || 520;
+        const pt = Math.max(0.54, Math.min(1.05, h / 820));
+        stage.style.setProperty("--pt", pt.toFixed(3) + "px");
+      };
+      syncScale();
+      if ("ResizeObserver" in window) {
+        new ResizeObserver(syncScale).observe(stage);
+      } else {
+        window.addEventListener("resize", syncScale, { passive: true });
+      }
+
+      const setGlassText = (el, text) => {
+        const sr = el.querySelector(".sr-only");
+        const glyph = el.querySelector(".glass-text");
+        if (sr) sr.textContent = text;
+        if (glyph) {
+          glyph.textContent = text;
+          glyph.setAttribute("data-text", text);
+        }
+      };
+
+      const formatClock = (s) => {
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return m + ":" + String(sec).padStart(2, "0");
+      };
+
+      const updateQuote = (advance = false) => {
+        const pool = QUOTES[daypart];
+        if (advance) {
+          quoteIdx[daypart] = (quoteIdx[daypart] + 1) % pool.length;
+        }
+        setGlassText(quoteEl, pool[quoteIdx[daypart]]);
+      };
+
+      const updateCaption = () => {
+        if (mode === "short") {
+          captionEl.textContent = CAPTIONS.short;
+          quoteCycleBtn.hidden = true;
+        } else if (mode === "hardline") {
+          captionEl.textContent = CAPTIONS.hardline;
+          quoteCycleBtn.hidden = false;
+        } else {
+          captionEl.textContent = CAPTIONS.long[daypart];
+          quoteCycleBtn.hidden = false;
+        }
+      };
+
+      const resumeStage = () => {
+        dismissed = false;
+        stage.classList.remove("is-dismissed");
+        if (mode === "short") {
+          shortStart = performance.now();
+          runShortWipe();
+        }
+      };
+
+      const dismissStage = (msg) => {
+        dismissed = true;
+        cancelHold();
+        stage.classList.add("is-dismissed");
+        afterMsg.textContent = msg;
+      };
+
+      const applyState = () => {
+        stage.dataset.scene = scene;
+        stage.dataset.daypart = daypart;
+        stage.dataset.mode = mode;
+
+        document.querySelectorAll("[data-scene-img]").forEach((img) => {
+          img.classList.toggle("is-active", img.dataset.sceneImg === scene);
+        });
+        document.querySelectorAll("[data-scene-btn]").forEach((b) => {
+          b.setAttribute("aria-pressed", String(b.dataset.sceneBtn === scene));
+        });
+        document.querySelectorAll("[data-daypart-btn]").forEach((b) => {
+          b.setAttribute("aria-pressed", String(b.dataset.daypartBtn === daypart));
+        });
+        document.querySelectorAll("[data-mode-btn]").forEach((b) => {
+          b.setAttribute("aria-pressed", String(b.dataset.modeBtn === mode));
+        });
+
+        updateQuote(false);
+        updateCaption();
+        if (dismissed) resumeStage();
+        if (mode === "short") {
+          shortStart = performance.now();
+          runShortWipe();
+        } else {
+          cancelAnimationFrame(shortRaf);
+        }
+      };
+
+      // Short break 20s left-to-right soft wipe (ShortBreakCapsule: x = -0.25 + t * 1.25)
+      const runShortWipe = () => {
+        cancelAnimationFrame(shortRaf);
+        if (reduceMotion) {
+          shortEl.style.setProperty("--wipe", "-0.25");
+          return;
+        }
+        const step = (now) => {
+          if (mode !== "short" || dismissed) return;
+          const t = ((now - shortStart) % 20000) / 20000;
+          const x = -0.25 + t * 1.25;
+          shortEl.style.setProperty("--wipe", x.toFixed(4));
+          shortRaf = requestAnimationFrame(step);
+        };
+        shortRaf = requestAnimationFrame(step);
+      };
+
+      // Live 1s countdown tick for long break
+      setInterval(() => {
+        if (reduceMotion || dismissed || document.hidden || mode === "short") return;
+        remaining = remaining > 1 ? remaining - 1 : 5 * 60;
+        setGlassText(clockEl, formatClock(remaining));
+      }, 1000);
+
+      // Toolbar button handlers
+      document.querySelectorAll("[data-scene-btn]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          scene = btn.dataset.sceneBtn;
+          applyState();
+        });
+      });
+
+      document.querySelectorAll("[data-daypart-btn]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          daypart = btn.dataset.daypartBtn;
+          applyState();
+        });
+      });
+
+      document.querySelectorAll("[data-mode-btn]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          mode = btn.dataset.modeBtn;
+          remaining = 4 * 60 + 47;
+          setGlassText(clockEl, formatClock(remaining));
+          applyState();
+        });
+      });
+
+      quoteEl.addEventListener("click", () => updateQuote(true));
+      quoteCycleBtn.addEventListener("click", () => updateQuote(true));
+      resetBtn.addEventListener("click", resumeStage);
+
+      document.querySelectorAll("[data-snooze]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const mins = btn.dataset.snooze;
+          dismissStage(`Snoozed ${mins} min — break deferred within your 30-minute budget.`);
+        });
+      });
+
+      urgentBtn.addEventListener("click", () => {
+        dismissStage("Reminders paused for an urgent task.");
+      });
+
+      // 2.0-second Hold-to-Skip (matches HoldToSkip.duration = 2.0 in BreakViews.swift)
+      const HOLD_MS = 2000;
+      let holdStart = 0;
+      let holdRaf = 0;
+      let holding = false;
+
+      const beginHold = () => {
+        if (holding || dismissed || mode === "hardline") return;
+        if (reduceMotion) {
+          dismissStage("Break skipped — back to your screen.");
+          return;
+        }
+        holding = true;
+        holdStart = performance.now();
+        holdBtn.classList.add("is-holding");
+        const tick = (now) => {
+          if (!holding) return;
+          const p = Math.min(1, (now - holdStart) / HOLD_MS);
+          holdFill.style.transform = `scaleX(${p.toFixed(4)})`;
+          if (p >= 1) {
+            dismissStage("Break skipped — back to your screen.");
+            return;
+          }
+          holdRaf = requestAnimationFrame(tick);
+        };
+        holdRaf = requestAnimationFrame(tick);
+      };
+
+      const cancelHold = () => {
+        if (!holding) return;
+        holding = false;
+        cancelAnimationFrame(holdRaf);
+        holdBtn.classList.remove("is-holding");
+        holdFill.style.transform = "scaleX(0)";
+      };
+
+      holdBtn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        holdBtn.setPointerCapture?.(e.pointerId);
+        beginHold();
+      });
+      holdBtn.addEventListener("pointerup", cancelHold);
+      holdBtn.addEventListener("pointercancel", cancelHold);
+      holdBtn.addEventListener("lostpointercapture", cancelHold);
+
+      stage.addEventListener("pointerenter", () => { pointerInsideStage = true; });
+      stage.addEventListener("pointerleave", () => { pointerInsideStage = false; });
+
+      window.addEventListener("keydown", (e) => {
+        if (e.code !== "Space" || e.metaKey || e.ctrlKey || e.altKey) return;
+        const activeInStage = stage.contains(document.activeElement);
+        if (!pointerInsideStage && !activeInStage) return;
+        e.preventDefault();
+        if (!e.repeat) beginHold();
+      });
+
+      window.addEventListener("keyup", (e) => {
+        if (e.code === "Space") cancelHold();
+      });
+
+      window.addEventListener("blur", cancelHold);
+
+      // Auto-pause popover switcher
+      const popShot = document.getElementById("popover-shot");
+      const popCap = document.getElementById("popover-caption");
+      const signalBtns = document.querySelectorAll(".signal-btn");
+
+      signalBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          signalBtns.forEach((b) => b.setAttribute("aria-selected", String(b === btn)));
+          popShot.src = btn.dataset.popover;
+          popCap.textContent = btn.dataset.popoverCaption;
+        });
+      });
+
+      // Sticky sidebar scroll-spy
+      const navLinks = document.querySelectorAll(".nav-item[data-nav]");
+      const sections = ["break", "rhythm", "quiet", "install"]
+        .map((id) => document.getElementById(id))
+        .filter(Boolean);
+
+      const setActiveNav = (id) => {
+        navLinks.forEach((a) => {
+          const on = a.dataset.nav === id;
+          a.classList.toggle("active", on);
+          if (on) a.setAttribute("aria-current", "true");
+          else a.removeAttribute("aria-current");
+        });
+      };
+
+      if ("IntersectionObserver" in window) {
+        const io = new IntersectionObserver(
+          (entries) => {
+            const vis = entries
+              .filter((e) => e.isIntersecting)
+              .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+            if (vis[0]) setActiveNav(vis[0].target.id);
+          },
+          { rootMargin: "-18% 0px -55% 0px", threshold: [0, 0.25, 0.5] }
+        );
+        sections.forEach((s) => io.observe(s));
+      }
+
+      // Live latest-release DMG resolver (zero hardcoded version numbers)
+      fetch("https://api.github.com/repos/debidong/pausa/releases/latest", {
+        headers: { Accept: "application/vnd.github+json" }
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((rel) => {
+          if (!rel || !Array.isArray(rel.assets)) return;
+          const dmg = rel.assets.find((a) => a.name && a.name.endsWith(".dmg"));
+          if (!dmg || !dmg.browser_download_url) return;
+          ["dl-btn", "dl-inline"].forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) el.href = dmg.browser_download_url;
+          });
+        })
+        .catch(() => {});
+
+      // Initialize state using visitor's local time-of-day
+      applyState();
+    })();
+  </script>
+</body>
+</html>

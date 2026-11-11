@@ -1,0 +1,55 @@
+name: Deploy Site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/site.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync site/ to gh-pages (preserving appcast.xml)
+        run: |
+          PAGES="$RUNNER_TEMP/pages"
+          HAD_APPCAST=0
+          if git fetch origin gh-pages; then
+            git worktree add "$PAGES" origin/gh-pages
+            [ -f "$PAGES/appcast.xml" ] && HAD_APPCAST=1
+          else
+            git worktree add --detach "$PAGES"
+            (cd "$PAGES" && git checkout --orphan gh-pages && git rm -rfq .)
+          fi
+
+          rsync -av --delete \
+            --exclude='.git' \
+            --exclude='appcast.xml' \
+            site/ "$PAGES/"
+
+          if [ "$HAD_APPCAST" -eq 1 ] && [ ! -s "$PAGES/appcast.xml" ]; then
+            echo "::error::appcast.xml missing after sync; aborting."
+            exit 1
+          fi
+
+          cd "$PAGES"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No site changes to publish."
+            exit 0
+          fi
+          git commit -m "site: deploy ${GITHUB_SHA::7}"
+          git push origin HEAD:gh-pages || (git pull --rebase origin gh-pages && git push origin HEAD:gh-pages)
