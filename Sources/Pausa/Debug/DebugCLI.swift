@@ -322,7 +322,7 @@ enum DebugCLI {
             // focus goes back to the previous app at the end.
             Task { @MainActor in
                 let prev = NSWorkspace.shared.frontmostApplication
-                func probe(ignoresMouse: Bool, activate: Bool) async -> (Bool, Bool) {
+                @MainActor func probe(ignoresMouse: Bool, activate: Bool) async -> (Bool, Bool) {
                     let p = ShortBreakPanel(contentRect: NSRect(x: -30000, y: -30000, width: 200, height: 100),
                                             styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
                     p.level = .statusBar + 1

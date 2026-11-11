@@ -18,6 +18,7 @@ enum BrowserVideoMonitor {
         "com.brave.Browser", "com.vivaldi.Vivaldi", "com.operasoftware.Opera",
         "at.studio.AsideBrowser",                 // Aside; "Video Wake Lock" from the main pid seen in pmset log 2026-10-25
     ]
+
     /// Every power assertion held right now (same data as `pmset -g assertions`).
     static func holders() -> [VideoSignal.Holder] {
         var dictRef: Unmanaged<CFDictionary>?
@@ -47,8 +48,8 @@ enum BrowserVideoMonitor {
     /// The frontmost app, if it is playing video: it (or a helper of it) holds a "Video Wake Lock".
     /// No browser list: any app that asks for that assertion by that name is playing a <video>
     /// (Chrome, Aside, other Chromium builds), and only the frontmost one counts.
-    static func check() -> NSRunningApplication? {
-        guard let front = NSWorkspace.shared.frontmostApplication else { return nil }
+    static func check(snapshot: DetectionSnapshot? = nil) -> NSRunningApplication? {
+        guard let front = (snapshot ?? DetectionSnapshot()).frontmostApp else { return nil }
         return VideoSignal.frontIsPlaying(holders()) { pid($0, belongsTo: front) } ? front : nil
     }
 }

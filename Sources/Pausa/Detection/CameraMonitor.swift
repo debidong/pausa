@@ -10,7 +10,7 @@ enum CameraMonitor {
         var description: String { "\(name) running=\(isRunning)" }
     }
 
-    static func cameras() -> [Camera] {
+    private static func deviceIDs() -> [CMIOObjectID] {
         var addr = CMIOObjectPropertyAddress(
             mSelector: CMIOObjectPropertySelector(kCMIOHardwarePropertyDevices),
             mScope: CMIOObjectPropertyScope(kCMIOObjectPropertyScopeGlobal),
@@ -20,10 +20,17 @@ enum CameraMonitor {
         var ids = [CMIOObjectID](repeating: 0, count: Int(size) / MemoryLayout<CMIOObjectID>.size)
         var used: UInt32 = 0
         guard CMIOObjectGetPropertyData(CMIOObjectID(kCMIOObjectSystemObject), &addr, 0, nil, size, &used, &ids) == noErr else { return [] }
-        return ids.map { Camera(name: name($0) ?? "?", isRunning: isRunning($0)) }
+        return ids
     }
 
-    static func anyRunning() -> Bool { cameras().contains { $0.isRunning } }
+    static func cameras() -> [Camera] {
+        deviceIDs().map { Camera(name: name($0) ?? "?", isRunning: isRunning($0)) }
+    }
+
+    /// Fast path for 1 Hz polling: avoids fetching `kCMIOObjectPropertyName` strings.
+    static func anyRunning() -> Bool {
+        deviceIDs().contains { isRunning($0) }
+    }
 
     private static func isRunning(_ id: CMIOObjectID) -> Bool {
         var addr = CMIOObjectPropertyAddress(

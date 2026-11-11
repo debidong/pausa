@@ -51,7 +51,7 @@ enum PhotoBackground {
     static var url: URL { override?.url ?? PhotoImport.photoURL }
     /// Black layer stored at import (§3.5), 0…0.55.
     static var extraDim: Double {
-        override?.extraDim ?? min(PhotoContrast.cap, max(0, UserDefaults.standard.double(forKey: PhotoImport.extraDimKey)))
+        override?.extraDim ?? min(PhotoContrast.cap, max(0, PausaDefaults.store.double(forKey: PhotoImport.extraDimKey)))
     }
 
     /// This long break could not read the photo: ThemeChoice.current shows the random scene instead.

@@ -3,6 +3,9 @@ import Foundation
 
 /// Reads whether any *physical* input audio device is running somewhere.
 /// Uses kAudioDevicePropertyDeviceIsRunningSomewhere: query only, no TCC prompt.
+/// Static device metadata (name, UID, transport, stream check) is cached and invalidated only when
+/// CoreAudio notifies `kAudioHardwarePropertyDevices` changes, so per-second ticks only read one
+/// `UInt32` (`kAudioDevicePropertyDeviceIsRunningSomewhere`) per non-virtual input device.
 struct AudioInputDevice: CustomStringConvertible {
     let id: AudioObjectID
     let name: String
@@ -39,6 +42,23 @@ enum AudioInputMonitor {
         "Background Music", "eqMac", "Audio Hijack", "CADefaultDeviceAggregate",
     ]
 
+    private struct CachedDevice {
+        let id: AudioObjectID
+        let name: String
+        let uid: String
+        let transport: UInt32
+        let isVirtual: Bool
+    }
+
+    private final class DeviceCache: @unchecked Sendable {
+        let lock = NSLock()
+        var devices: [CachedDevice]?
+        var listenerInstalled = false
+        let listenerQueue = DispatchQueue(label: "pausa.audio.devices", qos: .utility)
+    }
+
+    private static let cache = DeviceCache()
+
     static func isExcluded(name: String, transport: UInt32) -> Bool {
         if transport == kAudioDeviceTransportTypeVirtual
             || transport == kAudioDeviceTransportTypeAggregate
@@ -49,7 +69,37 @@ enum AudioInputMonitor {
         return excludedNameFragments.contains { lower.contains($0.lowercased()) }
     }
 
-    static func inputDevices() -> [AudioInputDevice] {
+    private static func ensureDeviceListenerLocked() {
+        guard !cache.listenerInstalled else { return }
+        cache.listenerInstalled = true
+        var addr = AudioObjectPropertyAddress(
+            mSelector: kAudioHardwarePropertyDevices,
+            mScope: kAudioObjectPropertyScopeGlobal,
+            mElement: kAudioObjectPropertyElementMain)
+        _ = AudioObjectAddPropertyListenerBlock(AudioObjectID(kAudioObjectSystemObject), &addr, cache.listenerQueue) { _, _ in
+            cache.lock.lock()
+            cache.devices = nil
+            cache.lock.unlock()
+        }
+    }
+
+    private static func cachedInputDevices() -> [CachedDevice] {
+        cache.lock.lock()
+        ensureDeviceListenerLocked()
+        if let existing = cache.devices {
+            cache.lock.unlock()
+            return existing
+        }
+        cache.lock.unlock()
+
+        let loaded = loadStaticInputDevices()
+        cache.lock.lock()
+        cache.devices = loaded
+        cache.lock.unlock()
+        return loaded
+    }
+
+    private static func loadStaticInputDevices() -> [CachedDevice] {
         var addr = AudioObjectPropertyAddress(
             mSelector: kAudioHardwarePropertyDevices,
             mScope: kAudioObjectPropertyScopeGlobal,
@@ -64,15 +114,26 @@ enum AudioInputMonitor {
             let name = stringProp(id, kAudioObjectPropertyName) ?? "?"
             let uid = stringProp(id, kAudioDevicePropertyDeviceUID) ?? ""
             let transport = u32Prop(id, kAudioDevicePropertyTransportType) ?? 0
-            let running = (u32Prop(id, kAudioDevicePropertyDeviceIsRunningSomewhere) ?? 0) != 0
-            return AudioInputDevice(id: id, name: name, uid: uid, transport: transport,
-                                    isRunning: running, isVirtual: isExcluded(name: name, transport: transport))
+            return CachedDevice(id: id, name: name, uid: uid, transport: transport,
+                                isVirtual: isExcluded(name: name, transport: transport))
         }
     }
 
-    /// True if any non-excluded input device is running.
+    static func inputDevices() -> [AudioInputDevice] {
+        cachedInputDevices().map { d in
+            let running = isDeviceRunning(d.id)
+            return AudioInputDevice(id: d.id, name: d.name, uid: d.uid, transport: d.transport,
+                                    isRunning: running, isVirtual: d.isVirtual)
+        }
+    }
+
+    /// True if any non-excluded input device is running (queries only `IsRunningSomewhere` on physical devices).
     static func anyPhysicalInputRunning() -> Bool {
-        inputDevices().contains { $0.isRunning && !$0.isVirtual }
+        cachedInputDevices().contains { !$0.isVirtual && isDeviceRunning($0.id) }
+    }
+
+    private static func isDeviceRunning(_ id: AudioObjectID) -> Bool {
+        (u32Prop(id, kAudioDevicePropertyDeviceIsRunningSomewhere) ?? 0) != 0
     }
 
     private static func hasInputStreams(_ id: AudioObjectID) -> Bool {

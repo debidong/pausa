@@ -13,8 +13,9 @@ typealias PausaCoreReason = PausaCore.PauseReason
 ///   are back. Only the first start / last end is reported, so nested
 ///   lock+sleep yields exactly one start and one end.
 ///
-/// Polls every 1 s on a utility queue; each tick is a handful of CoreAudio /
-/// CMIO property reads plus one CGWindowList call. Nothing needs a TCC prompt.
+/// Polls every 1 s on a utility queue while the user is present (paused while
+/// `isAway` is true); each tick shares one `DetectionSnapshot` across monitors so
+/// `CGWindowListCopyWindowInfo` and `runningApplications` are queried at most once.
 public final class PauseDetector: ObservableObject {
     public enum AwayKind: String { case screenLocked, displayAsleep, systemAsleep }
     public enum AwayEvent { case start(AwayKind), end(AwayKind) }
@@ -35,37 +36,69 @@ public final class PauseDetector: ObservableObject {
     public var pollInterval: TimeInterval = 1
 
     private let queue = DispatchQueue(label: "pausa.detector", qos: .utility)
+    private let injectedDefaults: UserDefaults?
+    private let clock: PausaClock
     private var timer: DispatchSourceTimer?
-    private var call = CallHold()                  // mic / camera, monotonic (systemUptime)
+    private var timerSuspended = false
+    private var call = CallHold()                  // mic / camera, monotonic (uptimeNow)
+    private var shareTracker = ScreenShareMonitor.Tracker()
     private var awayKinds: Set<AwayKind> = []
     private var observers: [(NotificationCenter, NSObjectProtocol)] = []
 
-    public init() {}
-    deinit { stop() }
+    init(defaults: UserDefaults? = nil, clock: PausaClock = .system) {
+        self.injectedDefaults = defaults
+        self.clock = clock
+    }
+
+    public convenience init() {
+        self.init(defaults: nil, clock: .system)
+    }
+
+    deinit {
+        if let t = timer {
+            if timerSuspended { t.resume() }
+            t.cancel()
+        }
+        for (c, o) in observers { c.removeObserver(o) }
+    }
 
     public func start() {
         guard timer == nil else { return }
         observeAway()
+        observeFocusFilter()
         MicUserMonitor.watchInputMethods()
         let t = DispatchSource.makeTimerSource(queue: queue)
         t.schedule(deadline: .now(), repeating: pollInterval, leeway: .milliseconds(250))
         t.setEventHandler { [weak self] in self?.tick() }
+        timerSuspended = false
         t.resume()
         timer = t
     }
 
     public func stop() {
-        timer?.cancel(); timer = nil
+        if let t = timer {
+            if timerSuspended { t.resume() }
+            t.cancel()
+        }
+        timer = nil
+        timerSuspended = false
         for (c, o) in observers { c.removeObserver(o) }
         observers.removeAll()
     }
 
+    /// Re-evaluates signals immediately (e.g. when an auto-pause setting or Focus Filter toggles).
+    public func refreshNow() {
+        guard timer != nil, !isAway else { return }
+        queue.async { [weak self] in self?.tick() }
+    }
+
     // MARK: polling
 
-    // Settings keys owned by Mitchell's Settings.swift; read directly so Detection does not
-    // depend on the settings UI layer.
+    private var store: UserDefaults { injectedDefaults ?? PausaDefaults.store }
+
     private func flag(_ key: String, default def: Bool) -> Bool {
-        UserDefaults.standard.object(forKey: key) == nil ? def : UserDefaults.standard.bool(forKey: key)
+        let ud = store
+        return ud.object(forKey: key) == nil ? def : ud.bool(forKey: key)
     }
 
     private var lastVideo: (app: NSRunningApplication, at: TimeInterval)?
@@ -76,10 +109,16 @@ public final class PauseDetector: ObservableObject {
     private var meetingApp: NSRunningApplication?
 
     private func tick() {
-        let now = ProcessInfo.processInfo.systemUptime
-        let micOn = AudioInputMonitor.anyPhysicalInputRunning() && (MicUserMonitor.nonInputMethodInUse() ?? true)   // input-method voice typing isn't a meeting
+        let now = clock.uptimeNow()
+        let snap = DetectionSnapshot()
+        let ud = store
+
+        let physicalMic = AudioInputMonitor.anyPhysicalInputRunning()
+        let micSummary = physicalMic ? MicUserMonitor.inspectActiveInputs(snapshot: snap) : .init(nonInputMethodActive: false, apps: [])
+        // Input-method voice typing isn't a meeting; nil (< macOS 14) falls back to device state.
+        let micOn = physicalMic && (micSummary.nonInputMethodActive ?? true)
         let cam = CameraMonitor.anyRunning()
-        let users = micOn ? MicUserMonitor.appsUsingInput() : []
+        let users = micOn ? micSummary.apps : []
         let meetingAppMic = users.contains { ScreenShareMonitor.meetingBundleIDs.contains($0.bundleIdentifier ?? "") }
         let callState = call.update(micOn: micOn, meetingAppMic: meetingAppMic, camera: cam, now: now)
         let inMeeting = callState.reason != nil
@@ -95,17 +134,17 @@ public final class PauseDetector: ObservableObject {
         if let r = callState.reason {
             next.insert(r == .meeting ? .meeting : .micInUse); src[r] = PauseSource(kind: .meeting, app: meetingApp)
         }
-        if let fs = FullscreenMonitor.check() {
+        if let fs = FullscreenMonitor.check(snapshot: snap) {
             next.insert(.fullscreen(appName: fs.appName))
             src[.fullscreen] = PauseSource(kind: .fullscreen, appName: fs.appName, bundleID: fs.bundleID)
         }
 
         // §1 browser video, 2-min grace after the assertion drops (R5, reuses meetingGrace).
-        if flag("pauseForBrowserVideo", default: true) {
-            let videoFront = BrowserVideoMonitor.check()
+        if flag(DefaultsKey.pauseForBrowserVideo, default: true) {
+            let videoFront = BrowserVideoMonitor.check(snapshot: snap)
             if let b = videoFront { lastVideo = (b, now) }
             #if PAUSA_DEV   // DEV only: log the video verdict whenever it changes, with what the front app holds
-            let vFront = NSWorkspace.shared.frontmostApplication
+            let vFront = snap.frontmostApp
             let vNow = vFront.map { "\($0.bundleIdentifier ?? "?")" } ?? "-"
             let vPlaying = videoFront != nil
             if vPlaying != devVideoPlaying {
@@ -121,8 +160,8 @@ public final class PauseDetector: ObservableObject {
         } else { lastVideo = nil }
 
         // §2 screen sharing / recording, same grace.
-        if flag("pauseForScreenSharing", default: true) {
-            switch ScreenShareMonitor.check(inMeeting: micOrCam || inMeeting) {
+        if flag(DefaultsKey.pauseForScreenSharing, default: true) {
+            switch ScreenShareMonitor.check(inMeeting: micOrCam || inMeeting, tracker: &shareTracker, snapshot: snap, now: now) {
             case .sharing(let a)?: lastShare = (.screenSharing(appName: a.localizedName ?? ""), a, now)
             case .recording(let a)?: lastShare = (.recording(appName: a.localizedName ?? ""), a, now)
             case nil: break
@@ -131,19 +170,22 @@ public final class PauseDetector: ObservableObject {
                 next.insert(s.reason)
                 src[.screenSharing] = PauseSource(kind: .screenSharing, app: s.app)
             }
-        } else { lastShare = nil }
+        } else {
+            lastShare = nil
+            shareTracker.browserBarSince = nil
+        }
 
         // §4 typing / dragging: report only kind + cap; the scheduler decides when it matters.
         var defs: [Deferral] = []
-        if flag("pauseWhileTyping", default: true), InputActivityMonitor.isBusy() { defs.append(.typing) }
+        if flag(DefaultsKey.pauseWhileTyping, default: true), InputActivityMonitor.isBusy() { defs.append(.typing) }
         // Mic on, not yet a meeting (dictation, or a call's first minute): a due break waits for it.
-        if callState.micPending, flag("pauseForMeetings", default: true) { defs.append(.microphone) }
+        if callState.micPending, flag(DefaultsKey.pauseForMeetings, default: true) { defs.append(.microphone) }
         // §3 custom apps (15 min cap, shared budget).
-        let custom = CustomPauseAppMonitor.check()
+        let custom = CustomPauseAppMonitor.check(snapshot: snap, defaults: ud)
         if custom != nil { defs.append(.focusApp()) }
-        // §5 macOS Focus (filter itself is on hold; we only read the state it writes).
-        if flag("pauseForFocusMode", default: true), UserDefaults.standard.bool(forKey: "focusFilterActive") {
-            defs.append(.focusMode(shortOnly: UserDefaults.standard.string(forKey: "focusModeScope") != "all"))
+        // §5 macOS Focus Filter (`Metadata.appintents` bundled by App/build-app.sh).
+        if flag(DefaultsKey.pauseForFocusMode, default: true), ud.bool(forKey: DefaultsKey.focusFilterActive) {
+            defs.append(.focusMode(shortOnly: ud.string(forKey: DefaultsKey.focusModeScope) != FocusModeScope.all.rawValue))
         }
 
         DispatchQueue.main.async { [weak self] in
@@ -155,14 +197,21 @@ public final class PauseDetector: ObservableObject {
         }
     }
 
-    /// Adds a soft deferral from another source (focus apps / Focus filter, Mitchell's side).
-    /// Kept here so all sources flow through the same list. Call on main.
+    /// Adds a soft deferral from another source. Kept here so all sources flow through the same list. Call on main.
     public var extraDeferrals: [Deferral] = []
     /// Name of the custom pause app currently matching (for 「已推迟：Xcode 在前台」).
     public private(set) var customAppName: String?
     public var allDeferrals: [Deferral] { deferrals + extraDeferrals }
 
-    // MARK: lock / sleep
+    // MARK: lock / sleep & Focus Filter notifications
+
+    private func observeFocusFilter() {
+        let nc = NotificationCenter.default
+        let o = nc.addObserver(forName: .pausaFocusFilterChanged, object: nil, queue: .main) { [weak self] _ in
+            self?.refreshNow()
+        }
+        observers.append((nc, o))
+    }
 
     private func observeAway() {
         let ws = NSWorkspace.shared.notificationCenter
@@ -187,6 +236,14 @@ public final class PauseDetector: ObservableObject {
         let nowAway = !awayKinds.isEmpty
         guard wasAway != nowAway else { return }
         isAway = nowAway
+        setPollingSuspended(nowAway)
         onAway?(nowAway ? .start(kind) : .end(kind))
+        if !nowAway { refreshNow() }
+    }
+
+    private func setPollingSuspended(_ suspend: Bool) {
+        guard let t = timer, suspend != timerSuspended else { return }
+        timerSuspended = suspend
+        if suspend { t.suspend() } else { t.resume() }
     }
 }

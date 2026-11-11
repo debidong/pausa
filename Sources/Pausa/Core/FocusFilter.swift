@@ -3,8 +3,8 @@ import Foundation
 
 /// macOS Focus Filter. The system calls perform() when a Focus that has
 /// Pausa's filter turns on, and again with default values when it turns off.
-/// NOTE: only visible in System Settings → Focus → Add Filter if the bundle carries
-/// Metadata.appintents (made by Xcode's appintentsmetadataprocessor; not by SwiftPM/CLT).
+/// Bundled into Contents/Resources/Metadata.appintents by App/build-app.sh via
+/// Xcode's `appintentsmetadataprocessor` so System Settings → Focus → Add Filter discovers it.
 /// System Settings shows these strings in the system language, not Pausa's: the English text is the
 /// key, App/zh-Hans.lproj/Localizable.strings has the Chinese (copied by App/build-app.sh).
 @available(macOS 13.0, *)
@@ -20,7 +20,7 @@ struct PausaFocusFilter: SetFocusFilterIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        UserDefaults.standard.set(reduceBreaks, forKey: "focusFilterActive")
+        PausaDefaults.store.set(reduceBreaks, forKey: DefaultsKey.focusFilterActive)
         await MainActor.run {
             FocusFilterStatus.shared.markSeen()
             NotificationCenter.default.post(name: .pausaFocusFilterChanged, object: nil)
@@ -30,6 +30,6 @@ struct PausaFocusFilter: SetFocusFilterIntent {
 }
 
 extension Notification.Name {
-    /// Posted when the Focus Filter turns on/off; read UserDefaults "focusFilterActive".
+    /// Posted when the Focus Filter turns on/off; read `DefaultsKey.focusFilterActive`.
     static let pausaFocusFilterChanged = Notification.Name("pausaFocusFilterChanged")
 }

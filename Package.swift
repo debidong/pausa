@@ -25,5 +25,10 @@ let package = Package(
                 .linkedFramework("SwiftUI"),
             ]
         ),
+        .testTarget(
+            name: "PausaTests",
+            dependencies: ["PausaCore", "Pausa"],
+            path: "Tests/PausaTests"
+        ),
     ]
 )

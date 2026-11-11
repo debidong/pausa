@@ -33,15 +33,15 @@ extension ThemeChoice {
 
 /// 随机: one scene per break, never the same as the previous break. The last pick is kept across launches.
 enum RandomScene {
-    private static let key = "randomSceneLast"
+    private static let key = DefaultsKey.randomSceneLast
     static var current: ThemeChoice {
-        ThemeChoice(rawValue: UserDefaults.standard.string(forKey: key) ?? "") ?? .forest
+        ThemeChoice(rawValue: PausaDefaults.store.string(forKey: key) ?? "") ?? .forest
     }
     /// Call when a break starts. No-op unless 随机 or 我的照片… is selected (the photo's fallback, §3.7).
     static func roll() {
         guard [.random, .photo].contains(Settings.shared.theme) else { return }
         let next = pick(after: current)
-        UserDefaults.standard.set(next.rawValue, forKey: key)
+        PausaDefaults.store.set(next.rawValue, forKey: key)
     }
     static func pick(after last: ThemeChoice?, using g: inout some RandomNumberGenerator) -> ThemeChoice {
         ThemeChoice.scenes.filter { $0 != last }.randomElement(using: &g)!

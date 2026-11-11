@@ -25,7 +25,7 @@ enum PhotoImport {
     static let jpegQuality = 0.9
     static let fileName = "my-photo.jpg"
     static let tempName = "my-photo.tmp.jpg"
-    static let extraDimKey = "photoExtraDim"
+    static let extraDimKey = DefaultsKey.photoExtraDim
     static let allowedTypes: Set<String> = [UTType.jpeg.identifier, UTType.png.identifier, UTType.heic.identifier]
 
     /// ~/Library/Application Support/<appName>/ (the dev build keeps its own, like BreakLog).
@@ -53,7 +53,7 @@ enum PhotoImport {
             let outcome = importPhoto(url, aspect: aspect)
             DispatchQueue.main.async {
                 if case .success(let dim) = outcome {
-                    UserDefaults.standard.set(dim, forKey: extraDimKey)
+                    PausaDefaults.store.set(dim, forKey: extraDimKey)
                     Settings.shared.theme = .photo   // last (§3.3 step 7)
                 }
                 completion(outcome)

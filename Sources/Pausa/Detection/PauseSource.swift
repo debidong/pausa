@@ -53,6 +53,12 @@ public struct PauseSource: Hashable {
 /// Which app is using a microphone. Public CoreAudio process objects (macOS 14+), query only,
 /// no microphone permission. Helper processes (e.g. Chrome Helper) map to their parent app.
 enum MicUserMonitor {
+    struct InputSummary {
+        /// `nil` on < macOS 14 where process-level audio state isn't exposed (caller falls back to device state).
+        let nonInputMethodActive: Bool?
+        let apps: [NSRunningApplication]
+    }
+
     /// Pids currently recording from an input device; nil when the API is unavailable (< macOS 14).
     static func inputPids() -> [pid_t]? {
         guard #available(macOS 14.0, *) else { return nil }
@@ -92,7 +98,11 @@ enum MicUserMonitor {
     /// Text Input Sources must be read on the main thread: macOS 27.2 asserts the main queue inside
     /// TISCreateInputSourceList and kills the process. Read there, at start and whenever the enabled
     /// input sources change; the detector queue only reads this copy.
-    private final class IMCache: @unchecked Sendable { let lock = NSLock(); var ids: Set<String> = [] }
+    private final class IMCache: @unchecked Sendable {
+        let lock = NSLock()
+        var ids: Set<String> = []
+        var observerInstalled = false
+    }
     private static let imCache = IMCache()
 
     static func inputMethodBundleIDs() -> Set<String> {
@@ -101,6 +111,12 @@ enum MicUserMonitor {
     }
 
     static func watchInputMethods() {
+        imCache.lock.lock()
+        let already = imCache.observerInstalled
+        imCache.observerInstalled = true
+        imCache.lock.unlock()
+        guard !already else { return }
+
         DispatchQueue.main.async {
             reloadInputMethods()
             DistributedNotificationCenter.default().addObserver(
@@ -120,20 +136,27 @@ enum MicUserMonitor {
         imCache.lock.lock(); imCache.ids = out; imCache.lock.unlock()
     }
 
+    /// Single-pass evaluation of CoreAudio process objects + running-app resolution for one tick.
+    static func inspectActiveInputs(snapshot: DetectionSnapshot? = nil) -> InputSummary {
+        guard let pids = inputPids() else { return InputSummary(nonInputMethodActive: nil, apps: []) }
+        let nonIMPids = pids.filter { !isInputMethod($0) }
+        guard !nonIMPids.isEmpty else { return InputSummary(nonInputMethodActive: false, apps: []) }
+        let apps = (snapshot ?? DetectionSnapshot()).runningApps
+        var out: [NSRunningApplication] = []
+        for pid in nonIMPids {
+            if let app = owningApp(pid, apps: apps), !out.contains(app) { out.append(app) }
+        }
+        return InputSummary(nonInputMethodActive: true, apps: out)
+    }
+
     /// Is anything other than an input method recording? nil = can't tell (fall back to device state).
     static func nonInputMethodInUse() -> Bool? {
         guard let pids = inputPids() else { return nil }
         return pids.contains { !isInputMethod($0) }
     }
 
-    static func appsUsingInput() -> [NSRunningApplication] {
-        guard let pids = inputPids() else { return [] }
-        let apps = NSWorkspace.shared.runningApplications
-        var out: [NSRunningApplication] = []
-        for pid in pids where !isInputMethod(pid) {
-            if let app = owningApp(pid, apps: apps), !out.contains(app) { out.append(app) }
-        }
-        return out
+    static func appsUsingInput(snapshot: DetectionSnapshot? = nil) -> [NSRunningApplication] {
+        inspectActiveInputs(snapshot: snapshot).apps
     }
 
     /// The regular app a pid belongs to (itself, an ancestor, or the outer .app bundle).

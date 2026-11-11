@@ -8,6 +8,22 @@ import CoreGraphics
 enum ScreenShareMonitor {
     enum Kind: Equatable { case sharing(app: NSRunningApplication), recording(app: NSRunningApplication) }
 
+    /// Instance-owned persistence state for the Chromium share bar so background detector ticks
+    /// never race on unprotected global variables.
+    struct Tracker: Sendable, Equatable {
+        var browserBarSince: TimeInterval?
+
+        mutating func acceptBrowserBar(seen: Bool, inMeeting: Bool, now: TimeInterval,
+                                       persistence: TimeInterval = ScreenShareMonitor.barPersistence) -> Bool {
+            guard seen, inMeeting else {
+                browserBarSince = nil
+                return false
+            }
+            if browserBarSince == nil { browserBarSince = now }
+            return now - (browserBarSince ?? now) >= persistence
+        }
+    }
+
     static let recorderBundleIDs: Set<String> = [
         "com.obsproject.obs-studio", "pl.maketheweb.cleanshotx", "com.loom.desktop",
         "net.telestream.screenflow10", "net.telestream.screenflow11", "com.wulkano.kap",
@@ -21,17 +37,34 @@ enum ScreenShareMonitor {
         "com.google.Chrome", "company.thebrowser.Browser", "com.microsoft.edgemac", "com.brave.Browser",
     ]
 
-    private static var browserBarSince: TimeInterval?
     /// §9: the browser share bar must persist this long before it counts.
-    static var barPersistence: TimeInterval = 3
+    static let barPersistence: TimeInterval = 3
+
+    private final class DefaultTrackerBox: @unchecked Sendable {
+        let lock = NSLock()
+        var tracker = Tracker()
+    }
+    private static let defaultTracker = DefaultTrackerBox()
+
+    /// Convenience entry for one-shot debug CLI checks (`--debug-detect`).
+    static func check(inMeeting: Bool, snapshot: DetectionSnapshot? = nil,
+                      now: TimeInterval = ProcessInfo.processInfo.systemUptime) -> Kind? {
+        defaultTracker.lock.lock()
+        defer { defaultTracker.lock.unlock() }
+        return check(inMeeting: inMeeting, tracker: &defaultTracker.tracker, snapshot: snapshot, now: now)
+    }
 
     /// `inMeeting`: existing mic/camera signal (§9 ⑤), required to accept the browser-bar signal.
-    static func check(inMeeting: Bool) -> Kind? {
-        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID)
-                as? [[String: Any]] else { return nil }
-        let apps = NSWorkspace.shared.runningApplications
-        let byPID = Dictionary(apps.map { ($0.processIdentifier, $0) }, uniquingKeysWith: { a, _ in a })
-        let screens = FullscreenMonitor.activeDisplayBounds()
+    static func check(inMeeting: Bool, tracker: inout Tracker, snapshot: DetectionSnapshot? = nil,
+                      now: TimeInterval = ProcessInfo.processInfo.systemUptime) -> Kind? {
+        let snap = snapshot ?? DetectionSnapshot()
+        let list = snap.onScreenWindows
+        if list.isEmpty {
+            _ = tracker.acceptBrowserBar(seen: false, inMeeting: inMeeting, now: now)
+            return nil
+        }
+        let byPID = snap.appsByPID
+        let screens = snap.displayBounds
         var barSeen: NSRunningApplication?
         var result: Kind?
 
@@ -60,11 +93,10 @@ enum ScreenShareMonitor {
             }
         }
 
-        let now = ProcessInfo.processInfo.systemUptime
-        if let b = barSeen, inMeeting {
-            if browserBarSince == nil { browserBarSince = now }
-            if now - (browserBarSince ?? now) >= barPersistence, result == nil { result = .sharing(app: b) }
-        } else { browserBarSince = nil }
+        if tracker.acceptBrowserBar(seen: barSeen != nil, inMeeting: inMeeting, now: now),
+           let b = barSeen, result == nil {
+            result = .sharing(app: b)
+        }
         return result
     }
     // replayd is NOT a signal: it stays resident after any recording/share (false

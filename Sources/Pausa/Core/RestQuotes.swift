@@ -49,7 +49,7 @@ enum RestQuotes {
     }
 
     /// Picks, records, and returns the next line in the current app language (nil if no data).
-    static func next(_ part: BreakDaypart, defaults d: UserDefaults = .standard, now: Date = Date(),
+    static func next(_ part: BreakDaypart, defaults d: UserDefaults = PausaDefaults.store, now: Date = Date(),
                      random: (Int) -> Int = { Int.random(in: 0..<$0) }) -> String? {
         let p = pool(part)
         guard !p.isEmpty else { return nil }

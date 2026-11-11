@@ -2,18 +2,19 @@ import AppKit
 import SwiftUI
 import PausaCore
 import Combine
+import os
 
 /// Status item: countdown to the next break, text only.
 /// Click opens a SwiftUI popover (MenuPopoverView); settings / pause / quit live in its gear menu.
 @MainActor
 final class MenuBarController: NSObject {
     private let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    private let app: AppController
+    let app: AppController
     private let popover = NSPopover()
     private let model = PopoverModel()
     private var lastTitle = ""
     private var lastIconKey = ""
-    private var settingsWindow: NSWindow?
+    var settingsWindow: NSWindow?
     private var langSub: AnyCancellable?
     private var dockSub: AnyCancellable?
     private var themeSub: AnyCancellable?
@@ -73,7 +74,7 @@ final class MenuBarController: NSObject {
         popover.contentViewController = host
     }
 
-    @objc private func togglePopover() {
+    @objc func togglePopover() {
         guard let button = item.button else { return }
         if popover.isShown { popover.performClose(nil); return }
         refresh()
@@ -116,9 +117,9 @@ final class MenuBarController: NSObject {
     }
 
     func showWelcomeOnce() {
-        let d = UserDefaults.standard
-        guard !d.bool(forKey: "didShowWelcome") else { return }
-        d.set(true, forKey: "didShowWelcome")
+        let d = PausaDefaults.store
+        guard !d.bool(forKey: DefaultsKey.didShowWelcome) else { return }
+        d.set(true, forKey: DefaultsKey.didShowWelcome)
         let visible = iconVisible
         let text = visible ? L("menu.welcome", Self.welcomeDuration(app.scheduler.next.remaining))
                            : L(Self.hiddenHint)
@@ -263,76 +264,6 @@ final class MenuBarController: NSObject {
     static weak var shared: MenuBarController?
     static func showAbout() { shared?.showSettings(page: .about) }
 
-#if DEBUG
-    /// `--capture-menu out.png [--paused] [--meeting]`: open the real popover, screenshot it, exit.
-    func captureMenu(to path: String, paused: Bool, meeting: Bool = false) {
-        if paused { app.pause() }
-        if meeting { app.simulateReasons([.meeting]) }
-        DispatchQueue.main.asyncAfter(deadline: .now() + (meeting ? 1.5 : 0.3)) {
-            if meeting { self.app.simulateReasons([.meeting]) }
-            self.togglePopover()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                let sc = Process()
-                sc.executableURL = URL(fileURLWithPath: "/usr/sbin/screencapture")
-                sc.arguments = ["-x", path]
-                try? sc.run(); sc.waitUntilExit()
-                if paused { self.app.resume() }
-                print(path); exit(0)
-            }
-        }
-    }
-
-    /// `--verify-lang-switch`: open Settings, switch language vi → zh-Hans in-process, print the sidebar,
-    /// toolbar and menu text after each switch, restore the saved language, exit.
-    func verifyLanguageSwitch() {
-        let original = app.settings.language
-        showSettings(page: .breaks)
-        func texts(_ v: NSView) -> [String] {
-            guard let t = v as? NSTableView else { return [] }
-            return (0..<t.numberOfRows).map { r in
-                guard let row = t.rowView(atRow: r, makeIfNecessary: true) else { return "?" }
-                func walk(_ x: NSView) -> [String] {
-                    var o: [String] = []
-                    if let f = x as? NSTextField { o.append(f.stringValue) }
-                    if let l = x.accessibilityLabel(), !l.isEmpty { o.append(l) }
-                    for e in x.accessibilityChildren() ?? [] {
-                        if let ev = e as? NSView { o += walk(ev) }
-                        else if let el = e as? NSAccessibilityElement, let l = el.accessibilityLabel() { o.append(l) }
-                    }
-                    return o + x.subviews.flatMap(walk)
-                }
-                return Array(Set(walk(row))).joined(separator: "/")
-            }
-        }
-        func dump(_ tag: String) {
-            guard let frame = settingsWindow?.contentView?.superview else { return }
-            func all(_ v: NSView) -> [NSView] { [v] + v.subviews.flatMap(all) }
-            let side = all(frame).first { $0 is NSTableView && $0.frame.width < 250 }
-            print("[\(tag)] sidebar rows:", side.map { texts($0).count } ?? 0)
-            if let v = side, let rep = v.bitmapImageRepForCachingDisplay(in: v.bounds) {
-                v.cacheDisplay(in: v.bounds, to: rep)
-                let out = "/tmp/pausa-sidebar-\(tag).png"
-                try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out))
-                print("[\(tag)] sidebar image:", out)
-            }
-            print("[\(tag)] toolbar title:", settingsWindow?.title ?? "-", "| popover:", MenuPopoverView.kindTitle(.short), L("menu.breakNow"), L("menu.postpone", 5))
-        }
-        var steps: [(TimeInterval, () -> Void)] = [
-            (1.0, { self.app.settings.language = .vi }),
-            (1.5, { dump("vi") }),
-            (0.2, { self.app.settings.language = .zhHans }),
-            (1.5, { dump("zh-Hans") }),
-            (0.2, { self.app.settings.language = original; exit(0) }),
-        ]
-        func next() {
-            guard !steps.isEmpty else { return }
-            let (d, f) = steps.removeFirst()
-            DispatchQueue.main.asyncAfter(deadline: .now() + d) { f(); next() }
-        }
-        next()
-    }
-#endif
-
     @objc func openSettings() { IconHint.shared.hidden = false; showSettings(page: nil) }
 
     /// Reopen (Dock click, launching Pausa again): Settings, with a note on top when the icon can't be seen.
@@ -385,11 +316,11 @@ final class IconHint: ObservableObject {
     @Published var hidden = false
 }
 
-/// Last-viewed tab (UserDefaults "settingsTab"); the first tab on first open.
+/// Last-viewed tab (DefaultsKey.settingsTab); the first tab on first open.
 final class SettingsNav: ObservableObject {
     static let shared = SettingsNav()
-    @Published var page: SettingsPage = SettingsPage(saved: UserDefaults.standard.string(forKey: "settingsTab") ?? "") ?? .breaks {
-        didSet { if !Settings.dryRun { UserDefaults.standard.set(page.rawValue, forKey: "settingsTab") } }
+    @Published var page: SettingsPage = SettingsPage(saved: PausaDefaults.store.string(forKey: DefaultsKey.settingsTab) ?? "") ?? .breaks {
+        didSet { PausaDefaults.store.set(page.rawValue, forKey: DefaultsKey.settingsTab) }
     }
 }
 
@@ -401,7 +332,7 @@ struct SettingsView: View {
     /// Debug renders only (`--render-settings … --theme ocean`): never persisted.
     static var themeOverride: ThemeChoice?
     /// Minimum content width (round 7c rev 2: the window starts 500 pt wide and can grow).
-    static let width: CGFloat = 500
+    nonisolated static let width: CGFloat = 500
 
     @ObservedObject private var hint = IconHint.shared
 
@@ -456,7 +387,7 @@ final class SettingsTabsController: NSTabViewController {
         let h = screen?.visibleFrame.height ?? goldenSize.height
         return NSSize(width: goldenSize.width, height: max(minimumSize.height, min(goldenSize.height, h)))
     }
-    static let autosave = "PausaSettingsFrame.v3"
+    nonisolated static let autosave = "PausaSettingsFrame.v3"
     static let legacyAutosaves = ["PausaSettingsWindow", "PausaSettingsFrame.v2"]
     private let settings: Settings
     private var resizeObserver: Any?
@@ -609,18 +540,15 @@ final class SettingsTabsController: NSTabViewController {
         v.subviews.forEach(scrollToTop)
     }
 
-    /// Round 7c diagnostics: the real frame per tab, whenever the user opens Settings or switches tabs.
-    /// ~/Library/Logs/Pausa/settings-frames.log
+    /// Diagnostics in debug builds only: emit tab/frame layout to unified logging (no unbounded disk files).
     func logFrame(_ event: String) {
+        #if DEBUG
         guard let w = view.window, !Settings.dryRun else { return }
-        let dir = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Logs/" + appName)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let url = dir.appendingPathComponent("settings-frames.log")
         let f = w.frame, c = w.contentView?.frame.size ?? .zero
-        let line = "\(ISO8601DateFormatter().string(from: Date())) \(event) tab=\(SettingsNav.shared.page.rawValue) "
-            + "frame=\(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height)) content=\(Int(c.width))x\(Int(c.height))\n"
-        if let h = try? FileHandle(forWritingTo: url) { h.seekToEndOfFile(); h.write(Data(line.utf8)); try? h.close() }
-        else { try? Data(line.utf8).write(to: url) }
+        Logger(subsystem: "app.pausa", category: "settings").debug(
+            "\(event, privacy: .public) tab=\(SettingsNav.shared.page.rawValue, privacy: .public) frame=\(Int(f.minX)),\(Int(f.minY)) \(Int(f.width))x\(Int(f.height)) content=\(Int(c.width))x\(Int(c.height))"
+        )
+        #endif
     }
 }
 
@@ -941,247 +869,6 @@ extension View {
         tint(theme.accent).environment(\.pausaAccent, theme.accent)
     }
 }
-
-#if DEBUG
-/// `Pausa --render-settings out.png [--all-pages]`: each settings page, light and dark, drawn offscreen.
-/// No window is ever shown or made key: the page is laid out in an NSHostingView inside a borderless
-/// window that is never ordered in, then drawn with cacheDisplay. The toolbar itself (window chrome)
-/// can't be drawn this way; it is only visible on the real Mac.
-enum SettingsSnapshot {
-    @MainActor static func write(to path: String, pages: Bool) {
-        NSApplication.shared.setActivationPolicy(.prohibited)
-        for p in pages ? SettingsPage.allCases : [SettingsNav.shared.page] {
-            for (name, ap) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
-                let h = SettingsView.contentHeight(.shared, p)
-                draw(AnyView(SettingsView(settings: .shared, page: p).scrollDisabled(true)), width: SettingsView.width, height: h, ap,
-                     path.replacingOccurrences(of: ".png", with: "-\(p.rawValue)-\(name).png"))
-            }
-        }
-        guard pages else { return }
-        // 特定日期 editor (sheet content only; the sheet chrome is real-Mac only).
-        let ed = ScheduleEditor.shared
-        for (tag, key, kind) in [("date-edit", DateKey(y: 2026, m: 10, d: 11) as DateKey?, DayKind.work), ("date-new", nil, DayKind.off)] {
-            ed.editDate(key, key == nil ? nil : kind)
-            guard let t = ed.target else { continue }
-            for (name, ap) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
-                draw(AnyView(DateSheet(settings: .shared, editor: ed, t: t)), width: 400, height: 230, ap,
-                     path.replacingOccurrences(of: ".png", with: "-\(tag)-\(name).png"))
-            }
-        }
-        ed.target = nil
-    }
-    @MainActor static func draw(_ v: AnyView, width: CGFloat, height h: CGFloat, _ ap: NSAppearance.Name, _ out: String) {
-        do { do {
-                let host = NSHostingView(rootView: v
-                    .frame(height: h).background(Color(nsColor: .windowBackgroundColor))
-                    .toggleStyle(SnapshotSwitchStyle()))   // offscreen: AppKit switches draw inactive (grey)
-                host.appearance = NSAppearance(named: ap)
-                host.frame = NSRect(x: 0, y: 0, width: width, height: h)
-                let w = SnapshotWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: true)
-                w.appearance = host.appearance
-                w.contentView = host          // never ordered in: nothing appears on screen
-                RunLoop.main.run(until: Date().addingTimeInterval(0.4))
-                host.layoutSubtreeIfNeeded(); host.display()
-                guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
-                host.cacheDisplay(in: host.bounds, to: rep)
-                try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out))
-                print(out)
-                w.contentView = nil
-            }
-        }
-    }
-}
-
-/// Offscreen renders only: an offscreen window's NSSwitch always draws as in an inactive app (grey when on),
-/// so snapshots draw the switch in SwiftUI at the same size, filled with the theme accent when on.
-struct SnapshotSwitchStyle: ToggleStyle {
-    @Environment(\.pausaAccent) private var accent
-    func makeBody(configuration c: Configuration) -> some View {
-        LabeledContent {
-            ZStack(alignment: c.isOn ? .trailing : .leading) {
-                Capsule().fill(c.isOn ? accent : Color(nsColor: .quaternaryLabelColor))
-                Circle().fill(.white).shadow(color: .black.opacity(0.25), radius: 0.5, y: 0.5).padding(1.5)
-            }
-            .frame(width: 26, height: 15)
-        } label: { c.label }
-    }
-}
-
-/// Offscreen snapshot window that claims key/main so controls draw in their active colours.
-final class SnapshotWindow: NSWindow {
-    override var isKeyWindow: Bool { true }
-    override var isMainWindow: Bool { true }
-}
-
-/// `Pausa --render-menu out.png [--lang en]`: the menu-bar popover offscreen, light and dark, in a set of
-/// sample states (normal, postpone used up, long next, at the hard line, paused).
-enum MenuSnapshot {
-    static var samples: [(String, PopoverState)] {
-        var normal = PopoverState()   // short break: 10-minute allowance, so no 15
-        normal.kind = .short; normal.length = 20; normal.remaining = 276; normal.show15 = false
-        var used = normal               // allowance used up: 5 greyed
-        used.remaining = 876; used.can5 = false; used.can15 = false
-        var long = normal               // 30-minute allowance, 20 used: 15 greyed
-        long.kind = .long; long.length = 300; long.remaining = 728; long.show15 = true; long.can15 = false
-        var longFree = long             // nothing used yet
-        longFree.can15 = true
-        var limit = long                // hard line: only 现在休息 (暂停提醒 stays)
-        limit.hardLine = true; limit.can5 = false; limit.can15 = false
-        var paused = normal
-        paused.held = true; paused.status = PauseReason.meeting.pausedText; paused.can5 = false; paused.can15 = false
-        paused.autoPaused = true
-        var manual = normal              // 暂停提醒 pressed: the same button reads 恢复提醒
-        manual.held = true; manual.status = L("status.pausedFor", StatsText.duration(2 * 3600 + 10 * 60)); manual.can5 = false; manual.can15 = false
-        manual.manualPaused = true
-        var out = [("1-normal", normal), ("2-used", used), ("3-long", long), ("3b-long-free", longFree), ("4-limit", limit), ("5-paused", paused), ("6-manual-paused", manual)]
-        // PauseSource: one paused state per kind with that app's icon (Safari when the app isn't installed),
-        // a browser meeting (browser name + icon) and an unknown app (text only, no parentheses).
-        func app(_ name: String, _ id: String) -> (String, String) {
-            NSWorkspace.shared.urlForApplication(withBundleIdentifier: id) != nil ? (name, id) : ("Safari", "com.apple.Safari")
-        }
-        let z = app("Zoom", "us.zoom.xos"), t = app("腾讯会议", "com.tencent.meeting"), v = app("IINA", "com.colliderli.iina")
-        let k = app("Keynote", "com.apple.iWork.Keynote"), c = app("Google Chrome", "com.google.Chrome")
-        let srcs: [(String, PauseSource)] = [
-            ("meeting", PauseSource(kind: .meeting, appName: z.0, bundleID: z.1)),
-            ("meeting-browser", PauseSource(kind: .meeting, appName: c.0, bundleID: c.1)),
-            ("sharing", PauseSource(kind: .screenSharing, appName: t.0, bundleID: t.1)),
-            ("video", PauseSource(kind: .video, appName: v.0, bundleID: v.1)),
-            ("fullscreen", PauseSource(kind: .fullscreen, appName: k.0, bundleID: k.1)),
-            ("unknown", PauseSource(kind: .meeting)),
-        ]
-        for (tag, src) in srcs {
-            var p = paused; p.status = src.statusText; p.statusAppID = src.bundleID; p.statusAppName = src.displayName
-            out.append(("7-source-\(tag)", p))
-        }
-        return out
-    }
-
-    /// Menu-bar item in both 菜单栏图标 modes on a light and a dark bar (offscreen stand-in for the bar).
-    @MainActor static func writeBar(to path: String) {
-        for (name, dark) in [("light", false), ("dark", true)] {
-            do {
-                let view = Text(MenuBarController.menuTitle(276)).font(.system(size: 13).monospacedDigit())
-                .foregroundColor(dark ? .white : .black)
-                .padding(.horizontal, 8).frame(height: 24)
-                .padding(.horizontal, 40)
-                .background(dark ? Color(white: 0.17) : Color(white: 0.93))
-                let r = ImageRenderer(content: view); r.scale = 2
-                let out = path.replacingOccurrences(of: ".png", with: "-bar-\(name).png")
-                if let img = r.nsImage, let t = img.tiffRepresentation, let rep = NSBitmapImageRep(data: t) {
-                    try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out)); print(out)
-                }
-            }
-            // 倒计时 ring: running (fraction 0.4), paused (dashed), warning (accent).
-            for (tag, f, p, w) in [("ring-running", 0.4, false, false), ("ring-paused", 0.0, true, false), ("ring-warning", 0.95, false, true)] {
-                let icon = MenuBarController.icon(fraction: Double(ringStep(fraction: f, paused: p)) / 24, paused: p, warning: w)
-                let tint: Color = dark ? .white : .black
-                let view = Group {
-                    if icon.isTemplate { Image(nsImage: icon).renderingMode(.template).foregroundColor(tint) } else { Image(nsImage: icon) }
-                }
-                .frame(width: 22, height: 24).padding(.horizontal, 40)
-                .background(dark ? Color(white: 0.17) : Color(white: 0.93))
-                let r = ImageRenderer(content: view); r.scale = 2
-                let out = path.replacingOccurrences(of: ".png", with: "-bar-\(tag)-\(name).png")
-                if let img = r.nsImage, let t = img.tiffRepresentation, let rep = NSBitmapImageRep(data: t) {
-                    try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out)); print(out)
-                }
-            }
-        }
-    }
-
-    @MainActor static func write(to path: String) {
-        NSApplication.shared.setActivationPolicy(.prohibited)
-        for (tag, st) in samples {
-            for (name, ap) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
-                let model = PopoverModel(); model.state = st
-                let host = NSHostingView(rootView: MenuPopoverView(model: model).pausaTheme(SettingsView.themeOverride ?? Settings.shared.theme)
-                    .background(Color(nsColor: .windowBackgroundColor)))
-                host.appearance = NSAppearance(named: ap)
-                host.frame = NSRect(origin: .zero, size: host.fittingSize)
-                let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-                w.appearance = NSAppearance(named: ap)
-                w.contentView = host
-                RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-                host.layoutSubtreeIfNeeded(); host.display()
-                guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { continue }
-                host.cacheDisplay(in: host.bounds, to: rep)
-                let out = path.replacingOccurrences(of: ".png", with: "-\(tag)-\(name).png")
-                try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out))
-                print(out)
-            }
-        }
-    }
-}
-
-
-/// `Pausa --render-settings-switch out.png A B`: one live SettingsView rendered under theme A, then the theme is
-/// switched in-process to B and the SAME view re-rendered. Restores the user's theme afterwards.
-enum ThemeSwitchSnapshot {
-    @MainActor static func write(to path: String, from a: ThemeChoice, to b: ThemeChoice) {
-        NSApplication.shared.setActivationPolicy(.prohibited)
-        let original = Settings.shared.theme
-        defer { Settings.shared.theme = original }
-        Settings.shared.theme = a
-        let host = NSHostingView(rootView: SettingsView(settings: .shared, page: .general))
-        host.appearance = NSAppearance(named: .aqua)
-        host.frame = NSRect(origin: .zero, size: host.fittingSize)
-        let w = NSWindow(contentRect: host.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-        w.contentView = host
-        func snap(_ tag: String) {
-            RunLoop.main.run(until: Date().addingTimeInterval(0.3))
-            host.layoutSubtreeIfNeeded(); host.display()
-            guard let rep = host.bitmapImageRepForCachingDisplay(in: host.bounds) else { return }
-            host.cacheDisplay(in: host.bounds, to: rep)
-            let out = path.replacingOccurrences(of: ".png", with: "-\(tag).png")
-            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out))
-            print(out)
-        }
-        snap("1-\(a.rawValue)")
-        Settings.shared.theme = b
-        snap("2-\(b.rawValue)")
-    }
-}
-
-/// `Pausa --render-interval-menu out.png [--lang en]`: the 休息间隔 menu items (title + enabled state) drawn
-/// as a menu, light and dark. Debug only: an open NSMenu can't be captured without screen-recording permission.
-enum IntervalMenuSnapshot {
-    @MainActor static func write(to path: String) {
-        NSApplication.shared.setActivationPolicy(.accessory)
-        // SwiftUI builds the pop-up's NSMenu only when it opens, so draw the items from the exact
-        // options and predicate the 休息间隔 menu uses.
-        let cur = Settings.shared.shortEveryMin
-        let items = Settings.shortEveryOptions.map { (title: L("unit.minutes", $0), enabled: !BreaksPage.intervalDisabled($0), on: $0 == cur) }
-        for it in items { print(it.enabled ? "  enabled " : "  GREYED  ", it.on ? "✓" : " ", it.title) }
-        for (name, ap) in [("light", NSAppearance.Name.aqua), ("dark", NSAppearance.Name.darkAqua)] {
-            let view = VStack(alignment: .leading, spacing: 0) {
-                ForEach(items.indices, id: \.self) { i in
-                    HStack(spacing: 6) {
-                        Text(items[i].on ? "✓" : "").frame(width: 12)
-                        Text(items[i].title).foregroundColor(items[i].enabled ? .primary : .secondary.opacity(0.6))
-                    }
-                    .font(.system(size: 13)).padding(.horizontal, 8).frame(height: 22)
-                }
-            }
-            .padding(.vertical, 5).frame(width: 140, alignment: .leading)
-            .background(RoundedRectangle(cornerRadius: 6).fill(Color(nsColor: .windowBackgroundColor)))
-            .padding(8)
-            .environment(\.locale, AppLanguage.current.locale)
-            let h = NSHostingView(rootView: view)
-            h.appearance = NSAppearance(named: ap)
-            h.frame = NSRect(origin: .zero, size: h.fittingSize)
-            let win = NSWindow(contentRect: h.frame, styleMask: [.borderless], backing: .buffered, defer: false)
-            win.appearance = NSAppearance(named: ap); win.contentView = h
-            RunLoop.main.run(until: Date().addingTimeInterval(0.2))
-            h.layoutSubtreeIfNeeded(); h.display()
-            guard let rep = h.bitmapImageRepForCachingDisplay(in: h.bounds) else { continue }
-            h.cacheDisplay(in: h.bounds, to: rep)
-            let out = path.replacingOccurrences(of: ".png", with: "-\(name).png")
-            try? rep.representation(using: .png, properties: [:])?.write(to: URL(fileURLWithPath: out))
-            print(out)
-        }
-    }
-}
-#endif
 
 /// Hidden-icon welcome bubble: closes on click.
 private final class WelcomePanel: NSPanel {

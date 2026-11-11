@@ -92,10 +92,10 @@ extension CustomPauseMode {
 /// the filter's perform() marks it the first time the system calls it.
 final class FocusFilterStatus: ObservableObject {
     static let shared = FocusFilterStatus()
-    @Published var configured = UserDefaults.standard.bool(forKey: "focusFilterSeen")
+    @Published var configured = PausaDefaults.store.bool(forKey: DefaultsKey.focusFilterSeen)
     func markSeen() {
         guard !configured else { return }
-        UserDefaults.standard.set(true, forKey: "focusFilterSeen"); configured = true
+        PausaDefaults.store.set(true, forKey: DefaultsKey.focusFilterSeen); configured = true
     }
     static func openSystemSettings() {
         for s in ["x-apple.systempreferences:com.apple.Focus-Settings.extension", "x-apple.systempreferences:com.apple.preference.notifications"] {

@@ -28,18 +28,20 @@ enum FullscreenMonitor {
     struct Result { let appName: String; let bundleID: String }
 
     /// Returns the pausing fullscreen app, or nil.
-    static func check() -> Result? {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
+    static func check(snapshot: DetectionSnapshot? = nil) -> Result? {
+        let snap = snapshot ?? DetectionSnapshot()
+        guard let app = snap.frontmostApp else { return nil }
         let bid = app.bundleIdentifier ?? ""
         guard isAllowlisted(app) else { return nil }
-        guard frontmostCoversDisplay(pid: app.processIdentifier) else { return nil }
+        guard frontmostCoversDisplay(pid: app.processIdentifier, snapshot: snap) else { return nil }
         return Result(appName: app.localizedName ?? bid, bundleID: bid)
     }
 
     /// Debug helper: does the frontmost app cover a display, regardless of allowlist?
     static func frontmostCoversDisplay() -> (app: String, covers: Bool, allowlisted: Bool)? {
-        guard let app = NSWorkspace.shared.frontmostApplication else { return nil }
-        return (app.localizedName ?? "?", frontmostCoversDisplay(pid: app.processIdentifier), isAllowlisted(app))
+        let snap = DetectionSnapshot()
+        guard let app = snap.frontmostApp else { return nil }
+        return (app.localizedName ?? "?", frontmostCoversDisplay(pid: app.processIdentifier, snapshot: snap), isAllowlisted(app))
     }
 
     static func isAllowlisted(_ app: NSRunningApplication) -> Bool {
@@ -47,23 +49,27 @@ enum FullscreenMonitor {
         return isGame(app)
     }
 
-    private static var categoryCache: [String: Bool] = [:]
-    private static let cacheLock = NSLock()
+    private final class CategoryCache: @unchecked Sendable {
+        let lock = NSLock()
+        var map: [String: Bool] = [:]
+    }
+    private static let categoryCache = CategoryCache()
 
     static func isGame(_ app: NSRunningApplication) -> Bool {
         guard let url = app.bundleURL else { return false }
         let key = url.path
-        cacheLock.lock(); defer { cacheLock.unlock() }
-        if let v = categoryCache[key] { return v }
+        categoryCache.lock.lock(); defer { categoryCache.lock.unlock() }
+        if let v = categoryCache.map[key] { return v }
         let cat = (Bundle(url: url)?.object(forInfoDictionaryKey: "LSApplicationCategoryType") as? String) ?? ""
         let v = cat.hasPrefix("public.app-category.") && cat.contains("games")
-        categoryCache[key] = v
+        categoryCache.map[key] = v
         return v
     }
 
-    static func frontmostCoversDisplay(pid: pid_t) -> Bool {
-        guard let list = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] else { return false }
-        let displays = activeDisplayBounds()
+    static func frontmostCoversDisplay(pid: pid_t, snapshot: DetectionSnapshot? = nil) -> Bool {
+        let snap = snapshot ?? DetectionSnapshot()
+        let list = snap.onScreenWindows
+        let displays = snap.displayBounds
         for w in list {
             guard (w[kCGWindowOwnerPID as String] as? pid_t) == pid,
                   let layer = w[kCGWindowLayer as String] as? Int, layer >= 0, layer < Int(CGWindowLevelForKey(.mainMenuWindow)),

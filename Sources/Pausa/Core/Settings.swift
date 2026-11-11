@@ -102,7 +102,9 @@ extension Notification.Name {
 
 final class Settings: ObservableObject {
     static let shared = Settings()
-    private let d = UserDefaults.standard
+    private let injectedDefaults: UserDefaults?
+    private var d: UserDefaults { injectedDefaults ?? PausaDefaults.store }
+    private var isIsolated: Bool { injectedDefaults != nil || Self.dryRun }
     var onChange: ((Config) -> Void)?
 
     // Allowed steps (ranges reviewed by 华佗); first value of each pair is the recommended default.
@@ -155,7 +157,7 @@ final class Settings: ObservableObject {
     /// Pausa 时段. Disabled by default = always active, so existing users see no change.
     @Published var schedule: PausaSchedule {
         didSet {
-            if !Self.dryRun, let data = try? JSONEncoder().encode(schedule) { d.set(data, forKey: "schedule") }
+            if let data = try? JSONEncoder().encode(schedule) { d.set(data, forKey: DefaultsKey.schedule) }
             onScheduleChange?()
         }
     }
@@ -179,111 +181,122 @@ final class Settings: ObservableObject {
         return Config.allows(everyMin: v.shortEvery, count: v.count, line: hardLineMinutes)
     }
     @Published var longLengthMin: Int { didSet { save() } }
-    @Published var breakSound: BreakSound { didSet { if !Self.dryRun { d.set(breakSound.rawValue, forKey: "breakSound") } } }
+    @Published var breakSound: BreakSound { didSet { d.set(breakSound.rawValue, forKey: DefaultsKey.breakSound) } }
     @Published var theme: ThemeChoice {
         didSet {
-            if !Self.dryRun { d.set(theme.rawValue, forKey: "theme") }
+            d.set(theme.rawValue, forKey: DefaultsKey.theme)
             NotificationCenter.default.post(name: .pausaThemeChanged, object: theme)
         }
     }
 
 
     /// 自动暂停 → 使用指定应用时 switch; the app list stays, only the condition turns off.
-    @Published var pauseForCustomApps: Bool { didSet { d.set(pauseForCustomApps, forKey: "pauseForCustomApps") } }
+    @Published var pauseForCustomApps: Bool { didSet { d.set(pauseForCustomApps, forKey: DefaultsKey.pauseForCustomApps) } }
 
     @Published var appearance: AppearanceMode {
         didSet {
-            d.set(appearance.rawValue, forKey: "appearance")
-            appearance.apply()
+            d.set(appearance.rawValue, forKey: DefaultsKey.appearance)
+            if !isIsolated { appearance.apply() }
         }
     }
 
 
     /// Default off: Pausa lives in the menu bar (LSUIElement). On: also a regular Dock app.
-    @Published var menuBarDisplay: MenuBarDisplay { didSet { d.set(menuBarDisplay.rawValue, forKey: "menuBarDisplay") } }
+    @Published var menuBarDisplay: MenuBarDisplay { didSet { d.set(menuBarDisplay.rawValue, forKey: DefaultsKey.menuBarDisplay) } }
     @Published var icon: IconChoice {
-        didSet { d.set(icon.rawValue, forKey: "icon"); icon.apply() }
+        didSet {
+            d.set(icon.rawValue, forKey: DefaultsKey.icon)
+            if !isIsolated { icon.apply() }
+        }
     }
     @Published var showInDock: Bool {
-        didSet { d.set(showInDock, forKey: "showInDock") }
+        didSet { d.set(showInDock, forKey: DefaultsKey.showInDock) }
     }
 
     @Published var language: AppLanguage {
         didSet {
-            d.set(language.rawValue, forKey: "language")
+            d.set(language.rawValue, forKey: DefaultsKey.language)
             NotificationCenter.default.post(name: .pausaLanguageChanged, object: language)
         }
     }
 
     // MARK: Smart pause v2 (自动暂停). Read by the detectors / scheduler; all UserDefaults-backed.
-    @Published var pauseForMeetings: Bool { didSet { d.set(pauseForMeetings, forKey: "pauseForMeetings") } }
-    @Published var pauseWhileTyping: Bool { didSet { d.set(pauseWhileTyping, forKey: "pauseWhileTyping") } }
-    @Published var pauseForBrowserVideo: Bool { didSet { d.set(pauseForBrowserVideo, forKey: "pauseForBrowserVideo") } }
-    @Published var pauseForScreenSharing: Bool { didSet { d.set(pauseForScreenSharing, forKey: "pauseForScreenSharing") } }
-    @Published var pauseForFocusMode: Bool { didSet { d.set(pauseForFocusMode, forKey: "pauseForFocusMode") } }
-    @Published var focusModeScope: FocusModeScope { didSet { d.set(focusModeScope.rawValue, forKey: "focusModeScope") } }
+    @Published var pauseForMeetings: Bool { didSet { d.set(pauseForMeetings, forKey: DefaultsKey.pauseForMeetings) } }
+    @Published var pauseWhileTyping: Bool { didSet { d.set(pauseWhileTyping, forKey: DefaultsKey.pauseWhileTyping) } }
+    @Published var pauseForBrowserVideo: Bool { didSet { d.set(pauseForBrowserVideo, forKey: DefaultsKey.pauseForBrowserVideo) } }
+    @Published var pauseForScreenSharing: Bool { didSet { d.set(pauseForScreenSharing, forKey: DefaultsKey.pauseForScreenSharing) } }
+    @Published var pauseForFocusMode: Bool { didSet { d.set(pauseForFocusMode, forKey: DefaultsKey.pauseForFocusMode) } }
+    @Published var focusModeScope: FocusModeScope { didSet { d.set(focusModeScope.rawValue, forKey: DefaultsKey.focusModeScope) } }
     /// 休息前提醒: the top-of-screen panel and the pointer countdown are two independent switches (default on).
-    @Published var showPreBreakPanel: Bool { didSet { d.set(showPreBreakPanel, forKey: "showPreBreakPanel") } }
-    @Published var showPreBreakPill: Bool { didSet { d.set(showPreBreakPill, forKey: "showPreBreakPill") } }
+    @Published var showPreBreakPanel: Bool { didSet { d.set(showPreBreakPanel, forKey: DefaultsKey.showPreBreakPanel) } }
+    @Published var showPreBreakPill: Bool { didSet { d.set(showPreBreakPill, forKey: DefaultsKey.showPreBreakPill) } }
     @Published var customPauseApps: [CustomPauseApp] {
-        didSet { if !Self.dryRun, let data = try? JSONEncoder().encode(customPauseApps) { d.set(data, forKey: "customPauseApps") } }
+        didSet { if let data = try? JSONEncoder().encode(customPauseApps) { d.set(data, forKey: DefaultsKey.customPauseApps) } }
     }
 
-    private init() {
+    init(defaults: UserDefaults? = nil) {
+        self.injectedDefaults = defaults
         let r = Self.recommended
-        let ud = UserDefaults.standard
-        ud.register(defaults: ["shortEveryMin": r.shortEvery, "shortLengthSec": r.shortLength,
-                              "longLengthMin": r.longLength,
-                              "pauseForMeetings": true, "pauseWhileTyping": true, "pauseForBrowserVideo": true,
-                              "pauseForScreenSharing": true, "pauseForFocusMode": true,
-                              "showPreBreakPanel": true, "showPreBreakPill": true])
+        let ud = defaults ?? PausaDefaults.store
+        ud.register(defaults: [DefaultsKey.shortEveryMin: r.shortEvery, DefaultsKey.shortLengthSec: r.shortLength,
+                               DefaultsKey.longLengthMin: r.longLength,
+                               DefaultsKey.pauseForMeetings: true, DefaultsKey.pauseWhileTyping: true, DefaultsKey.pauseForBrowserVideo: true,
+                               DefaultsKey.pauseForScreenSharing: true, DefaultsKey.pauseForFocusMode: true,
+                               DefaultsKey.showPreBreakPanel: true, DefaultsKey.showPreBreakPill: true])
         func pick(_ key: String, _ allowed: [Int], _ def: Int) -> Int {
             let v = ud.integer(forKey: key); return allowed.contains(v) ? v : def
         }
-        shortLengthSec = pick("shortLengthSec", Self.shortLengthOptions, r.shortLength)
-        let line = Config.hardLineMinutes(ud.integer(forKey: "hardLineMinutes"))   // missing or unknown → 90
+        shortLengthSec = pick(DefaultsKey.shortLengthSec, Self.shortLengthOptions, r.shortLength)
+        let line = Config.hardLineMinutes(ud.integer(forKey: DefaultsKey.hardLineMinutes))   // missing or unknown → 90
         hardLineMinutes = line
         // Migration: old builds stored "long break every M minutes"; map it to the nearest N.
-        var every = pick("shortEveryMin", Self.shortEveryOptions, r.shortEvery)
+        var every = pick(DefaultsKey.shortEveryMin, Self.shortEveryOptions, r.shortEvery)
         var count: Int
         if !Self.intervalAllowed(every, line: line) {   // no count ≥ 1 fits (that interval is greyed too)
             every = Self.shortEveryOptions.filter { Self.intervalAllowed($0, line: line) }.max() ?? r.shortEvery
         }
-        if ud.object(forKey: "shortsBeforeLong") != nil {
-            count = ud.integer(forKey: "shortsBeforeLong")
-        } else if ud.object(forKey: "longEveryNth") != nil {
-            count = Config.count(fromNth: ud.integer(forKey: "longEveryNth"))   // N=2→1, N=3→2, …
-        } else if ud.object(forKey: "longEveryMin") != nil {
-            count = Config.count(fromNth: Config.nth(forLegacyLongEveryMin: ud.integer(forKey: "longEveryMin"), everyMin: every, line: line))
+        var migratedLegacyRhythm = false
+        if ud.object(forKey: DefaultsKey.shortsBeforeLong) != nil {
+            count = ud.integer(forKey: DefaultsKey.shortsBeforeLong)
+        } else if ud.object(forKey: DefaultsKey.legacyLongEveryNth) != nil {
+            count = Config.count(fromNth: ud.integer(forKey: DefaultsKey.legacyLongEveryNth))   // N=2→1, N=3→2, …
+            migratedLegacyRhythm = true
+        } else if ud.object(forKey: DefaultsKey.legacyLongEveryMin) != nil {
+            count = Config.count(fromNth: Config.nth(forLegacyLongEveryMin: ud.integer(forKey: DefaultsKey.legacyLongEveryMin), everyMin: every, line: line))
+            migratedLegacyRhythm = true
         } else {
             count = Self.recommendedCount
         }
-        ud.removeObject(forKey: "longEveryNth"); ud.removeObject(forKey: "longEveryMin")
+        ud.removeObject(forKey: DefaultsKey.legacyLongEveryNth)
+        ud.removeObject(forKey: DefaultsKey.legacyLongEveryMin)
         // Clamp exactly as the interval picker does (largest count Config.allows), silently.
         count = Self.clampedCount(count, everyMin: every, line: line)
+        if migratedLegacyRhythm {
+            ud.set(count, forKey: DefaultsKey.shortsBeforeLong)
+        }
         shortEveryMin = every
         shortsBeforeLong = count
-        theme = ThemeChoice.migrated(ud.string(forKey: "theme"))
-        showInDock = ud.bool(forKey: "showInDock")
-        menuBarDisplay = MenuBarDisplay(rawValue: ud.string(forKey: "menuBarDisplay") ?? "") ?? .progressRing   // saved choices are kept; fresh installs get the ring
-        appearance = AppearanceMode(rawValue: ud.string(forKey: "appearance") ?? "") ?? .system
-        ud.removeObject(forKey: "menuBarStyle")   // setting removed (Steve): the menu bar is clock only
-        pauseForCustomApps = ud.object(forKey: "pauseForCustomApps") as? Bool ?? true
-        icon = IconChoice(rawValue: ud.string(forKey: "icon") ?? "") ?? .ink   // round 4 default; saved choice kept
-        language = AppLanguage(rawValue: ud.string(forKey: "language") ?? "") ?? .system
-        longLengthMin = pick("longLengthMin", Self.longLengthOptions, r.longLength)
-        breakSound = BreakSound(rawValue: ud.string(forKey: "breakSound") ?? "") ?? .longOnly   // default 仅长休息
-        pauseForMeetings = ud.bool(forKey: "pauseForMeetings")
-        pauseWhileTyping = ud.bool(forKey: "pauseWhileTyping")
-        pauseForBrowserVideo = ud.bool(forKey: "pauseForBrowserVideo")
-        ud.removeObject(forKey: "browserVideoScope")   // 包括网页里的视频 removed (Steve): web video always counts
-        pauseForScreenSharing = ud.bool(forKey: "pauseForScreenSharing")
-        pauseForFocusMode = ud.bool(forKey: "pauseForFocusMode")
-        showPreBreakPanel = ud.bool(forKey: "showPreBreakPanel")
-        showPreBreakPill = ud.bool(forKey: "showPreBreakPill")
-        focusModeScope = FocusModeScope(rawValue: ud.string(forKey: "focusModeScope") ?? "") ?? .shortOnly
-        customPauseApps = ud.data(forKey: "customPauseApps").flatMap { try? JSONDecoder().decode([CustomPauseApp].self, from: $0) } ?? []
-        var sch = ud.data(forKey: "schedule").flatMap { try? JSONDecoder().decode(PausaSchedule.self, from: $0) } ?? Self.defaultSchedule
+        theme = ThemeChoice.migrated(ud.string(forKey: DefaultsKey.theme))
+        showInDock = ud.bool(forKey: DefaultsKey.showInDock)
+        menuBarDisplay = MenuBarDisplay(rawValue: ud.string(forKey: DefaultsKey.menuBarDisplay) ?? "") ?? .progressRing   // saved choices are kept; fresh installs get the ring
+        appearance = AppearanceMode(rawValue: ud.string(forKey: DefaultsKey.appearance) ?? "") ?? .system
+        ud.removeObject(forKey: DefaultsKey.legacyMenuBarStyle)   // setting removed (Steve): the menu bar is clock only
+        pauseForCustomApps = ud.object(forKey: DefaultsKey.pauseForCustomApps) as? Bool ?? true
+        icon = IconChoice(rawValue: ud.string(forKey: DefaultsKey.icon) ?? "") ?? .ink   // round 4 default; saved choice kept
+        language = AppLanguage(rawValue: ud.string(forKey: DefaultsKey.language) ?? "") ?? .system
+        longLengthMin = pick(DefaultsKey.longLengthMin, Self.longLengthOptions, r.longLength)
+        breakSound = BreakSound(rawValue: ud.string(forKey: DefaultsKey.breakSound) ?? "") ?? .longOnly   // default 仅长休息
+        pauseForMeetings = ud.bool(forKey: DefaultsKey.pauseForMeetings)
+        pauseWhileTyping = ud.bool(forKey: DefaultsKey.pauseWhileTyping)
+        pauseForBrowserVideo = ud.bool(forKey: DefaultsKey.pauseForBrowserVideo)
+        ud.removeObject(forKey: DefaultsKey.legacyBrowserVideoScope)   // 包括网页里的视频 removed (Steve): web video always counts
+        pauseForScreenSharing = ud.bool(forKey: DefaultsKey.pauseForScreenSharing)
+        pauseForFocusMode = ud.bool(forKey: DefaultsKey.pauseForFocusMode)
+        showPreBreakPanel = ud.bool(forKey: DefaultsKey.showPreBreakPanel)
+        showPreBreakPill = ud.bool(forKey: DefaultsKey.showPreBreakPill)
+        focusModeScope = FocusModeScope(rawValue: ud.string(forKey: DefaultsKey.focusModeScope) ?? "") ?? .shortOnly
+        customPauseApps = ud.data(forKey: DefaultsKey.customPauseApps).flatMap { try? JSONDecoder().decode([CustomPauseApp].self, from: $0) } ?? []
+        var sch = ud.data(forKey: DefaultsKey.schedule).flatMap { try? JSONDecoder().decode(PausaSchedule.self, from: $0) } ?? Self.defaultSchedule
         // The per-range switch is gone (Steve). A range it had turned off was inactive; drop it so
         // nothing listed is silently ignored and behaviour stays the same.
         sch.include.rules.removeAll { !$0.enabled }
@@ -302,11 +315,11 @@ final class Settings: ObservableObject {
     }
 
     private func save() {
-        d.set(shortEveryMin, forKey: "shortEveryMin")
-        d.set(shortsBeforeLong, forKey: "shortsBeforeLong")
-        d.set(shortLengthSec, forKey: "shortLengthSec")
-        d.set(longLengthMin, forKey: "longLengthMin")
-        d.set(hardLineMinutes, forKey: "hardLineMinutes")
+        d.set(shortEveryMin, forKey: DefaultsKey.shortEveryMin)
+        d.set(shortsBeforeLong, forKey: DefaultsKey.shortsBeforeLong)
+        d.set(shortLengthSec, forKey: DefaultsKey.shortLengthSec)
+        d.set(longLengthMin, forKey: DefaultsKey.longLengthMin)
+        d.set(hardLineMinutes, forKey: DefaultsKey.hardLineMinutes)
         onChange?(config)
     }
 
@@ -319,6 +332,7 @@ final class Settings: ObservableObject {
         set {
             guard newValue != launchAtLoginState else { return }
             launchAtLoginState = newValue
+            guard !isIsolated else { return }
             DispatchQueue.global(qos: .userInitiated).async {
                 do { newValue ? try SMAppService.mainApp.register() : try SMAppService.mainApp.unregister() }
                 catch { NSLog("Pausa: launch at login failed: \(error)") }
@@ -332,8 +346,8 @@ final class Settings: ObservableObject {
 
     /// First launch only: turn launch-at-login on by default, quietly.
     func enableLaunchAtLoginOnFirstRun() {
-        guard !d.bool(forKey: "didFirstRun") else { return }
-        d.set(true, forKey: "didFirstRun")
+        guard !isIsolated, !d.bool(forKey: DefaultsKey.didFirstRun) else { return }
+        d.set(true, forKey: DefaultsKey.didFirstRun)
         if Bundle.main.bundleURL.pathExtension == "app" { launchAtLogin = true }
     }
 }

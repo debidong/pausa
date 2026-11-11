@@ -493,12 +493,15 @@ final class HoldToSkip: ObservableObject {
     static let duration: TimeInterval = 2.0
     @Published private(set) var progress: Double = 0
     var onComplete: (() -> Void)?
+    private let clock: PausaClock
     private var startedAt: TimeInterval?
     private var timer: Timer?
 
+    init(clock: PausaClock = .system) { self.clock = clock }
+
     func begin() {
         guard startedAt == nil else { return }
-        startedAt = ProcessInfo.processInfo.systemUptime
+        startedAt = clock.uptimeNow()
         let t = Timer(timeInterval: 1.0 / 60, repeats: true) { [weak self] _ in self?.tick() }
         RunLoop.main.add(t, forMode: .common)
         timer = t
@@ -506,7 +509,7 @@ final class HoldToSkip: ObservableObject {
 
     private func tick() {
         guard let s = startedAt else { return }
-        let p = min(1, (ProcessInfo.processInfo.systemUptime - s) / Self.duration)
+        let p = min(1, (clock.uptimeNow() - s) / Self.duration)
         progress = p
         if p >= 1 { stop(); onComplete?() }
     }
@@ -525,19 +528,21 @@ final class Countdown: ObservableObject {
     let total: TimeInterval
     @Published private(set) var remaining: TimeInterval
     private(set) var startedAt: TimeInterval = 0
+    private let clock: PausaClock
     private var timer: Timer?
     private let onDone: () -> Void
 
-    init(total: TimeInterval, onDone: @escaping () -> Void) {
+    init(total: TimeInterval, clock: PausaClock = .system, onDone: @escaping () -> Void) {
         self.total = max(total, 0.1)
         self.remaining = total
+        self.clock = clock
         self.onDone = onDone
     }
 
     var progress: Double { 1 - remaining / total }
 
     func start() {
-        startedAt = ProcessInfo.processInfo.systemUptime
+        startedAt = clock.uptimeNow()
         let t = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in self?.tick() }
         RunLoop.main.add(t, forMode: .common)
         timer = t
@@ -546,7 +551,7 @@ final class Countdown: ObservableObject {
     func stop() { timer?.invalidate(); timer = nil }
 
     private func tick() {
-        remaining = max(0, total - (ProcessInfo.processInfo.systemUptime - startedAt))
+        remaining = max(0, total - (clock.uptimeNow() - startedAt))
         if remaining <= 0 { stop(); onDone() }
     }
 }

@@ -17,7 +17,10 @@ final class StatsModel: ObservableObject {
     @Published var selectedDay: Date?
 
     /// Where the rows come from: the log, plus the work span still running (live app, see `bind`).
-    var load: () -> (records: [BreakRecord], work: [WorkSpan], open: WorkSpan?) = { (BreakLog.shared.all(), BreakLog.shared.work(), nil) }
+    var load: () -> (records: [BreakRecord], work: [WorkSpan], open: WorkSpan?) = {
+        let s = BreakLog.shared.snapshot()
+        return (s.breaks, s.work, nil)
+    }
     var clearAll: () -> Void = { BreakLog.shared.clear() }
     var now: () -> Date = Date.init
     var calendar = Calendar.autoupdatingCurrent
@@ -28,7 +31,10 @@ final class StatsModel: ObservableObject {
     private var dayObserver: Any?
 
     func bind(_ app: AppController) {
-        load = { [weak app] in (BreakLog.shared.all(), BreakLog.shared.work(), app?.openWorkSpan) }
+        load = { [weak app] in
+            let s = BreakLog.shared.snapshot()
+            return (s.breaks, s.work, app?.openWorkSpan)
+        }
         clearAll = { [weak app] in app?.clearStats() }
         app.onStatsChanged = { [weak self] in self?.reload() }
     }

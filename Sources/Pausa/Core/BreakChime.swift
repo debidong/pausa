@@ -23,8 +23,8 @@ final class BreakChime {
     }
 
     /// Plays the chime `command` calls for under the current setting and these reasons (read now).
-    func play(for command: Command, reasons: Set<PausaCore.PauseReason>) {
-        guard let c = Chime.pick(command, sound: Settings.shared.breakSound, reasons: reasons),
+    func play(for command: Command, sound: BreakSound = Settings.shared.breakSound, reasons: Set<PausaCore.PauseReason>) {
+        guard let c = Chime.pick(command, sound: sound, reasons: reasons),
               let sound = sounds[c] else { return }
         sound.stop()
         sound.play()
