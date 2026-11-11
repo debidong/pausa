@@ -1,14 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
+<rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
   <channel>
     <title>Pausa</title>
+    <item>
+      <title>0.6.2</title>
+      <pubDate>Wed, 11 Nov 2026 06:37:14 +0000</pubDate>
+      <sparkle:version>139</sparkle:version>
+      <sparkle:shortVersionString>0.6.2</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.6.2/Pausa-0.6.2.zip" type="application/octet-stream" sparkle:edSignature="LtZYDXt8CfJ63dRhOhUoutRaXedH8O9UenJPGJ+mMMirQeqFH02w98vC1c04CQ33rYJs6Kc2XzeL0VrIQ7egDw==" length="12183245" />
+    </item>
     <item>
       <title>0.6.1</title>
       <pubDate>Wed, 04 Nov 2026 11:33:51 +0000</pubDate>
       <sparkle:version>136</sparkle:version>
       <sparkle:shortVersionString>0.6.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.6.1/Pausa-0.6.1.zip" type="application/octet-stream" sparkle:edSignature="xL/TYADAOyHfPtcPf6tT1Ws/BsR8PyiE84MH1l1En6cYj7XDi5GE0+3uUnha/8gkIdHeelnt8o2VpKDGXgbZCA==" length="12163040"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.6.1/Pausa-0.6.1.zip" type="application/octet-stream" sparkle:edSignature="xL/TYADAOyHfPtcPf6tT1Ws/BsR8PyiE84MH1l1En6cYj7XDi5GE0+3uUnha/8gkIdHeelnt8o2VpKDGXgbZCA==" length="12163040" />
     </item>
     <item>
       <title>0.6.0</title>
@@ -16,7 +24,7 @@
       <sparkle:version>133</sparkle:version>
       <sparkle:shortVersionString>0.6.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.6.0/Pausa-0.6.0.zip" type="application/octet-stream" sparkle:edSignature="4cehQkD6UEhJWEagGRpZt6Dae7ykPF4zJBo8eM960BwreUkIFLH8yaBoCIFnrrm7Tg+cpxzSlaQ/ZtMKIrpKCg==" length="12162392"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.6.0/Pausa-0.6.0.zip" type="application/octet-stream" sparkle:edSignature="4cehQkD6UEhJWEagGRpZt6Dae7ykPF4zJBo8eM960BwreUkIFLH8yaBoCIFnrrm7Tg+cpxzSlaQ/ZtMKIrpKCg==" length="12162392" />
     </item>
     <item>
       <title>0.5.0</title>
@@ -24,7 +32,7 @@
       <sparkle:version>123</sparkle:version>
       <sparkle:shortVersionString>0.5.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.5.0/Pausa-0.5.0.zip" type="application/octet-stream" sparkle:edSignature="WUkfGLJZlRdzQubQUcXg6wyRN9WN6keERoTI2MaKtaydTRPIA4e6TtsHGg2hfhB6A5ncdjGla7vl3FdTJI4xAg==" length="11016566"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.5.0/Pausa-0.5.0.zip" type="application/octet-stream" sparkle:edSignature="WUkfGLJZlRdzQubQUcXg6wyRN9WN6keERoTI2MaKtaydTRPIA4e6TtsHGg2hfhB6A5ncdjGla7vl3FdTJI4xAg==" length="11016566" />
     </item>
     <item>
       <title>0.4.9</title>
@@ -32,7 +40,7 @@
       <sparkle:version>119</sparkle:version>
       <sparkle:shortVersionString>0.4.9</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.9/Pausa-0.4.9.zip" type="application/octet-stream" sparkle:edSignature="WxDSUIGpwE0lY7p73GFxgFUVoHXDT3FA/O+xbJrZkc9tJ+YADmALdyhmxI1Tk8FlbWKQ01Rxjpo3y31LORHrBA==" length="11003462"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.9/Pausa-0.4.9.zip" type="application/octet-stream" sparkle:edSignature="WxDSUIGpwE0lY7p73GFxgFUVoHXDT3FA/O+xbJrZkc9tJ+YADmALdyhmxI1Tk8FlbWKQ01Rxjpo3y31LORHrBA==" length="11003462" />
     </item>
     <item>
       <title>0.4.8</title>
@@ -40,7 +48,7 @@
       <sparkle:version>115</sparkle:version>
       <sparkle:shortVersionString>0.4.8</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.8/Pausa-0.4.8.zip" type="application/octet-stream" sparkle:edSignature="6SZ9B+AN7gigCRuEt7ojMt/z00m5xcMYcEnPp2WvSjoUntTNQL0UTqlIq1lzMzGVAvFeKihf3rFpUJlTfTSnBg==" length="10989430"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.8/Pausa-0.4.8.zip" type="application/octet-stream" sparkle:edSignature="6SZ9B+AN7gigCRuEt7ojMt/z00m5xcMYcEnPp2WvSjoUntTNQL0UTqlIq1lzMzGVAvFeKihf3rFpUJlTfTSnBg==" length="10989430" />
     </item>
     <item>
       <title>0.4.7</title>
@@ -48,7 +56,7 @@
       <sparkle:version>110</sparkle:version>
       <sparkle:shortVersionString>0.4.7</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.7/Pausa-0.4.7.zip" type="application/octet-stream" sparkle:edSignature="sBKeMLYyPrPGWRbzSoGfa4yGAzECVBFVpJvNxKkOxWHA3BXMmP6YRVetZ+3677RSpkVeRE1ew5lQU9vdfj4aBg==" length="10916410"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.7/Pausa-0.4.7.zip" type="application/octet-stream" sparkle:edSignature="sBKeMLYyPrPGWRbzSoGfa4yGAzECVBFVpJvNxKkOxWHA3BXMmP6YRVetZ+3677RSpkVeRE1ew5lQU9vdfj4aBg==" length="10916410" />
     </item>
     <item>
       <title>0.4.6</title>
@@ -56,7 +64,7 @@
       <sparkle:version>109</sparkle:version>
       <sparkle:shortVersionString>0.4.6</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.6/Pausa-0.4.6.zip" type="application/octet-stream" sparkle:edSignature="eXN4z99mYtn4VNtHrfZ+B1yEj72Heoe7mxOjonjry1OZw/Z2N86uPIQpJ2wO1KfWyHv2+T19MSBnlvVSUQF0Aw==" length="10916519"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.6/Pausa-0.4.6.zip" type="application/octet-stream" sparkle:edSignature="eXN4z99mYtn4VNtHrfZ+B1yEj72Heoe7mxOjonjry1OZw/Z2N86uPIQpJ2wO1KfWyHv2+T19MSBnlvVSUQF0Aw==" length="10916519" />
     </item>
     <item>
       <title>0.4.5</title>
@@ -64,7 +72,7 @@
       <sparkle:version>105</sparkle:version>
       <sparkle:shortVersionString>0.4.5</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.5/Pausa-0.4.5.zip" type="application/octet-stream" sparkle:edSignature="dXnUrQqHwmTRL5Hx9D+FN9wnpuLyIWGftuHJDN9VlKosdciftyHJc7TDfU5acrMkG2XoiNzawppb9WxM6rqvBw==" length="10913333"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.5/Pausa-0.4.5.zip" type="application/octet-stream" sparkle:edSignature="dXnUrQqHwmTRL5Hx9D+FN9wnpuLyIWGftuHJDN9VlKosdciftyHJc7TDfU5acrMkG2XoiNzawppb9WxM6rqvBw==" length="10913333" />
     </item>
     <item>
       <title>0.4.4</title>
@@ -72,7 +80,7 @@
       <sparkle:version>103</sparkle:version>
       <sparkle:shortVersionString>0.4.4</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.4/Pausa-0.4.4.zip" type="application/octet-stream" sparkle:edSignature="E4ee8I4AYk+wSA5MWsj7RV9dnwpwEntX3OUPjJVSDO2IdUCLG3pAdSZhGcaqN0HnZK5qrvF7vswSIfO00Bd5BA==" length="10915961"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.4/Pausa-0.4.4.zip" type="application/octet-stream" sparkle:edSignature="E4ee8I4AYk+wSA5MWsj7RV9dnwpwEntX3OUPjJVSDO2IdUCLG3pAdSZhGcaqN0HnZK5qrvF7vswSIfO00Bd5BA==" length="10915961" />
     </item>
     <item>
       <title>0.4.3</title>
@@ -80,7 +88,7 @@
       <sparkle:version>101</sparkle:version>
       <sparkle:shortVersionString>0.4.3</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.3/Pausa-0.4.3.zip" type="application/octet-stream" sparkle:edSignature="rq7fyugasoHPwMKbDeUB0ixdOSvz4Fj0JVhkdGjMfhOZTT/YZqVQXcl7nYkVp04upD9sYX0xNpbc+GfgvlEjAA==" length="10915577"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.3/Pausa-0.4.3.zip" type="application/octet-stream" sparkle:edSignature="rq7fyugasoHPwMKbDeUB0ixdOSvz4Fj0JVhkdGjMfhOZTT/YZqVQXcl7nYkVp04upD9sYX0xNpbc+GfgvlEjAA==" length="10915577" />
     </item>
     <item>
       <title>0.4.2</title>
@@ -88,7 +96,7 @@
       <sparkle:version>99</sparkle:version>
       <sparkle:shortVersionString>0.4.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.2/Pausa-0.4.2.zip" type="application/octet-stream" sparkle:edSignature="nqWG9IdcfcFMXjOYAVWI3f7AefBG9mjpHgDnliIe3036+ZhLoyPF9u0SIjA2MxphCLCp+CDEIRVPj9/QfYpoAw==" length="10915611"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.2/Pausa-0.4.2.zip" type="application/octet-stream" sparkle:edSignature="nqWG9IdcfcFMXjOYAVWI3f7AefBG9mjpHgDnliIe3036+ZhLoyPF9u0SIjA2MxphCLCp+CDEIRVPj9/QfYpoAw==" length="10915611" />
     </item>
     <item>
       <title>0.4.1</title>
@@ -96,7 +104,7 @@
       <sparkle:version>94</sparkle:version>
       <sparkle:shortVersionString>0.4.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.1/Pausa-0.4.1.zip" type="application/octet-stream" sparkle:edSignature="CjJGI89dTTTDtC8LUnC4VwFpgK4mUIVcgEHr8L02jfJyQAyyD0XUMGxnSfnNQjoMSmxtMn+LnBb2ZCHNQjLHCg==" length="10909901"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.1/Pausa-0.4.1.zip" type="application/octet-stream" sparkle:edSignature="CjJGI89dTTTDtC8LUnC4VwFpgK4mUIVcgEHr8L02jfJyQAyyD0XUMGxnSfnNQjoMSmxtMn+LnBb2ZCHNQjLHCg==" length="10909901" />
     </item>
     <item>
       <title>0.4.0</title>
@@ -104,7 +112,7 @@
       <sparkle:version>93</sparkle:version>
       <sparkle:shortVersionString>0.4.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.0/Pausa-0.4.0.zip" type="application/octet-stream" sparkle:edSignature="M58AagANvT13P06TWWkBjFuGFSI3ynwFxJdoamwj2b6Jx3rTi/RxQyY5utJwAu9oSC+uEVR/b2T5RC3mTvm+CQ==" length="10909021"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.4.0/Pausa-0.4.0.zip" type="application/octet-stream" sparkle:edSignature="M58AagANvT13P06TWWkBjFuGFSI3ynwFxJdoamwj2b6Jx3rTi/RxQyY5utJwAu9oSC+uEVR/b2T5RC3mTvm+CQ==" length="10909021" />
     </item>
     <item>
       <title>0.3.5</title>
@@ -112,7 +120,7 @@
       <sparkle:version>68</sparkle:version>
       <sparkle:shortVersionString>0.3.5</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.5/Pausa-0.3.5.zip" type="application/octet-stream" sparkle:edSignature="CESm793ZSFa2W95QtTy48uZeMWAlvwMP4ZaElrlWUR9xU5UcK2VQ2bBpEpFHDL6hggELu6sikmixrA4aWMxUCQ==" length="10765769"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.5/Pausa-0.3.5.zip" type="application/octet-stream" sparkle:edSignature="CESm793ZSFa2W95QtTy48uZeMWAlvwMP4ZaElrlWUR9xU5UcK2VQ2bBpEpFHDL6hggELu6sikmixrA4aWMxUCQ==" length="10765769" />
     </item>
     <item>
       <title>0.3.4</title>
@@ -120,7 +128,7 @@
       <sparkle:version>67</sparkle:version>
       <sparkle:shortVersionString>0.3.4</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.4/Pausa-0.3.4.zip" type="application/octet-stream" sparkle:edSignature="8nrEs8Uc+DiK8o4TokmO74wYZ3KTumNSvmflfXl7trEBlGSZUuHH7xpBz98CwS7T8NzbkqURVns6YPDDXAikDQ==" length="10763567"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.4/Pausa-0.3.4.zip" type="application/octet-stream" sparkle:edSignature="8nrEs8Uc+DiK8o4TokmO74wYZ3KTumNSvmflfXl7trEBlGSZUuHH7xpBz98CwS7T8NzbkqURVns6YPDDXAikDQ==" length="10763567" />
     </item>
     <item>
       <title>0.3.3</title>
@@ -128,7 +136,7 @@
       <sparkle:version>64</sparkle:version>
       <sparkle:shortVersionString>0.3.3</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.3/Pausa-0.3.3.zip" type="application/octet-stream" sparkle:edSignature="tGdbaHYA1/oDKjes8DaL4s9cJKJEkKKWbIaZ1a9c2XkbhyGplGEKSRbRhJj13F83155+BwkYXVDdV2cFipPRAw==" length="10756355"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.3/Pausa-0.3.3.zip" type="application/octet-stream" sparkle:edSignature="tGdbaHYA1/oDKjes8DaL4s9cJKJEkKKWbIaZ1a9c2XkbhyGplGEKSRbRhJj13F83155+BwkYXVDdV2cFipPRAw==" length="10756355" />
     </item>
     <item>
       <title>0.3.2</title>
@@ -136,7 +144,7 @@
       <sparkle:version>62</sparkle:version>
       <sparkle:shortVersionString>0.3.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.2/Pausa-0.3.2.zip" type="application/octet-stream" sparkle:edSignature="eXU5PZxZlHtd5Pxna8o1TuLAqBbKp/kYJvE8uViGdi+PGR2Pd22DFgsTFssO6N34XyYyiaGRSFBpzRT07CGtCg==" length="10752229"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.2/Pausa-0.3.2.zip" type="application/octet-stream" sparkle:edSignature="eXU5PZxZlHtd5Pxna8o1TuLAqBbKp/kYJvE8uViGdi+PGR2Pd22DFgsTFssO6N34XyYyiaGRSFBpzRT07CGtCg==" length="10752229" />
     </item>
     <item>
       <title>0.3.1</title>
@@ -144,7 +152,7 @@
       <sparkle:version>53</sparkle:version>
       <sparkle:shortVersionString>0.3.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.1/Pausa-0.3.1.zip" type="application/octet-stream" sparkle:edSignature="2DXHlBnZsY/c8Uj3GSxHD8xVBQ4GalB1UiiLhQb8RTAuXM4cjwyjdn05Fr/kN5qh/SmmGkoXXKVh9d2JvsfFBA==" length="10722731"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.1/Pausa-0.3.1.zip" type="application/octet-stream" sparkle:edSignature="2DXHlBnZsY/c8Uj3GSxHD8xVBQ4GalB1UiiLhQb8RTAuXM4cjwyjdn05Fr/kN5qh/SmmGkoXXKVh9d2JvsfFBA==" length="10722731" />
     </item>
     <item>
       <title>0.3.0</title>
@@ -152,7 +160,7 @@
       <sparkle:version>45</sparkle:version>
       <sparkle:shortVersionString>0.3.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.0/Pausa-0.3.0.zip" type="application/octet-stream" sparkle:edSignature="PH5HKu9Gpprsrt+E+iIx307x263N8xmtV0Mh52w04uk0MgGdDN1MumnIAgL4GgbkOUNeAab+csgvqem73ExgDA==" length="10511356"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.3.0/Pausa-0.3.0.zip" type="application/octet-stream" sparkle:edSignature="PH5HKu9Gpprsrt+E+iIx307x263N8xmtV0Mh52w04uk0MgGdDN1MumnIAgL4GgbkOUNeAab+csgvqem73ExgDA==" length="10511356" />
     </item>
     <item>
       <title>0.2.0</title>
@@ -160,7 +168,7 @@
       <sparkle:version>30</sparkle:version>
       <sparkle:shortVersionString>0.2.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.2.0/Pausa-0.2.0.zip" type="application/octet-stream" sparkle:edSignature="cd+tSbAHqL14GlgQQUM/A+uXWLx5TncvxEEDkLA5i6zhI39O5pkTsFn2MKYdno+h/CrfybbGSoxpFf7xMbG4DA==" length="10519428"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.2.0/Pausa-0.2.0.zip" type="application/octet-stream" sparkle:edSignature="cd+tSbAHqL14GlgQQUM/A+uXWLx5TncvxEEDkLA5i6zhI39O5pkTsFn2MKYdno+h/CrfybbGSoxpFf7xMbG4DA==" length="10519428" />
     </item>
     <item>
       <title>0.1.2</title>
@@ -168,7 +176,7 @@
       <sparkle:version>14</sparkle:version>
       <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.1.2/Pausa-0.1.2.zip" type="application/octet-stream" sparkle:edSignature="eaKlyPEryb7evv5wbwmAXX7VOeFSl2ecpagYidU2xPfR51gVR2YC12GlwY/Ibsq9g6lbfV+jyNFhIPiLWWWgBQ==" length="10508340"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.1.2/Pausa-0.1.2.zip" type="application/octet-stream" sparkle:edSignature="eaKlyPEryb7evv5wbwmAXX7VOeFSl2ecpagYidU2xPfR51gVR2YC12GlwY/Ibsq9g6lbfV+jyNFhIPiLWWWgBQ==" length="10508340" />
     </item>
     <item>
       <title>0.1.1</title>
@@ -176,7 +184,7 @@
       <sparkle:version>11</sparkle:version>
       <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.1.1/Pausa-0.1.1.zip" type="application/octet-stream" sparkle:edSignature="qrmowb8vo+EWgCw8zafcK4KHVT8eC3odS8nubuZ5Nf8IDfrG1km1hbKgpt+efexBl9NDUO/SXz9ZN3sL58gWBQ==" length="10500220"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.1.1/Pausa-0.1.1.zip" type="application/octet-stream" sparkle:edSignature="qrmowb8vo+EWgCw8zafcK4KHVT8eC3odS8nubuZ5Nf8IDfrG1km1hbKgpt+efexBl9NDUO/SXz9ZN3sL58gWBQ==" length="10500220" />
     </item>
     <item>
       <title>0.1.0</title>
@@ -184,7 +192,7 @@
       <sparkle:version>9</sparkle:version>
       <sparkle:shortVersionString>0.1.0</sparkle:shortVersionString>
       <sparkle:minimumSystemVersion>13.0</sparkle:minimumSystemVersion>
-      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.1.0/Pausa-0.1.0.zip" type="application/octet-stream" sparkle:edSignature="N5uDnFAvyQy+KzhGXX2RuVkrUbm/tp001JG/vxqR2B53twqbignKMZ24S9iJ3K+HGt5tUHasvVnYgsbjOFzIBA==" length="10499211"/>
+      <enclosure url="https://github.com/debidong/pausa/releases/download/v0.1.0/Pausa-0.1.0.zip" type="application/octet-stream" sparkle:edSignature="N5uDnFAvyQy+KzhGXX2RuVkrUbm/tp001JG/vxqR2B53twqbignKMZ24S9iJ3K+HGt5tUHasvVnYgsbjOFzIBA==" length="10499211" />
     </item>
   </channel>
 </rss>
