@@ -362,4 +362,68 @@ final class MenuBarAndControllerExtendedTests: XCTestCase {
         XCTAssertFalse(updater2.shouldPostponeRelaunch(version: "0.6.5") {})
         XCTAssertEqual(updater2.phase, .installing(version: ""))
     }
+
+    func testCleanBackdropViewConfiguresLightBlurAndHidesCoreUIMudLayers() {
+        _ = NSApplication.shared
+        let window = NSPanel(
+            contentRect: NSRect(x: -5000, y: -5000, width: 200, height: 120),
+            styleMask: [.borderless, .nonactivatingPanel],
+            backing: .buffered,
+            defer: false
+        )
+        window.alphaValue = 0
+        let container = BreakOverlayController.makeBlurView(
+            frame: NSRect(x: 0, y: 0, width: 200, height: 120),
+            tint: BreakOverlayController.shortDim,
+            blurRadius: BreakOverlayController.shortBlurRadius
+        )
+        window.contentView = container
+        window.orderFrontRegardless()
+        container.layoutSubtreeIfNeeded()
+        container.displayIfNeeded()
+        CATransaction.flush()
+        defer { window.orderOut(nil) }
+
+        guard let backdropView = container.subviews.compactMap({ $0 as? CleanBackdropView }).first else {
+            return XCTFail("Expected CleanBackdropView inside makeBlurView container")
+        }
+        XCTAssertEqual(container.subviews.count, 2)
+        XCTAssertEqual(backdropView.blurRadius, BreakOverlayController.shortBlurRadius)
+
+        backdropView.reconfigureBackdrop(reduceTransparency: false)
+        if let root = backdropView.layer?.sublayers?.first(where: {
+            ($0.sublayers ?? []).contains(where: { String(describing: type(of: $0)) == "CABackdropLayer" })
+        }), let bd = root.sublayers?.first(where: { String(describing: type(of: $0)) == "CABackdropLayer" }) {
+            let scale = (bd.value(forKey: "scale") as? NSNumber)?.doubleValue
+            XCTAssertEqual(scale ?? 0, 0.5, accuracy: 0.01)
+            let radius = (bd.value(forKeyPath: "filters.gaussianBlur.inputRadius") as? NSNumber)?.doubleValue
+            if let radius {
+                XCTAssertEqual(radius, BreakOverlayController.shortBlurRadius, accuracy: 0.01)
+            }
+            for sibling in root.sublayers ?? [] where sibling !== bd {
+                XCTAssertTrue(sibling.isHidden, "Expected CoreUI fill/tone/chameleon layer \(sibling.name ?? "") to be hidden")
+            }
+
+            // Under Reduce Transparency, fallback fill layers must remain visible.
+            backdropView.reconfigureBackdrop(reduceTransparency: true)
+            for sibling in root.sublayers ?? [] where sibling !== bd {
+                XCTAssertFalse(sibling.isHidden)
+            }
+        }
+    }
+
+    func testBundledChimeFilesLoadAsStereoAcousticSounds() throws {
+        let repoRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+        let soundsDir = repoRoot.appendingPathComponent("App/sounds", isDirectory: true)
+        for chime in Chime.allCases {
+            let url = soundsDir.appendingPathComponent("\(chime.name).caf")
+            XCTAssertTrue(FileManager.default.fileExists(atPath: url.path), "Missing \(url.path)")
+            let sound = try XCTUnwrap(NSSound(contentsOf: url, byReference: false), "Failed to load \(chime.name).caf")
+            XCTAssertGreaterThan(sound.duration, 2.0, "\(chime.name).caf duration too short")
+            XCTAssertLessThan(sound.duration, 5.0, "\(chime.name).caf duration unexpectedly long")
+        }
+    }
 }

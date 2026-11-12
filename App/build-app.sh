@@ -151,7 +151,7 @@ cp App/strings.json "$RES/strings.json"   # every UI string, all languages (see 
 # Focus filter text shown by System Settings (system language; English is the key, see FocusFilter.swift).
 for d in App/*.lproj; do mkdir -p "$RES/$(basename "$d")" && cp "$d"/Localizable.strings "$RES/$(basename "$d")/"; done
 cp App/rest-quotes.json "$RES/rest-quotes.json" && echo "quotes: $(grep -c '"id"' App/rest-quotes.json)"
-# Break chimes (提示音, Core/BreakChime.swift): start and end, CAF LEI16 48 kHz mono.
+# Break chimes (提示音, Core/BreakChime.swift; scripts/make-chimes.swift): start and end, CAF LEI16 48 kHz stereo.
 mkdir -p "$RES/sounds" && cp App/sounds/break-long-start.caf App/sounds/break-long-end.caf \
   App/sounds/break-short-start.caf App/sounds/break-short-end.caf "$RES/sounds/"
 # Long-break backgrounds: release builds ship HEIC only, from App/backgrounds.

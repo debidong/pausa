@@ -71,14 +71,16 @@ public final class BreakOverlayController {
     private var countdown: Countdown?
     private var dimWindows: [NSWindow] = []
     private var capsules: [NSPanel] = []
-    /// Tint over the short-break blur; a bit stronger in Dark mode.
-    static let shortDim = 0.25
-    static let shortDimDark = 0.32
+    /// Clean optical scrim over the short-break blur (no CoreUI gray fill underneath).
+    static let shortBlurRadius = 11.0
+    static let softDesktopBlurRadius = 24.0
+    static let shortDim = 0.20
+    static let shortDimDark = 0.22
     static var currentShortDim: Double {
         NSApp?.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? shortDimDark : shortDim
     }
     /// 模糊桌面 (long break, both appearances): worst case is a white web page behind the blur;
-    /// 0.55 keeps white text at 4.73:1 there. dayDim/nightDim are painting-only; midnightDim still applies.
+    /// 0.55 keeps white text ≥ 4.5:1 there. dayDim/nightDim are painting-only; midnightDim still applies.
     static let softDesktopDim = 0.55
     private var longWindows: [NSWindow] = []
     /// Hold Space to skip, both break types (round 3 §4). Shared by all break windows.
@@ -369,7 +371,7 @@ public final class BreakOverlayController {
                                      screenID: sid)
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
             let frame = NSRect(origin: .zero, size: screen.frame.size)
-            let base = Self.makeBlurView(frame: frame, tint: tint)
+            let base = Self.makeBlurView(frame: frame, tint: tint, blurRadius: Self.softDesktopBlurRadius)
             let host = NSHostingView(rootView: view)
             host.frame = frame
             host.autoresizingMask = [.width, .height]
@@ -395,26 +397,31 @@ public final class BreakOverlayController {
         w.backgroundColor = .clear
         w.becomesKeyOnlyIfNeeded = true
         w.contentView = Self.makeBlurView(frame: NSRect(origin: .zero, size: screen.frame.size),
-                                          tint: Self.currentShortDim)
+                                          tint: Self.currentShortDim,
+                                          blurRadius: Self.shortBlurRadius)
         w.isReleasedWhenClosed = false
         w.animationBehavior = .none
         w.alphaValue = 0
         return w
     }
 
-    /// NSVisualEffectView (behind-window, always active) with a flat black tint on top.
-    static func makeBlurView(frame: NSRect, tint: Double) -> NSView {
-        let blur = NSVisualEffectView(frame: frame)
-        blur.material = .fullScreenUI
-        blur.blendingMode = .behindWindow
-        blur.state = .active
+    /// Clean optical behind-window blur (no CoreUI gray fill, lifted black floor, or 1.8x oversaturation)
+    /// paired with a subtle cool-slate scrim on top.
+    static func makeBlurView(frame: NSRect, tint: Double, blurRadius: Double = shortBlurRadius) -> NSView {
+        let container = NSView(frame: frame)
+        container.autoresizingMask = [.width, .height]
+
+        let blur = CleanBackdropView(frame: container.bounds)
+        blur.blurRadius = blurRadius
         blur.autoresizingMask = [.width, .height]
-        let dim = NSView(frame: blur.bounds)
+        container.addSubview(blur)
+
+        let dim = NSView(frame: container.bounds)
         dim.wantsLayer = true
-        dim.layer?.backgroundColor = NSColor.black.withAlphaComponent(tint).cgColor
+        dim.layer?.backgroundColor = NSColor(srgbRed: 0.03, green: 0.05, blue: 0.09, alpha: tint).cgColor
         dim.autoresizingMask = [.width, .height]
-        blur.addSubview(dim)
-        return blur
+        container.addSubview(dim)
+        return container
     }
 
     /// Card in the middle of the visible frame, hint at the bottom: one transparent panel over the
@@ -659,4 +666,84 @@ final class Countdown: ObservableObject {
         if remaining <= 0 { stop(); onDone() }
     }
 }
+
+/// Behind-window optical blur without CoreUI's heavy 30pt radius, 1.8x oversaturation, chalky gray fill,
+/// or darken/lighten floor. Falls back untouched under Reduce Transparency or unknown layer layouts.
+final class CleanBackdropView: NSVisualEffectView {
+    var blurRadius: Double = BreakOverlayController.shortBlurRadius { didSet { reconfigureBackdrop() } }
+    var saturation: Double = 1.06 { didSet { reconfigureBackdrop() } }
+    var backdropScale: Double = 0.5 { didSet { reconfigureBackdrop() } }
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        wantsLayer = true
+        appearance = NSAppearance(named: .darkAqua)
+        material = .fullScreenUI
+        blendingMode = .behindWindow
+        state = .active
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        reconfigureBackdrop()
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        reconfigureBackdrop()
+    }
+
+    override func layout() {
+        super.layout()
+        reconfigureBackdrop()
+    }
+
+    override func updateLayer() {
+        super.updateLayer()
+        reconfigureBackdrop()
+    }
+
+    func reconfigureBackdrop(reduceTransparency: Bool = NSWorkspace.shared.accessibilityDisplayShouldReduceTransparency) {
+        guard let root = layer?.sublayers?.first(where: {
+            ($0.sublayers ?? []).contains(where: { String(describing: type(of: $0)) == "CABackdropLayer" })
+        }),
+        let bd = root.sublayers?.first(where: { String(describing: type(of: $0)) == "CABackdropLayer" }) else {
+            return
+        }
+
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        if reduceTransparency {
+            for sub in root.sublayers ?? [] { sub.isHidden = false }
+        } else {
+            if bd.responds(to: NSSelectorFromString("setScale:")) {
+                bd.setValue(backdropScale, forKey: "scale")
+            }
+            for f in bd.filters ?? [] {
+                guard let obj = f as? NSObject,
+                      obj.responds(to: NSSelectorFromString("name")),
+                      let name = obj.value(forKey: "name") as? String else { continue }
+                if name.hasPrefix("gaussianBlur") {
+                    bd.setValue(blurRadius, forKeyPath: "filters.\(name).inputRadius")
+                } else if name == "colorSaturate" {
+                    bd.setValue(saturation, forKeyPath: "filters.\(name).inputAmount")
+                }
+            }
+            for sub in root.sublayers ?? [] where sub !== bd {
+                sub.isHidden = true
+            }
+        }
+        CATransaction.commit()
+    }
+}
+
 

@@ -9,7 +9,7 @@ enum BreakViewSnapshots {
     static func write(to dir: URL) {
         for t in ThemeID.scenes {
             let short = ImageRenderer(content: ZStack(alignment: .center) {
-                SnapshotDesktop().blur(radius: 30).clipped()
+                SnapshotDesktop().blur(radius: BreakOverlayController.shortBlurRadius).clipped()
                 Color.black.opacity(BreakOverlayController.shortDim)
                 ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}), flatBackground: true, theme: t)
             }.frame(width: 1440, height: 900))
@@ -112,7 +112,7 @@ enum BreakViewSnapshots {
             let r = ImageRenderer(content: ZStack {
                 (light ? AnyView(LinearGradient(colors: [Color(white: 0.96), Color(red: 0.85, green: 0.9, blue: 0.97)], startPoint: .top, endPoint: .bottom))
                        : AnyView(SnapshotDesktop()))
-                    .frame(width: 1440, height: 900).blur(radius: 30, opaque: true).clipped()
+                    .frame(width: 1440, height: 900).blur(radius: BreakOverlayController.shortBlurRadius, opaque: true).clipped()
                 Color.black.opacity(BreakOverlayController.shortDim)
                 ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}), flatBackground: true, fixedRemaining: 18)
             }.frame(width: 1440, height: 900))
@@ -142,7 +142,7 @@ enum BreakViewSnapshots {
             Group {
                 if let sample { Image(nsImage: sample).resizable().scaledToFill() } else { SnapshotDesktop() }
             }
-            .frame(width: 1440, height: 900).blur(radius: 30, opaque: true).clipped()
+            .frame(width: 1440, height: 900).blur(radius: BreakOverlayController.shortBlurRadius, opaque: true).clipped()
             Color.black.opacity(BreakOverlayController.shortDim)
             ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}), flatBackground: true,
                               fixedRemaining: 19).opacity(opacity)

@@ -278,8 +278,8 @@
     }
 
     .break-stage[data-mode="short"] .scene-stack {
-      filter: blur(22px) saturate(82%);
-      transform: scale(1.08);
+      filter: blur(11px) saturate(106%);
+      transform: scale(1.04);
     }
 
     .scene-img {
@@ -320,10 +320,17 @@
     .shade-contrast { opacity: var(--extra-dim); }
     .shade-daypart { opacity: var(--scene-dim); }
     .shade-midnight { opacity: var(--midnight-dim); }
-    .shade-short { opacity: 0; }
+    .shade-short { background: rgb(8, 13, 23); opacity: 0; }
+
+    .break-stage[data-mode="short"] .shade-contrast,
+    .break-stage[data-mode="short"] .shade-daypart,
+    .break-stage[data-mode="short"] .shade-midnight,
+    .break-stage[data-mode="short"] .shade-bottom {
+      opacity: 0;
+    }
 
     .break-stage[data-mode="short"] .shade-short {
-      opacity: 0.58;
+      opacity: 0.20;
     }
 
     .shade-bottom {

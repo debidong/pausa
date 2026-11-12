@@ -51,7 +51,7 @@ struct ShortBreakCapsule: View {
                     let t = elapsed(ProcessInfo.processInfo.systemUptime)
                     GlassClock(text: BreakOverlayController.Copy.shortTitle,
                                size: LongBreakView.clockSize(g.size.height) * Self.promptScale,
-                               flat: flatBackground, monospaced: false)
+                               flat: flatBackground, monospaced: false, tone: .short)
                         .mask(mask(t))
                 }
                 .frame(maxWidth: g.size.width - 80)
@@ -85,7 +85,7 @@ struct ShortBreakControls: View {
     var flat = false
     var fixedRemaining: Double? = nil
     var body: some View {
-        HoldCapsule(hold: hold, glass: !flat)
+        HoldCapsule(hold: hold, glass: !flat, darkBacking: 0.24)
             .modifier(GlassGroup(on: !flat))
             .padding(12)   // room for the glass edge
             .environment(\.colorScheme, .dark)
@@ -107,8 +107,10 @@ struct GlassClock: View {
     var tone: Tone = .standard
     struct Tone {
         let fill: Double, backing: Double, flat: Double
-        /// Short-break prompt; also the midnight long break (kept dim on purpose).
+        /// Default tone.
         static let standard = Tone(fill: 0.18, backing: 0.28, flat: 1)
+        /// Short-break prompt: crisp white glass with soft glyph cushion so it reads over light or dark apps.
+        static let short = Tone(fill: 0.68, backing: 0.42, flat: 1)
         /// Long break by day and evening: reads as clearly as the skip capsule's white 0.9 text.
         static let bright = Tone(fill: 0.62, backing: 0.36, flat: 1)
         static let dim = Tone(fill: 0.18, backing: 0.28, flat: 0.55)
@@ -166,6 +168,7 @@ struct HoldCapsule: View {
     @ObservedObject var hold: HoldToSkip
     var fixed: Double? = nil
     var glass = true
+    var darkBacking: Double = 0
     var body: some View {
         let p = max(0, min(1, fixed ?? hold.progress))
         // "长按 %@ 跳过": the keycap renders where %@ sits, text on either side.
@@ -186,7 +189,10 @@ struct HoldCapsule: View {
             .padding(.horizontal, 16).padding(.vertical, 7)
             .background(alignment: .leading) {
                 GeometryReader { g in
-                    Rectangle().fill(Color.white.opacity(0.28)).frame(width: g.size.width * p)
+                    ZStack(alignment: .leading) {
+                        if darkBacking > 0 { Color.black.opacity(darkBacking) }
+                        Rectangle().fill(Color.white.opacity(0.28)).frame(width: g.size.width * p)
+                    }
                 }
                 .clipShape(Capsule())
             }
