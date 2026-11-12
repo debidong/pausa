@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Sparkle
 import os
@@ -129,14 +130,25 @@ final class Updater: NSObject, SPUUpdaterDelegate {
     let driver = SilentUserDriver()
     private lazy var updater: SPUUpdater = {
         wireDriver()
-        return SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: driver, delegate: self)
+        let u = SPUUpdater(hostBundle: .main, applicationBundle: .main, userDriver: driver, delegate: self)
+        u.httpHeaders = ["Cache-Control": "no-cache", "Pragma": "no-cache"]
+        return u
     }()
     private var started = false
+    private var wakeObserver: NSObjectProtocol?
+    private var pendingRetryWorkItem: DispatchWorkItem?
     private let log = Logger(subsystem: "app.pausa", category: "update")
 
     override init() {
         super.init()
         wireDriver()
+    }
+
+    deinit {
+        if let wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
+        }
+        pendingRetryWorkItem?.cancel()
     }
 
     private func wireDriver() {
@@ -166,10 +178,59 @@ final class Updater: NSObject, SPUUpdaterDelegate {
         if next != previous { onPhaseChange?(next) }
     }
 
-    /// Starts scheduled checks (interval from Info.plist SUScheduledCheckInterval). Safe to call twice.
+    /// Starts scheduled checks (interval from Info.plist SUScheduledCheckInterval), triggers an immediate
+    /// silent background check on launch, and watches wake/network recovery. Safe to call twice.
     func start() {
         guard !started else { return }
-        do { try updater.start(); started = true } catch { NSLog("Pausa updater failed to start: \(error)") }
+        do {
+            try updater.start()
+            started = true
+            if !Settings.dryRun {
+                if updater.automaticallyChecksForUpdates {
+                    log.info("triggering launch background update check")
+                    updater.checkForUpdatesInBackground()
+                }
+                installWakeObserver()
+            }
+        } catch {
+            NSLog("Pausa updater failed to start: \(error)")
+        }
+    }
+
+    static func shouldRefreshOnWake(lastCheck: Date?, interval: TimeInterval, phase: UpdatePhase, now: Date = Date()) -> Bool {
+        if case .failed = phase { return true }
+        guard let lastCheck else { return true }
+        return now.timeIntervalSince(lastCheck) >= max(60, interval)
+    }
+
+    private func installWakeObserver() {
+        guard wakeObserver == nil else { return }
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            // Wait 12 s after wake so Wi-Fi and DNS have reconnected before polling appcast.xml.
+            self?.scheduleCycleReset(after: 12, onlyWhenOverdueOrFailed: true)
+        }
+    }
+
+    private func scheduleCycleReset(after delay: TimeInterval, onlyWhenOverdueOrFailed: Bool) {
+        pendingRetryWorkItem?.cancel()
+        let item = DispatchWorkItem { [weak self] in
+            guard let self, self.started, !Settings.dryRun else { return }
+            guard self.updater.automaticallyChecksForUpdates,
+                  !self.updater.sessionInProgress,
+                  self.deferredInstall == nil else { return }
+            if onlyWhenOverdueOrFailed,
+               !Self.shouldRefreshOnWake(lastCheck: self.updater.lastUpdateCheckDate,
+                                         interval: self.updater.updateCheckInterval,
+                                         phase: self.machine.phase) {
+                return
+            }
+            self.log.info("resetting Sparkle update cycle (overdue/wake/retry)")
+            self.updater.resetUpdateCycle()
+        }
+        pendingRetryWorkItem = item
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay, execute: item)
     }
 
     /// Manual "检查更新". Starts the updater first if needed; silent either way.
@@ -228,7 +289,29 @@ final class Updater: NSObject, SPUUpdaterDelegate {
         if code != Int(SUError.noUpdateError.rawValue) {
             deferredInstall = nil
             transition(.failed(ns.localizedDescription))
+            if started, !Settings.dryRun, ns.domain == NSURLErrorDomain {
+                scheduleCycleReset(after: 60, onlyWhenOverdueOrFailed: false)
+            }
         }
+    }
+
+    func handleWillInstallOnQuit(version: String?, immediateInstallHandler: @escaping () -> Void) -> Bool {
+        transition(.readyToRelaunch(fallbackVersion: version))
+        log.info("delegate: willInstallUpdateOnQuit \(version ?? "?", privacy: .public)")
+        if canInstallNow() {
+            deferredInstall = nil
+            transition(.installProceeded)
+            DeferredInstall.delegateRelaunch(immediateInstallHandler).proceed(willRelaunch: willRelaunch)
+        } else {
+            log.info("update ready (quit-hook); holding install until overlay clears")
+            deferredInstall = .delegateRelaunch(immediateInstallHandler)
+        }
+        return true
+    }
+
+    func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem,
+                 immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool {
+        handleWillInstallOnQuit(version: item.displayVersionString, immediateInstallHandler: immediateInstallHandler)
     }
 
     func shouldPostponeRelaunch(version: String?, untilInvoking installHandler: @escaping () -> Void) -> Bool {

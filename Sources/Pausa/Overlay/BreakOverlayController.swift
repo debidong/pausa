@@ -105,6 +105,7 @@ public final class BreakOverlayController {
     private var sceneSeed: UInt64 = 1
     /// Picked once per break (kept across screen changes); see RestQuotes.
     private var longQuote: String?
+    private var shortQuote: String?
     /// Daypart of the current long break, fixed when it starts (the screen style reads this).
     public private(set) var daypart: BreakDaypart = .current()
     #if PAUSA_DEV
@@ -150,6 +151,7 @@ public final class BreakOverlayController {
         countdown = cd
 
         sceneSeed = UInt64.random(in: 1...UInt64.max)
+        shortQuote = RestQuotes.nextShort()
         holdToSkip.cancel(animated: false)
         holdToSkip.onComplete = { [weak self] in self?.skipShort() }
         dimWindows = NSScreen.screens.map(makeDimWindow)
@@ -427,7 +429,7 @@ public final class BreakOverlayController {
     /// Card in the middle of the visible frame, hint at the bottom: one transparent panel over the
     /// whole visible frame. Click-through; key (without activating Pausa) only to hear Space.
     private func makeCapsule(countdown: Countdown, on screen: NSScreen) -> NSPanel {
-        let host = NSHostingView(rootView: ShortBreakCapsule(countdown: countdown, hold: holdToSkip))
+        let host = NSHostingView(rootView: ShortBreakCapsule(countdown: countdown, hold: holdToSkip, prompt: shortQuote))
         let vf = screen.frame   // full screen, same geometry as the long break (clock size/position match)
         let p = ShortBreakPanel(contentRect: vf, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         p.hold = holdToSkip

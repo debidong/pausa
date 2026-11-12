@@ -426,4 +426,42 @@ final class MenuBarAndControllerExtendedTests: XCTestCase {
             XCTAssertLessThan(sound.duration, 5.0, "\(chime.name).caf duration unexpectedly long")
         }
     }
+
+    func testUpdaterWillInstallOnQuitAutoRestartsImmediatelyOrDefersUntilOverlayClears() {
+        // Unblocked: auto-restarts right away without waiting for manual click.
+        let immediate = Updater()
+        var immediateRuns = 0
+        immediate.canInstallNow = { true }
+        let handled = immediate.handleWillInstallOnQuit(version: "0.6.7") {
+            immediateRuns += 1
+        }
+        XCTAssertTrue(handled)
+        XCTAssertEqual(immediateRuns, 1)
+        XCTAssertEqual(immediate.phase, .installing(version: "0.6.7"))
+
+        // Blocked by break/preview: holds until overlay clears, then auto-restarts once.
+        let deferred = Updater()
+        var blocked = true
+        var deferredRuns = 0
+        deferred.canInstallNow = { !blocked }
+        let held = deferred.handleWillInstallOnQuit(version: "0.6.7") {
+            deferredRuns += 1
+        }
+        XCTAssertTrue(held)
+        XCTAssertEqual(deferredRuns, 0)
+        XCTAssertEqual(deferred.phase, .readyToInstall(version: "0.6.7"))
+
+        blocked = false
+        deferred.retryHeldInstall()
+        XCTAssertEqual(deferredRuns, 1)
+        XCTAssertEqual(deferred.phase, .installing(version: "0.6.7"))
+    }
+
+    func testUpdaterShouldRefreshOnWakePolicy() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        XCTAssertTrue(Updater.shouldRefreshOnWake(lastCheck: nil, interval: 3600, phase: .idle, now: now))
+        XCTAssertFalse(Updater.shouldRefreshOnWake(lastCheck: now.addingTimeInterval(-1200), interval: 3600, phase: .upToDate, now: now))
+        XCTAssertTrue(Updater.shouldRefreshOnWake(lastCheck: now.addingTimeInterval(-3601), interval: 3600, phase: .upToDate, now: now))
+        XCTAssertTrue(Updater.shouldRefreshOnWake(lastCheck: now.addingTimeInterval(-60), interval: 3600, phase: .failed(message: "offline"), now: now))
+    }
 }

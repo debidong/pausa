@@ -80,7 +80,7 @@ enum BreakViewSnapshots {
             func view(_ w: Double, _ h: Double, night: Bool, _ part: BreakDaypart, bare: Bool = false) -> some View {
                 var v = LongBreakView(countdown: Countdown(total: 180, onDone: {}), showControls: true, onSnooze: { _ in },
                                       theme: .photo, seed: 7, animate: false, stillTime: 60, night: night, daypart: part,
-                                      fixedRemaining: 167, flatControls: true, quote: RestQuotes.all.first?.text(for: AppLanguage.current))
+                                      fixedRemaining: 167, flatControls: true, quote: RestQuotes.longQuotes.first?.text(for: AppLanguage.current))
                 v.bare = bare
                 return v.frame(width: w, height: h)
             }
@@ -107,14 +107,15 @@ enum BreakViewSnapshots {
     static func writeQuotes(to dir: URL, lang: String) {
         SceneryArt.override = 1920
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        let longestAll = RestQuotes.all.compactMap { $0.text(for: AppLanguage.current) }.max { $0.count < $1.count }
+        let longestAll = RestQuotes.longQuotes.compactMap { $0.text(for: AppLanguage.current) }.max { $0.count < $1.count }
+        let longestShort = RestQuotes.shortPool.compactMap { $0.text(for: AppLanguage.current) }.max { $0.count < $1.count }
         for (name, light) in [("light", true), ("dark", false)] {
             let r = ImageRenderer(content: ZStack {
                 (light ? AnyView(LinearGradient(colors: [Color(white: 0.96), Color(red: 0.85, green: 0.9, blue: 0.97)], startPoint: .top, endPoint: .bottom))
                        : AnyView(SnapshotDesktop()))
                     .frame(width: 1440, height: 900).blur(radius: BreakOverlayController.shortBlurRadius, opaque: true).clipped()
                 Color.black.opacity(BreakOverlayController.shortDim)
-                ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}), flatBackground: true, fixedRemaining: 18)
+                ShortBreakCapsule(countdown: Countdown(total: 20, onDone: {}), flatBackground: true, fixedRemaining: 18, prompt: longestShort)
             }.frame(width: 1440, height: 900))
             save(r.nsImage, dir.appendingPathComponent("short-\(lang)-\(name).png"))
             let l = ImageRenderer(content: LongBreakView(countdown: Countdown(total: 300, onDone: {}),

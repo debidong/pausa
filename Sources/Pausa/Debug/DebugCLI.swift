@@ -116,8 +116,9 @@ enum DebugCLI {
                 let (pre, post) = HoldCapsule.split(v("break.holdToSkip"))
                 let gaps = CGFloat((pre.isEmpty ? 0 : 1) + (post.isEmpty ? 0 : 1)) * 4
                 let cap = w(pre, 13, .medium) + w(post, 13, .medium) + gaps + w(v("key.space"), 12, .medium) + 10 + 32
-                let shortW = w(v("break.short.hint"), 108 * 0.7, .semibold)
-                print("     \(lang.rawValue): capsule \(Int(cap)) pt, short hint \(Int(shortW)) pt")
+                let shortPrompts = [v("break.short.hint")] + RestQuotes.shortPool.compactMap { $0.text(for: lang) }
+                let shortW = shortPrompts.map { w($0, 108 * 0.7, .semibold) }.max() ?? 0
+                print("     \(lang.rawValue): capsule \(Int(cap)) pt, max short hint \(Int(shortW)) pt (\(shortPrompts.count) variants)")
                 check("\(lang.rawValue): keys present", v("break.holdToSkip").contains("%@") && !v("key.space").isEmpty && !v("break.short.hint").isEmpty)
                 check("\(lang.rawValue): one line on a 1280-pt screen", cap < 600 && shortW < 1200)
             }
@@ -470,26 +471,51 @@ enum DebugCLI {
             let d = UserDefaults(suiteName: "pausa.quotes.selftest")!
             d.removePersistentDomain(forName: "pausa.quotes.selftest")
             let day1 = Date(timeIntervalSince1970: 1_800_000_000), day2 = day1.addingTimeInterval(86_400)
-            var ok = RestQuotes.all.count == 36 && BreakDaypart.allCases.allSatisfy { RestQuotes.pool($0).count == 12 }
-            // Boundaries: 05:59 midnight, 06:00 day, 17:59 day, 18:00 night, 22:59 night, 23:00 midnight.
+            var ok = RestQuotes.all.count == 124
+                && RestQuotes.longQuotes.count == 108
+                && RestQuotes.pool(.day).count == 54
+                && RestQuotes.pool(.night).count == 30
+                && RestQuotes.pool(.midnight).count == 24
+                && RestQuotes.shortPool.count == 16
+            // All 8 locales present and non-empty; zero customer-service "您" in Chinese quotes.
+            for q in RestQuotes.all {
+                for lang in AppLanguage.allCases where lang != .system {
+                    let s = q.text[lang.rawValue] ?? ""
+                    ok = ok && !s.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                }
+                ok = ok && !(q.text["zh-Hans"]?.contains("您") ?? false)
+                ok = ok && !(q.text["zh-Hant"]?.contains("您") ?? false)
+            }
+            // Boundaries: 04:59 midnight, 05:00 day, 17:59 day, 18:00 night, 22:59 night, 23:00 midnight.
             var cal = Calendar(identifier: .gregorian); cal.timeZone = TimeZone(identifier: "Asia/Taipei")!
             func at(_ h: Int, _ m: Int) -> Date { cal.date(bySettingHour: h, minute: m, second: 0, of: day1)! }
-            let edges: [(Int, Int, BreakDaypart)] = [(5, 59, .midnight), (6, 0, .day), (17, 59, .day), (18, 0, .night),
+            let edges: [(Int, Int, BreakDaypart)] = [(4, 59, .midnight), (5, 0, .day), (17, 59, .day), (18, 0, .night),
                                                     (22, 59, .night), (23, 0, .midnight), (0, 0, .midnight)]
             ok = ok && edges.allSatisfy { BreakDaypart.current(at: at($0.0, $0.1), cal: cal) == $0.2 }
+            // Cross-day persistent deduplication: picks across day1 & day2 keep accumulating until all 30 night quotes are seen.
             let nightIDs = Set(RestQuotes.pool(.night).map(\.id))
-            for _ in 0..<12 { _ = RestQuotes.next(.night, defaults: d, now: day1) }
-            ok = ok && Set(d.stringArray(forKey: "restQuotes.used") ?? []) == nightIDs           // 12 picks, 12 distinct, night only
-            let last = d.string(forKey: "restQuotes.last")
-            _ = RestQuotes.next(.night, defaults: d, now: day1)                                   // pool exhausted → restart, not the last one
-            ok = ok && d.string(forKey: "restQuotes.last") != last && nightIDs.contains(d.string(forKey: "restQuotes.last") ?? "")
+            for i in 0..<30 { _ = RestQuotes.next(.night, defaults: d, now: i < 15 ? day1 : day2) }
+            ok = ok && Set(d.stringArray(forKey: RestQuotes.usedKey(for: "night")) ?? []) == nightIDs
+            let lastNight = d.string(forKey: RestQuotes.lastKey(for: "night"))
+            _ = RestQuotes.next(.night, defaults: d, now: day2)   // pool exhausted → restart, never repeating lastNight
+            let nextNight = d.string(forKey: RestQuotes.lastKey(for: "night"))
+            ok = ok && nextNight != lastNight && nightIDs.contains(nextNight ?? "")
+            ok = ok && (d.stringArray(forKey: RestQuotes.usedKey(for: "night")) ?? []).count == 1
+            // Short-break pool deduplicates independently across all 16 micro-prompts.
+            let shortIDs = Set(RestQuotes.shortPool.map(\.id))
+            for _ in 0..<16 { _ = RestQuotes.nextShort(defaults: d) }
+            ok = ok && Set(d.stringArray(forKey: RestQuotes.usedKey(for: "short")) ?? []) == shortIDs
+            let lastShort = d.string(forKey: RestQuotes.lastKey(for: "short"))
+            _ = RestQuotes.nextShort(defaults: d)
+            ok = ok && d.string(forKey: RestQuotes.lastKey(for: "short")) != lastShort
+            // Category isolation: picking midnight does not wipe night's used set.
             _ = RestQuotes.next(.midnight, defaults: d, now: day2)
-            ok = ok && (d.stringArray(forKey: "restQuotes.used") ?? []).count == 1               // new day resets
-            ok = ok && (d.string(forKey: "restQuotes.last") ?? "").hasPrefix("break.long.quote.midnight.")
+            ok = ok && (d.string(forKey: RestQuotes.lastKey(for: "midnight")) ?? "").hasPrefix("break.long.quote.midnight.")
+            ok = ok && (d.stringArray(forKey: RestQuotes.usedKey(for: "night")) ?? []).count == 1
             AppLanguage.override = .fr
             ok = ok && (RestQuotes.text(id: "break.long.quote.midnight.8") ?? "") == "C'est tout pour aujourd'hui. Bonne nuit."
             d.removePersistentDomain(forName: "pausa.quotes.selftest")
-            print(ok ? "QUOTES PASS (all=\(RestQuotes.all.count), 12 per daypart)" : "QUOTES FAIL"); exit(ok ? 0 : 1)
+            print(ok ? "QUOTES PASS (long=\(RestQuotes.longQuotes.count) [54/30/24], short=\(RestQuotes.shortPool.count))" : "QUOTES FAIL"); exit(ok ? 0 : 1)
         }
         if let i = args.firstIndex(of: "--debug-render-quotes"), i + 1 < args.count {
             // --debug-render-quotes <dir> --lang <code>: quote under the countdown, short + long.

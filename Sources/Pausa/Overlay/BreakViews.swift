@@ -27,6 +27,7 @@ struct ShortBreakCapsule: View {
     var theme: ThemeID = .current
     var hold: HoldToSkip? = nil
     var fixedRemaining: Double? = nil
+    var prompt: String? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     static let clearFor: Double = 3
@@ -45,17 +46,18 @@ struct ShortBreakCapsule: View {
     }
 
     var body: some View {
+        let label = prompt ?? BreakOverlayController.Copy.shortTitle
         GeometryReader { g in
             ZStack {
                 TimelineView(.animation) { _ in
                     let t = elapsed(ProcessInfo.processInfo.systemUptime)
-                    GlassClock(text: BreakOverlayController.Copy.shortTitle,
+                    GlassClock(text: label,
                                size: LongBreakView.clockSize(g.size.height) * Self.promptScale,
                                flat: flatBackground, monospaced: false, tone: .short)
                         .mask(mask(t))
                 }
                 .frame(maxWidth: g.size.width - 80)
-                .accessibilityLabel(BreakOverlayController.Copy.shortTitle)
+                .accessibilityLabel(label)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }

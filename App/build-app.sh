@@ -144,8 +144,9 @@ grep -q "PausaFocusFilter" "$RES/Metadata.appintents/extract.actionsdata" || {
   exit 1
 }
 rm -rf "$ICONTMP"
-# About card art (scripts/make-about-pond.py).
-cp App/about/about-pond-light.jpg App/about/about-pond-dark.jpg "$RES/"
+# About card art (scripts/make-about-pond.py) and editorial brand fonts.
+cp App/about/about-pond-light.jpg App/about/about-pond-dark.jpg \
+   App/about/InstrumentSerif-Regular.ttf App/about/Archivo-Light.ttf "$RES/"
 # Break quotes (App/rest-quotes.json -> Resources/rest-quotes.json).
 cp App/strings.json "$RES/strings.json"   # every UI string, all languages (see L10n.swift)
 # Focus filter text shown by System Settings (system language; English is the key, see FocusFilter.swift).

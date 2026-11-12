@@ -1,24 +1,4 @@
 {
-  "about.developer": {
-    "zh-Hans": "由 Bowen（debidong）开发",
-    "zh-Hant": "由 Bowen（debidong）開發",
-    "en": "Developed by Bowen (debidong)",
-    "es": "Desarrollado por Bowen (debidong)",
-    "ru": "Разработчик: Bowen (debidong)",
-    "fr": "Développé par Bowen (debidong)",
-    "vi": "Phát triển bởi Bowen (debidong)",
-    "th": "พัฒนาโดย Bowen (debidong)"
-  },
-  "about.icon": {
-    "zh-Hans": "图标的灵感来自泰国寺庙里的莲花。",
-    "zh-Hant": "圖示的靈感來自泰國寺廟裡的蓮花。",
-    "en": "The icon was inspired by the lotus flowers in Thai temples.",
-    "es": "El icono se inspira en las flores de loto de los templos tailandeses.",
-    "ru": "Значок вдохновлён лотосами в тайских храмах.",
-    "fr": "L’icône s’inspire des fleurs de lotus des temples thaïlandais.",
-    "vi": "Biểu tượng lấy cảm hứng từ hoa sen ở chùa Thái Lan.",
-    "th": "ไอคอนได้แรงบันดาลใจจากดอกบัวในวัดไทย"
-  },
   "about.medical": {
     "zh-Hans": "若眼部持续不适，请及时就医。Pausa 不能替代专业治疗。",
     "zh-Hant": "若眼部持續不適，請及時就醫。Pausa 不能取代專業治療。",
@@ -28,16 +8,6 @@
     "fr": "Si la gêne oculaire persiste, consultez rapidement un médecin. Pausa ne remplace pas un traitement professionnel.",
     "vi": "Nếu mắt vẫn tiếp tục khó chịu, hãy đi khám bác sĩ kịp thời. Pausa không thể thay thế việc điều trị chuyên môn.",
     "th": "หากดวงตายังรู้สึกไม่สบายอย่างต่อเนื่อง โปรดไปพบแพทย์โดยเร็ว Pausa ไม่สามารถใช้แทนการรักษาจากผู้เชี่ยวชาญได้"
-  },
-  "about.name": {
-    "zh-Hans": "名字来自西班牙语中的“暂停”。",
-    "zh-Hant": "名字來自西班牙語中的「暫停」。",
-    "en": "The name comes from the Spanish word for “pause.”",
-    "es": "El nombre viene de la palabra española “pausa”.",
-    "ru": "Название происходит от испанского слова «пауза».",
-    "fr": "Le nom vient du mot espagnol signifiant « pause ».",
-    "vi": "Tên gọi bắt nguồn từ từ “tạm dừng” trong tiếng Tây Ban Nha.",
-    "th": "ชื่อนี้มาจากคำภาษาสเปนที่แปลว่า “หยุดพัก”"
   },
   "about.version": {
     "zh-Hans": "版本 %@",

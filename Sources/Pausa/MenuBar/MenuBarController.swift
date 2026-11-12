@@ -1,4 +1,5 @@
 import AppKit
+import CoreText
 import SwiftUI
 import PausaCore
 import Combine
@@ -748,10 +749,11 @@ struct AboutPage: View {
                 Text(L("about.medical"))   // wording pending medical review
                     .font(.system(size: 11))
                     // Not .secondary: measured below 4.5:1 on the window background.
-                    .foregroundStyle(scheme == .dark ? Color(white: 0.68) : Color(white: 0.36))
+                    .foregroundStyle(scheme == .dark ? Color(white: 0.68) : Color(white: 0.38))
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
+                    .padding(.top, 2)
             }
             Section {
                 UpdateRow(model: .shared, version: version)
@@ -762,66 +764,132 @@ struct AboutPage: View {
 }
 
 /// About top card: watercolor lotus pond (App/about, 1440x600 crops of the day/night art) filling the
-/// card, lotus on the left; name and credits on the calm water from 52% width.
-/// Light: lotus-leaf greens on cream water (title, body, teal link underlined on hover). Dark: night pond,
-/// cream text, cream underlined link.
+/// card, lotus on the left; bottom-right Square Fold brand lockup ("Pausa" linking to official site + "by debidong").
 struct AboutCard: View {
     @Environment(\.colorScheme) private var scheme
     static let height: CGFloat = 220
-    static let textStart: CGFloat = 0.52
-    static let titleLight = Color(red: 0x24 / 255, green: 0x37 / 255, blue: 0x2D / 255)   // #24372D
-    static let bodyLight = Color(red: 0x3A / 255, green: 0x4A / 255, blue: 0x40 / 255)    // #3A4A40
-    static let cream = Color(red: 0xF5 / 255, green: 0xEC / 255, blue: 0xD7 / 255)
-    private static func image(dark: Bool) -> NSImage? {
-        Bundle.main.url(forResource: dark ? "about-pond-dark" : "about-pond-light", withExtension: "jpg")
-            .flatMap(NSImage.init(contentsOf:))
-    }
-    /// Light-mode link: deep teal #2F6B57 instead of system blue, underlined on hover.
-    static let linkLight = Color(red: 0x2F / 255, green: 0x6B / 255, blue: 0x57 / 255)
-    @State private var linkHover = false
+    /// Soft botanical sage-pine so the wordmark blends into the watercolor wash instead of reading as stark black.
+    static let inkLight = Color(red: 0x2C / 255, green: 0x45 / 255, blue: 0x38 / 255)   // #2C4538
+    static let cream = Color(red: 0xF0 / 255, green: 0xEB / 255, blue: 0xDF / 255)      // #F0EBDF
+    static let websiteURL = URL(string: "https://debidong.github.io/pausa/")!
 
-    /// New York title, light body, 8 pt rhythm; text column from 52% of the card.
-    private func text(dark: Bool, width: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(appName).font(.system(size: 28, weight: .semibold, design: .serif))
-                .foregroundStyle(dark ? Self.cream : Self.titleLight)
-                .padding(.bottom, 4)
-            Text(L("about.name")).lineSpacing(2)
-            Text(L("about.icon")).lineSpacing(2)
-            Link(destination: URL(string: "https://github.com/debidong")!) {
-                Text(L("about.developer"))
-                    .foregroundStyle(dark ? Self.cream : Self.linkLight)
-                    .underline(dark || linkHover)
-                    .multilineTextAlignment(.leading)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+    private static let fontsReady: Bool = {
+        for name in ["InstrumentSerif-Regular", "Archivo-Light"] {
+            if let url = Bundle.main.url(forResource: name, withExtension: "ttf")
+                ?? URL(fileURLWithPath: "App/about/\(name).ttf") as URL?,
+               FileManager.default.fileExists(atPath: url.path) {
+                CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
             }
-            .onHover { linkHover = $0 }
-            .padding(.top, 4)
         }
-        .font(.system(size: 13, weight: .light))
-        .foregroundStyle(dark ? Self.cream : Self.bodyLight)
-        .lineLimit(2)
-        .fixedSize(horizontal: false, vertical: true)
-        .multilineTextAlignment(.leading)
-        .frame(width: width * (1 - Self.textStart) - 14, alignment: .leading)
-        .offset(x: width * Self.textStart)
+        return true
+    }()
+
+    /// Builds an un-dilated CoreText vector path for "Pausa" so macOS synthetic font smoothing never thickens its stems.
+    private static let pausaGlyphs: (path: Path, size: CGSize) = {
+        _ = fontsReady
+        let ctFont = CTFontCreateWithName("InstrumentSerif-Regular" as CFString, 50, nil)
+        let chars = Array("Pausa".utf16)
+        var glyphs = [CGGlyph](repeating: 0, count: chars.count)
+        CTFontGetGlyphsForCharacters(ctFont, chars, &glyphs, chars.count)
+        var advances = [CGSize](repeating: .zero, count: chars.count)
+        CTFontGetAdvancesForGlyphs(ctFont, .horizontal, glyphs, &advances, chars.count)
+        let cap = CTFontGetCapHeight(ctFont)
+        let tracking: CGFloat = -0.75
+        let combined = CGMutablePath()
+        var x: CGFloat = 0
+        for i in 0..<glyphs.count {
+            if let gp = CTFontCreatePathForGlyph(ctFont, glyphs[i], nil) {
+                let t = CGAffineTransform(translationX: x, y: cap).scaledBy(x: 1, y: -1)
+                combined.addPath(gp, transform: t)
+            }
+            x += advances[i].width + (i < glyphs.count - 1 ? tracking : 0)
+        }
+        return (Path(combined), CGSize(width: x, height: cap + 2))
+    }()
+
+    private static func image(dark: Bool) -> NSImage? {
+        let name = dark ? "about-pond-dark" : "about-pond-light"
+        return Bundle.main.url(forResource: name, withExtension: "jpg").flatMap(NSImage.init(contentsOf:))
+            ?? NSImage(contentsOfFile: "App/about/\(name).jpg")
+    }
+
+    @State private var linkHover = false
+    @State private var pushedCursor = false
+
+    private func signature(dark: Bool) -> some View {
+        let _ = Self.fontsReady
+        let wordmark = Self.pausaGlyphs
+        let baseInk = dark ? Self.cream : Self.inkLight
+        let wordmarkOpacity = linkHover ? (dark ? 0.90 : 0.86) : 0.65
+        let underlineOpacity = dark ? 0.42 : 0.36
+
+        return VStack(alignment: .trailing, spacing: 8) {
+            Link(destination: Self.websiteURL) {
+                wordmark.path
+                    .fill(baseInk.opacity(wordmarkOpacity))
+                    .frame(width: wordmark.size.width, height: wordmark.size.height)
+                    .overlay(alignment: .bottom) {
+                        Rectangle()
+                            .fill(baseInk.opacity(underlineOpacity))
+                            .frame(height: 0.75)
+                            .padding(.horizontal, 1.5)
+                            .offset(y: 4)
+                            .scaleEffect(x: linkHover ? 1 : 0, y: 1, anchor: .trailing)
+                            .opacity(linkHover ? 1 : 0)
+                    }
+                    .contentShape(Rectangle())
+                    .animation(.easeOut(duration: 0.18), value: linkHover)
+            }
+            .buttonStyle(.plain)
+            .blendMode(dark ? .normal : .multiply)
+            .onHover { hovering in
+                linkHover = hovering
+                if hovering && !pushedCursor {
+                    NSCursor.pointingHand.push()
+                    pushedCursor = true
+                } else if !hovering && pushedCursor {
+                    NSCursor.pop()
+                    pushedCursor = false
+                }
+            }
+            .onDisappear {
+                if pushedCursor {
+                    NSCursor.pop()
+                    pushedCursor = false
+                }
+            }
+            .accessibilityLabel("Pausa")
+
+            Text("by debidong")
+                .font(.custom("Archivo-Light", fixedSize: 11.5))
+                .tracking(0.48)
+                .foregroundStyle(baseInk.opacity(dark ? 0.44 : 0.46))
+                .blendMode(dark ? .normal : .multiply)
+                .padding(.trailing, 1.5)
+        }
+        .padding(.trailing, 34)
+        .padding(.bottom, 24)
     }
 
     var body: some View {
         let dark = scheme == .dark
         GeometryReader { g in
-            ZStack(alignment: .leading) {
+            ZStack(alignment: .bottomTrailing) {
                 if let img = Self.image(dark: dark) {
                     Image(nsImage: img).resizable().interpolation(.high).aspectRatio(contentMode: .fill)
                         .frame(width: g.size.width, height: g.size.height).clipped()
                 } else {
                     (dark ? Color(white: 0.15) : Color(red: 0.98, green: 0.96, blue: 0.9))
                 }
-                text(dark: dark, width: g.size.width)
+                signature(dark: dark)
             }
         }
         .frame(height: Self.height)
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .strokeBorder(dark ? Color.white.opacity(0.09) : Color.black.opacity(0.06), lineWidth: 0.5)
+        )
     }
 }
 
