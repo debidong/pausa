@@ -64,6 +64,35 @@ final class DetectionLogicTests: XCTestCase {
         XCTAssertNil(StatusPick.line(source: nil, autoStatus: nil, reason: nil))
     }
 
+    func testVideoHoldIgnoresTransientPulsesAndPreservesSustainedGrace() {
+        var hold = VideoSignal.Hold<String>()
+
+        // 1. Sub-5s transient pulse (e.g. WeChatAppEx WebView preload) never activates `.video` or grace.
+        XCTAssertNil(hold.update(frontPlaying: "WeChat", now: 10.0))
+        XCTAssertNil(hold.update(frontPlaying: "WeChat", now: 14.9))
+        XCTAssertNil(hold.update(frontPlaying: nil, now: 15.0))
+
+        // 2. Switching apps mid-warmup restarts the 5s timer per app.
+        XCTAssertNil(hold.update(frontPlaying: "WeChat", now: 20.0))
+        XCTAssertNil(hold.update(frontPlaying: "WeChat", now: 23.0))
+        XCTAssertNil(hold.update(frontPlaying: "Safari", now: 24.0))
+        XCTAssertNil(hold.update(frontPlaying: "Safari", now: 28.9))
+        XCTAssertEqual(hold.update(frontPlaying: "Safari", now: 29.0), "Safari")
+
+        // 3. Once confirmed, 120s grace holds after assertion drops; a brief WeChat pulse neither hijacks nor extends it.
+        XCTAssertEqual(hold.update(frontPlaying: nil, now: 30.0), "Safari")
+        XCTAssertEqual(hold.update(frontPlaying: "WeChat", now: 60.0), "Safari")
+        XCTAssertEqual(hold.update(frontPlaying: nil, now: 60.5), "Safari")
+        XCTAssertEqual(hold.update(frontPlaying: nil, now: 148.9), "Safari")
+        XCTAssertNil(hold.update(frontPlaying: nil, now: 149.0))
+
+        // 4. Explicit reset (e.g. toggling `pauseForBrowserVideo` off) clears active hold and grace immediately.
+        XCTAssertNil(hold.update(frontPlaying: "Aside", now: 200.0))
+        XCTAssertEqual(hold.update(frontPlaying: "Aside", now: 205.0), "Aside")
+        hold.reset()
+        XCTAssertNil(hold.update(frontPlaying: nil, now: 206.0))
+    }
+
     // MARK: - FullscreenMonitor
 
     private func cgWindow(pid: pid_t, layer: Int, rect: CGRect, alpha: Double = 1.0) -> [String: Any] {

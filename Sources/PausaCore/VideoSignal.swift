@@ -32,4 +32,60 @@ public enum VideoSignal {
   public static func frontIsPlaying(_ holders: [Holder], belongsToFront: (Int32) -> Bool) -> Bool {
     holders.contains { isPlayback(type: $0.type, name: $0.name) && belongsToFront($0.pid) }
   }
+
+  /// Sustained-playback gate + 2-minute post-playback grace (mirrors CallHold).
+  /// Embedded Chromium WebViews (e.g. WeChatAppEx on macBowena, 2026-11-06 & 2026-11-13) and
+  /// browser feed preloads briefly pulse "Video Wake Lock" for < 1–4 s when no video is being
+  /// watched; requiring `minRun` filters transient pulses before latching the 2-minute grace.
+  public struct Hold<Owner> {
+    public static var minRun: Double { 5 }
+    private var active: (owner: Owner, since: Double)?
+    private var last: (owner: Owner, at: Double)?
+
+    public init() {}
+
+    public mutating func reset() {
+      active = nil
+      last = nil
+    }
+
+    public mutating func update(
+      frontPlaying: Owner?,
+      now: Double,
+      minRun: Double = Self.minRun,
+      grace: Double = CallHold.grace,
+      sameOwner: (Owner, Owner) -> Bool
+    ) -> Owner? {
+      if let current = frontPlaying {
+        let since: Double
+        if let prev = active, sameOwner(prev.owner, current) {
+          since = prev.since
+        } else {
+          since = now
+        }
+        active = (current, since)
+        if now - since >= minRun {
+          last = (current, now)
+        }
+      } else {
+        active = nil
+      }
+      if let held = last, now - held.at < grace {
+        return held.owner
+      }
+      last = nil
+      return nil
+    }
+  }
+}
+
+public extension VideoSignal.Hold where Owner: Equatable {
+  mutating func update(
+    frontPlaying: Owner?,
+    now: Double,
+    minRun: Double = Self.minRun,
+    grace: Double = CallHold.grace
+  ) -> Owner? {
+    update(frontPlaying: frontPlaying, now: now, minRun: minRun, grace: grace, sameOwner: ==)
+  }
 }

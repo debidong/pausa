@@ -101,7 +101,7 @@ public final class PauseDetector: ObservableObject {
         return ud.object(forKey: key) == nil ? def : ud.bool(forKey: key)
     }
 
-    private var lastVideo: (app: NSRunningApplication, at: TimeInterval)?
+    private var videoHold = VideoSignal.Hold<NSRunningApplication>()
     #if PAUSA_DEV
     private var devVideoPlaying = false
     #endif
@@ -139,25 +139,27 @@ public final class PauseDetector: ObservableObject {
             src[.fullscreen] = PauseSource(kind: .fullscreen, appName: fs.appName, bundleID: fs.bundleID)
         }
 
-        // §1 browser video, 2-min grace after the assertion drops (R5, reuses meetingGrace).
+        // §1 browser video, sustained for VideoSignal.Hold.minRun, then 2-min grace after it drops (R5, reuses meetingGrace).
         if flag(DefaultsKey.pauseForBrowserVideo, default: true) {
             let videoFront = BrowserVideoMonitor.check(snapshot: snap)
-            if let b = videoFront { lastVideo = (b, now) }
+            let heldVideo = videoHold.update(frontPlaying: videoFront, now: now, grace: meetingGrace) {
+                $0.processIdentifier == $1.processIdentifier
+            }
             #if PAUSA_DEV   // DEV only: log the video verdict whenever it changes, with what the front app holds
             let vFront = snap.frontmostApp
             let vNow = vFront.map { "\($0.bundleIdentifier ?? "?")" } ?? "-"
-            let vPlaying = videoFront != nil
+            let vPlaying = heldVideo != nil
             if vPlaying != devVideoPlaying {
                 devVideoPlaying = vPlaying
                 let held = BrowserVideoMonitor.holders().filter { $0.name != nil }.map { "\($0.pid):\($0.name ?? "")" }.joined(separator: ", ")
                 Logger(subsystem: "app.pausa", category: "dev").info("video \(vPlaying ? "ON" : "OFF", privacy: .public) front \(vNow, privacy: .public) assertions [\(held, privacy: .public)]")
             }
             #endif
-            if let v = lastVideo, now - v.at < meetingGrace {
-                next.insert(.browserVideo(appName: v.app.localizedName ?? "Browser"))
-                src[.video] = PauseSource(kind: .video, app: v.app)
+            if let app = heldVideo {
+                next.insert(.browserVideo(appName: app.localizedName ?? "Browser"))
+                src[.video] = PauseSource(kind: .video, app: app)
             }
-        } else { lastVideo = nil }
+        } else { videoHold.reset() }
 
         // §2 screen sharing / recording, same grace.
         if flag(DefaultsKey.pauseForScreenSharing, default: true) {

@@ -953,6 +953,28 @@ func testVideoFrontAppAnyApp() {
   XCTAssertTrue(plays([.init(pid: 200, type: t, name: wake), .init(pid: 101, type: t, name: wake)]))
 }
 
+/// Transient "Video Wake Lock" pulses (< 5 s, e.g. WeChatAppEx WebView preloads) never latch `.video`
+/// or its 2-minute grace; sustained playback (>= 5 s) confirms and keeps grace after assertion drops.
+func testVideoHoldDebounceAndGrace() {
+  var h = VideoSignal.Hold<String>()
+  // Sub-5s pulse (WeChatAppEx 0.24s / 4s) is ignored and leaves no grace.
+  XCTAssertEqual(h.update(frontPlaying: "WeChat", now: 100), nil)
+  XCTAssertEqual(h.update(frontPlaying: "WeChat", now: 104.9), nil)
+  XCTAssertEqual(h.update(frontPlaying: nil, now: 105), nil)
+
+  // Sustained playback confirms at 5s and keeps 120s grace after dropping.
+  XCTAssertEqual(h.update(frontPlaying: "Aside", now: 200), nil)
+  XCTAssertEqual(h.update(frontPlaying: "Aside", now: 204), nil)
+  XCTAssertEqual(h.update(frontPlaying: "Aside", now: 205), "Aside")
+  XCTAssertEqual(h.update(frontPlaying: "Aside", now: 210), "Aside")
+  XCTAssertEqual(h.update(frontPlaying: nil, now: 211), "Aside")
+  // Brief WeChat pulse during Aside's grace must neither hijack attribution nor extend grace.
+  XCTAssertEqual(h.update(frontPlaying: "WeChat", now: 250), "Aside")
+  XCTAssertEqual(h.update(frontPlaying: nil, now: 251), "Aside")
+  XCTAssertEqual(h.update(frontPlaying: nil, now: 329.9), "Aside")
+  XCTAssertEqual(h.update(frontPlaying: nil, now: 330), nil)
+}
+
 func testStatusPrefersSource() {
   XCTAssertEqual(StatusPick.line(source: "暂停中：正在看视频", autoStatus: "已暂停：Safari 正在播放视频", reason: "x"), "暂停中：正在看视频")
   XCTAssertEqual(StatusPick.line(source: nil, autoStatus: "已推迟：Xcode 在前台", reason: "x"), "已推迟：Xcode 在前台")
@@ -1688,7 +1710,7 @@ let cases: [(String, () -> Void)] = [
  ("defer.priority", dt.testMeetingOutranksScreenShare), ("postpone.shortBudget", dt.testMenuPostponeShortBudget), ("postpone.ninety", dt.testMenuPostponeLongStopsAtNinety), ("schedule.migrationV1", st.testMigrationV1), ("schedule.dayKinds", st.testDayKinds), ("schedule.workdayUnion", st.testWorkdayUnionsWeekdayRules),
  ("pause.expiryForcesLong", mp.testPauseExpiryForcesLongBreak), ("pause.noReminders", mp.testNoRemindersDuringPause),
  ("pause.idleNotLongBreak", mp.testIdleDuringPauseIsNotALongBreak), ("urgent.oneSkipAtLine", mp.testUrgentPauseAtLineRecordsOneSkip), ("urgent.onlyAtLine", mp.testUrgentPauseOnlyAtLine), ("urgent.preBreakPanel", mp.testUrgentPauseFromPreBreakPanel), ("pause.hoursKeepCounting", mp.testPausedHoursKeepCountingThenResumeForcesLong), ("pause.resumeBeforeLine", mp.testResumeBeforeLineContinues), ("pause.lockResetsClock", mp.testLockDuringPauseResetsClock), ("persist.restartWhilePaused", pt.testRestartWhilePausedKeepsCounting), ("pause.noDeferBudget", mp.testPauseDoesNotUseDeferBudget),
- ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("video.onlyPlayback", testVideoSignalOnlyPlayback), ("video.frontAppAnyApp", testVideoFrontAppAnyApp), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle), ("accept.1", testAccept1MidnightSplit), ("accept.2", testAccept2IdleEndsAtLastInput), ("accept.3", testAccept3BreakNotWork), ("accept.4", testAccept4MeetingIgnoresIdle), ("accept.5", testAccept5LockNotWork), ("accept.6", testAccept6ActiveAndQuietHours), ("accept.7", testAccept7MeetingAfterHours), ("accept.8", testAccept8ManualPauseIsWork), ("accept.10", testAccept10ShortCompletes), ("accept.11", testAccept11LockThroughLong), ("accept.12", testAccept12SkipAddsNoTime), ("accept.13", testAccept13SnoozeThenComplete), ("accept.14", testAccept14MeetingNoBreakRows), ("accept.15", testAccept15BreakBelongsToStartDay), ("accept.16", testAccept16BarProportional), ("accept.17", testAccept17ScaleFloor), ("accept.18", testAccept18FullDay), ("accept.19", testAccept19ScaleCeiling), ("accept.20", testAccept20TypicalGapSpacing), ("accept.21", testAccept21GapPerBreak), ("accept.22", testAccept22GapPosition), ("accept.23", testAccept23SkipNoGap), ("accept.24", testAccept24BarLabels), ("accept.27", testAccept27EmptyDay), ("accept.30", testAccept30KeepThirtyDays), ("stats.durationParts", testDurationParts),
+ ("persist.resume", pt.testResumeAfterRestart), ("persist.gapIsRest", pt.testGapCountsAsRest), ("persist.mustNotDefer", pt.testMustNotDeferSurvivesRestart), ("cap.videoDropped", pc.testVideoDroppedAfterTwoHours), ("cap.meetingKept", pc.testMeetingKeptAfterRecheck), ("cap.outsideHours", pc.testOutsideHoursNeverCapped), ("cap.fullscreenDropped", pc.testFullscreenDroppedAfterTwoHours), ("video.onlyPlayback", testVideoSignalOnlyPlayback), ("video.frontAppAnyApp", testVideoFrontAppAnyApp), ("video.holdDebounce", testVideoHoldDebounceAndGrace), ("status.prefersSource", testStatusPrefersSource), ("stats.snoozeOnce", testStatsSnoozeRecordsOnce), ("stats.days", testStatsDays), ("work.idleEndsAtLastInput", testWorkIdleEndsAtLastInput), ("work.stopsDuringBreak", testWorkStopsDuringBreak), ("work.splitsAtMidnight", testWorkSplitsAtMidnight), ("work.meetingIgnoresIdle", testWorkMeetingIgnoresIdle), ("accept.1", testAccept1MidnightSplit), ("accept.2", testAccept2IdleEndsAtLastInput), ("accept.3", testAccept3BreakNotWork), ("accept.4", testAccept4MeetingIgnoresIdle), ("accept.5", testAccept5LockNotWork), ("accept.6", testAccept6ActiveAndQuietHours), ("accept.7", testAccept7MeetingAfterHours), ("accept.8", testAccept8ManualPauseIsWork), ("accept.10", testAccept10ShortCompletes), ("accept.11", testAccept11LockThroughLong), ("accept.12", testAccept12SkipAddsNoTime), ("accept.13", testAccept13SnoozeThenComplete), ("accept.14", testAccept14MeetingNoBreakRows), ("accept.15", testAccept15BreakBelongsToStartDay), ("accept.16", testAccept16BarProportional), ("accept.17", testAccept17ScaleFloor), ("accept.18", testAccept18FullDay), ("accept.19", testAccept19ScaleCeiling), ("accept.20", testAccept20TypicalGapSpacing), ("accept.21", testAccept21GapPerBreak), ("accept.22", testAccept22GapPosition), ("accept.23", testAccept23SkipNoGap), ("accept.24", testAccept24BarLabels), ("accept.27", testAccept27EmptyDay), ("accept.30", testAccept30KeepThirtyDays), ("stats.durationParts", testDurationParts),
  ("mic.dictationStillGetsBreaks", mt.testDictationBurstsStillGetBreaks), ("mic.breakAfterBurst", mt.testBreakDueDuringBurstFiresAfter), ("mic.firmPastNinety", mt.testMicFirmPastNinetyLine), ("meeting.ninetyFiresAfter", mt.testNinetyLineFiresRightAfterMeeting), ("mic.aloneAfter60s", mt.testMicAloneAfter60s), ("mic.cameraAndMeetingAppImmediate", mt.testCameraAndMeetingAppImmediate), ("mic.backgroundThreeHoursGetsBreak", mt.testBackgroundMicThreeHoursGetsBreak),
  ("prebreak.cardAt30", pb.testCardAppearsAt30), ("prebreak.countdown", pb.testCountsDownEverySecond), ("prebreak.startsBreak", pb.testStartsBreakAtZero),
  ("prebreak.typingWait", pb.testTypingWaitShowsPillOnly), ("prebreak.pauseHides", pb.testPauseReasonsHideIt), ("prebreak.shortResume", pb.testShortResumeDoesNotOpenCard),
