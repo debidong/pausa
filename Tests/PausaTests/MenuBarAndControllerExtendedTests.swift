@@ -464,4 +464,70 @@ final class MenuBarAndControllerExtendedTests: XCTestCase {
         XCTAssertTrue(Updater.shouldRefreshOnWake(lastCheck: now.addingTimeInterval(-3601), interval: 3600, phase: .upToDate, now: now))
         XCTAssertTrue(Updater.shouldRefreshOnWake(lastCheck: now.addingTimeInterval(-60), interval: 3600, phase: .failed(message: "offline"), now: now))
     }
+
+    func testRollingDigitsPerSlotDiffAndPostponeDirection() {
+        // 1. Ordinary 1-second tick ("19:58" -> "19:57"): only rightmost units digit rolls downward (+1).
+        let initSlots = RollingDigits.initialSlots(for: "19:58")
+        XCTAssertEqual(initSlots.map(\.id), [4, 3, 2, 1, 0])
+        let tick1 = RollingDigits.computeTransition(from: initSlots, lastNumeric: 1198, to: "19:57", newNumeric: 1197)
+        XCTAssertEqual(tick1.changedRightIDs, [0])
+        XCTAssertEqual(tick1.updated.last?.previous, "8")
+        XCTAssertEqual(tick1.updated.last?.current, "7")
+        XCTAssertEqual(tick1.updated.last?.direction, 1)
+        for unchanged in tick1.updated.dropLast() {
+            XCTAssertNil(unchanged.previous)
+        }
+
+        // 2. Minute rollover ("10:00" -> "9:59"): units, tens, and minutes roll right-to-left; ':' stays untouched.
+        let tenMin = RollingDigits.initialSlots(for: "10:00")
+        let rollover = RollingDigits.computeTransition(from: tenMin, lastNumeric: 600, to: "9:59", newNumeric: 599)
+        XCTAssertEqual(rollover.changedRightIDs, [0, 1, 3])
+        let colonSlot = rollover.updated.first { $0.id == 2 }
+        XCTAssertEqual(colonSlot?.current, ":")
+        XCTAssertNil(colonSlot?.previous)
+
+        // 3. Postpone (+5m: "9:58" -> "14:58"): newly inserted tens-of-minutes & minutes roll upward (-1), ':58' untouched.
+        let nineMin = RollingDigits.initialSlots(for: "9:58")
+        let postpone = RollingDigits.computeTransition(from: nineMin, lastNumeric: 598, to: "14:58", newNumeric: 898)
+        XCTAssertEqual(postpone.changedRightIDs, [3, 4])
+        for id in [3, 4] {
+            let slot = postpone.updated.first { $0.id == id }
+            XCTAssertEqual(slot?.direction, -1)
+        }
+        for id in [0, 1, 2] {
+            let slot = postpone.updated.first { $0.id == id }
+            XCTAssertNil(slot?.previous)
+        }
+    }
+
+    func testDynamicIslandPanelPathFilletEarsAndCountdownCopyAcrossAllLocales() {
+        func elementCount(_ path: CGPath) -> Int {
+            var n = 0
+            path.applyWithBlock { _ in n += 1 }
+            return n
+        }
+
+        let start = PanelPath.make(CGRect(x: 12, y: 138, width: 185, height: 32), radius: 10, ear: PanelMetrics.startEarRadius, yUp: true)
+        let open = PanelPath.make(CGRect(x: 12, y: 0, width: 360, height: 170), radius: 24, ear: PanelMetrics.earRadius, yUp: true)
+        let flat = PanelPath.make(CGRect(x: 12, y: 0, width: 360, height: 170), radius: 24, ear: 0, yUp: false)
+        XCTAssertEqual(elementCount(start), 10)
+        XCTAssertEqual(elementCount(open), 10)
+        XCTAssertEqual(elementCount(flat), 10)
+        XCTAssertEqual(open.boundingBoxOfPath.minX, 0, accuracy: 0.001)
+        XCTAssertEqual(open.boundingBoxOfPath.maxX, 384, accuracy: 0.001)
+        XCTAssertEqual(open.boundingBoxOfPath.minY, 0, accuracy: 0.001)
+        XCTAssertEqual(open.boundingBoxOfPath.maxY, 170, accuracy: 0.001)
+
+        for lang in AppLanguage.allCases {
+            AppLanguage.override = lang
+            for kind in [BreakKind.short, .long] {
+                let pill = PreBreakCopy.pillParts(kind, 9)
+                XCTAssertEqual(pill.number, "9", "pill number mismatch in \(lang.rawValue)")
+                let pop = PopoverCountdownCopy.parts(kind: kind, remaining: 1198, length: kind == .short ? 20 : 300)
+                XCTAssertEqual(pop.clock, "19:58", "popover clock mismatch in \(lang.rawValue)")
+                XCTAssertFalse(pop.spoken.contains("\u{E000}"), "sentinel leaked in \(lang.rawValue)")
+                XCTAssertTrue(pop.spoken.contains("19:58"), "spoken missing clock in \(lang.rawValue)")
+            }
+        }
+    }
 }

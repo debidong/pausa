@@ -12,6 +12,9 @@ import PausaCore
 enum PanelMetrics {
     static let width: CGFloat = 360
     static let radius: CGFloat = 24
+    /// Concave top fillet ears so the black shell melts seamlessly into the top screen bezel / notch.
+    static let earRadius: CGFloat = 12
+    static let startEarRadius: CGFloat = 8
     static let hPad: CGFloat = 20, topGap: CGFloat = 10, bottomPad: CGFloat = 20
     static let contentWidth: CGFloat = 320
     static let rowGap: CGFloat = 14
@@ -56,18 +59,23 @@ extension NSScreen {
     }
 }
 
-/// The panel outline: flat top edge, rounded bottom corners. The same command sequence for every radius,
-/// so Core Animation can interpolate between two of them. `yUp`: top is maxY (layers in a non-flipped view);
-/// otherwise top is minY (SwiftUI).
+/// The panel outline: top edge with concave liquid fillet ears (`±ear`) + rounded bottom corners (`radius`).
+/// Emits the exact same 10-command sequence for every `(radius, ear)` pair so Core Animation interpolates smoothly.
+/// `yUp`: top is maxY (layers in a non-flipped view); otherwise top is minY (SwiftUI).
 enum PanelPath {
-    static func make(_ r: CGRect, radius: CGFloat, yUp: Bool) -> CGPath {
+    static func make(_ r: CGRect, radius: CGFloat, ear: CGFloat = PanelMetrics.earRadius, yUp: Bool) -> CGPath {
         let k: CGFloat = 0.5522847498
-        let rad = max(1, min(radius, r.width / 2, r.height))
+        let e = max(0, min(ear, r.height * 0.45))
+        let rad = max(1, min(radius, r.width / 2, max(1, r.height - e)))
         let top = yUp ? r.maxY : r.minY, bot = yUp ? r.minY : r.maxY
-        let up: CGFloat = yUp ? 1 : -1
+        let down: CGFloat = yUp ? -1 : 1
+        let up: CGFloat = -down
         let p = CGMutablePath()
-        p.move(to: CGPoint(x: r.minX, y: top))
-        p.addLine(to: CGPoint(x: r.maxX, y: top))
+        p.move(to: CGPoint(x: r.minX - e, y: top))
+        p.addLine(to: CGPoint(x: r.maxX + e, y: top))
+        p.addCurve(to: CGPoint(x: r.maxX, y: top + down * e),
+                   control1: CGPoint(x: r.maxX + e * (1 - k), y: top),
+                   control2: CGPoint(x: r.maxX, y: top + down * e * (1 - k)))
         p.addLine(to: CGPoint(x: r.maxX, y: bot + up * rad))
         p.addCurve(to: CGPoint(x: r.maxX - rad, y: bot),
                    control1: CGPoint(x: r.maxX, y: bot + up * rad * (1 - k)),
@@ -76,6 +84,10 @@ enum PanelPath {
         p.addCurve(to: CGPoint(x: r.minX, y: bot + up * rad),
                    control1: CGPoint(x: r.minX + rad * (1 - k), y: bot),
                    control2: CGPoint(x: r.minX, y: bot + up * rad * (1 - k)))
+        p.addLine(to: CGPoint(x: r.minX, y: top + down * e))
+        p.addCurve(to: CGPoint(x: r.minX - e, y: top),
+                   control1: CGPoint(x: r.minX, y: top + down * e * (1 - k)),
+                   control2: CGPoint(x: r.minX - e * (1 - k), y: top))
         p.closeSubpath()
         return p
     }
@@ -83,7 +95,8 @@ enum PanelPath {
 
 struct PanelShape: Shape {
     var radius: CGFloat = PanelMetrics.radius
-    func path(in rect: CGRect) -> Path { Path(PanelPath.make(rect, radius: radius, yUp: false)) }
+    var ear: CGFloat = PanelMetrics.earRadius
+    func path(in rect: CGRect) -> Path { Path(PanelPath.make(rect, radius: radius, ear: ear, yUp: false)) }
 }
 
 // MARK: - Buttons: which ones, and how they wrap
@@ -134,7 +147,7 @@ enum RowLayout: Equatable {
     static func gap(before i: Int, in b: [PanelButton]) -> CGFloat {
         guard i > 0 else { return 0 }
         if b[i] == .now { return 8 }
-        if b[i].isSnooze, b[i - 1] == .skip { return 2 }
+        if b[i].isSnooze, b[i - 1] == .skip { return 6 }
         return 0
     }
 
@@ -159,11 +172,7 @@ enum RowLayout: Equatable {
 // MARK: - Copy
 
 enum PreBreakCopy {
-    /// 「短休息将在 N 秒后开始」, split at the formatted number so the three parts can be set in three styles.
-    /// One string per language, so word order is the translator's call (spec 10.1).
-    static func sentence(_ k: BreakKind, seconds n: Int) -> (before: String, number: String, after: String) {
-        let full = L(k == .short ? "prebreak.startsIn.short" : "prebreak.startsIn.long", n)
-        let num = String(n)
+    private static func splitAround(_ num: String, in full: String) -> (before: String, number: String, after: String) {
         guard let r = full.range(of: num) else { return (full, "", "") }
         // A space next to the number must survive the layout: use no-break spaces at the cut.
         func keep(_ s: String, leading: Bool) -> String {
@@ -174,12 +183,21 @@ enum PreBreakCopy {
         }
         return (keep(String(full[..<r.lowerBound]), leading: true), num, keep(String(full[r.upperBound...]), leading: false))
     }
+
+    /// 「短休息将在 N 秒后开始」, split at the formatted number so the number rolls independently on one baseline.
+    /// One string per language, so word order is the translator's call (spec 10.1).
+    static func sentence(_ k: BreakKind, seconds n: Int) -> (before: String, number: String, after: String) {
+        splitAround(String(n), in: L(k == .short ? "prebreak.startsIn.short" : "prebreak.startsIn.long", n))
+    }
     static func spoken(_ k: BreakKind, seconds n: Int) -> String {
         L(k == .short ? "prebreak.startsIn.short" : "prebreak.startsIn.long", n)
     }
     static var hardLine: String { Settings.shared.hardLineText }
     /// The kind comes first and never changes while the digits tick: a glance at the pill tells short from long.
     static func pill(_ k: BreakKind, _ s: Int) -> String { L(k == .short ? "pill.countdown.short" : "pill.countdown.long", s) }
+    static func pillParts(_ k: BreakKind, _ s: Int) -> (before: String, number: String, after: String) {
+        splitAround(String(s), in: pill(k, s))
+    }
     static func typing(_ k: BreakKind) -> String { L(k == .short ? "pill.typing.short" : "pill.typing.long") }
 }
 
@@ -201,6 +219,17 @@ struct PreBreakActions {
 
 private let hardLineOrange = Color(red: 1, green: 0x9F / 255, blue: 0x0A / 255)   // #FF9F0A
 
+private struct IslandButtonStyle: ButtonStyle {
+    let disabled: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    func makeBody(configuration: Configuration) -> some View {
+        let pressed = configuration.isPressed && !disabled && !reduceMotion
+        configuration.label
+            .scaleEffect(pressed ? 0.94 : 1.0)
+            .animation(.spring(response: 0.22, dampingFraction: 0.68), value: pressed)
+    }
+}
+
 struct PanelButtonView: View {
     let kind: PanelButton
     let action: () -> Void
@@ -209,16 +238,23 @@ struct PanelButtonView: View {
     private var disabled: Bool { kind == .snoozeUsedUp }
     private var fg: Color {
         switch kind {
-        case .skip: return .white.opacity(hover ? 0.75 : 0.45)
-        case .snooze, .urgent: return .white.opacity(hover ? 1 : 0.75)
-        case .snoozeUsedUp: return .white.opacity(0.3)
+        case .skip: return .white.opacity(hover ? 0.85 : 0.52)
+        case .snooze, .urgent: return .white.opacity(hover ? 0.98 : 0.86)
+        case .snoozeUsedUp: return .white.opacity(0.32)
         case .now: return .black
         }
     }
     private var bg: Color {
         switch kind {
-        case .now: return hover ? Color(white: 0xE8 / 255.0) : .white
-        case .snooze, .urgent: return hover ? .white.opacity(0.08) : .clear
+        case .now: return hover ? Color(white: 0.91) : .white
+        case .snooze, .urgent: return .white.opacity(hover ? 0.17 : 0.10)
+        case .skip: return hover ? .white.opacity(0.07) : .clear
+        case .snoozeUsedUp: return .clear
+        }
+    }
+    private var border: Color {
+        switch kind {
+        case .snooze, .urgent: return .white.opacity(hover ? 0.25 : 0.14)
         default: return .clear
         }
     }
@@ -232,16 +268,17 @@ struct PanelButtonView: View {
                 .padding(.horizontal, kind.hPad)
                 .frame(height: 32)
                 .background(Capsule().fill(bg))
+                .overlay(Capsule().strokeBorder(border, lineWidth: 0.5))
                 .contentShape(Capsule())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(IslandButtonStyle(disabled: disabled))
         .focusable(false)
         .disabled(disabled)
         .onHover { hover = $0 && !disabled }
     }
 }
 
-/// The first line: three type styles on one baseline, the number in a box that keeps its width.
+/// The first line: unified surrounding copy (`14.5pt medium`) + rolling `19pt semibold` digits in a fixed-width box.
 struct PanelSentence: View {
     let kind: BreakKind
     let seconds: Int
@@ -250,18 +287,19 @@ struct PanelSentence: View {
     /// 1 down to 0.8 when a language's sentence is wider than 320 (zh and en never are).
     private var scale: CGFloat {
         let p = parts
-        let w = PanelText.width(p.before, size: 15, weight: .regular) + max(26, PanelText.width(p.number, size: 20, weight: .semibold))
-            + PanelText.width(p.after, size: 13, weight: .regular)
+        let w = PanelText.width(p.before, size: 14.5, weight: .medium) + max(26, PanelText.width(p.number, size: 19, weight: .semibold))
+            + PanelText.width(p.after, size: 14.5, weight: .medium)
         return w <= PanelMetrics.contentWidth ? 1 : max(0.8, PanelMetrics.contentWidth / w)
     }
 
     var body: some View {
         let p = parts
         HStack(alignment: .firstTextBaseline, spacing: 0) {
-            if !p.before.isEmpty { Text(p.before).font(.system(size: 15)).foregroundColor(.white.opacity(0.85)) }
-            Text(p.number).font(.system(size: 20, weight: .semibold).monospacedDigit()).foregroundColor(.white)
+            if !p.before.isEmpty { Text(p.before).font(.system(size: 14.5, weight: .medium)).foregroundColor(.white.opacity(0.78)) }
+            RollingDigits(text: p.number, numericValue: Double(seconds), size: 19, weight: .semibold)
+                .foregroundColor(.white)
                 .frame(width: 26)
-            if !p.after.isEmpty { Text(p.after).font(.system(size: 13)).foregroundColor(.white.opacity(0.6)) }
+            if !p.after.isEmpty { Text(p.after).font(.system(size: 14.5, weight: .medium)).foregroundColor(.white.opacity(0.78)) }
         }
         .lineLimit(1).fixedSize()
         .scaleEffect(scale)
@@ -365,16 +403,32 @@ struct CursorPill: View {
     @ObservedObject var model: PreBreakModel
     @Environment(\.colorScheme) private var scheme
     var body: some View {
-        Text(model.state.typingWait ? PreBreakCopy.typing(model.state.kind) : PreBreakCopy.pill(model.state.kind, max(0, model.state.secondsLeft)))
-            .font(.system(size: 12, weight: .semibold).monospacedDigit())
-            .foregroundColor(.primary)
-            .lineLimit(1).fixedSize()
-            .padding(.horizontal, 10).padding(.vertical, 5)
-            // 35% solid between the glass and the text (white in light, black in dark): a white page or bright video
-            // behind the pill can't wash the digits out (Steve, appendix B). Later .background sits further back.
-            .background(Capsule().fill((scheme == .dark ? Color.black : Color.white).opacity(0.35)))
-            .background(PillGlass())
-            .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
+        Group {
+            if model.state.typingWait {
+                Text(PreBreakCopy.typing(model.state.kind))
+                    .font(.system(size: 12, weight: .semibold))
+            } else {
+                let sec = max(0, model.state.secondsLeft)
+                let p = PreBreakCopy.pillParts(model.state.kind, sec)
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    if !p.before.isEmpty { Text(p.before).font(.system(size: 12, weight: .semibold)) }
+                    RollingDigits(text: p.number, numericValue: Double(sec), size: 12, weight: .semibold)
+                    if !p.after.isEmpty { Text(p.after).font(.system(size: 12, weight: .semibold)) }
+                }
+            }
+        }
+        .foregroundColor(.primary)
+        .lineLimit(1).fixedSize()
+        .padding(.horizontal, 10).padding(.vertical, 5)
+        // 35% solid between the glass and the text (white in light, black in dark): a white page or bright video
+        // behind the pill can't wash the digits out (Steve, appendix B). Later .background sits further back.
+        .background(Capsule().fill((scheme == .dark ? Color.black : Color.white).opacity(0.35)))
+        .background(PillGlass())
+        .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(model.state.typingWait
+            ? PreBreakCopy.typing(model.state.kind)
+            : PreBreakCopy.pill(model.state.kind, max(0, model.state.secondsLeft)))
     }
 }
 
@@ -403,6 +457,10 @@ private final class OpenPanel {
     let shadow: PreBreakPanel
     let bodyShape = CAShapeLayer()
     let shadowShape = CAShapeLayer()
+    let rimGradient = CAGradientLayer()
+    let rimMask = CAShapeLayer()
+    let contentHolder = NSView(frame: .zero)
+    let contentMask = CAShapeLayer()
     let content: FirstMouseHost<AnyView>
     var screenFrame: NSRect
 
@@ -424,9 +482,31 @@ private final class OpenPanel {
         bodyRoot.wantsLayer = true
         bodyShape.fillColor = NSColor.black.cgColor
         bodyRoot.layer?.addSublayer(bodyShape)
+
+        contentHolder.wantsLayer = true
+        contentMask.fillColor = NSColor.black.cgColor
+        contentHolder.layer?.mask = contentMask
         content.wantsLayer = true
-        content.autoresizingMask = [.width, .height]
-        bodyRoot.addSubview(content)
+        content.autoresizingMask = []
+        contentHolder.addSubview(content)
+        bodyRoot.addSubview(contentHolder)
+
+        let yUp = !(bodyRoot.layer?.isGeometryFlipped ?? false)
+        rimGradient.colors = [
+            NSColor.white.withAlphaComponent(0.0).cgColor,
+            NSColor.white.withAlphaComponent(0.0).cgColor,
+            NSColor.white.withAlphaComponent(0.07).cgColor,
+            NSColor.white.withAlphaComponent(0.16).cgColor,
+        ]
+        rimGradient.locations = [0.0, 0.12, 0.42, 1.0]
+        rimGradient.startPoint = CGPoint(x: 0.5, y: yUp ? 1.0 : 0.0)
+        rimGradient.endPoint = CGPoint(x: 0.5, y: yUp ? 0.0 : 1.0)
+        rimMask.fillColor = nil
+        rimMask.strokeColor = NSColor.white.cgColor
+        rimMask.lineWidth = 1.0
+        rimGradient.mask = rimMask
+        bodyRoot.layer?.addSublayer(rimGradient)
+
         body.contentView = bodyRoot
 
         let shadowRoot = NSView(frame: .zero)
@@ -441,37 +521,64 @@ private final class OpenPanel {
         layout()
     }
 
-    var panelRect: NSRect {
+    /// Logical 360 pt body rectangle on screen (excluding top fillet ears).
+    var logicalPanelRect: NSRect {
         NSRect(x: placement.centerX - PanelMetrics.width / 2, y: screenFrame.maxY - height,
                width: PanelMetrics.width, height: height)
     }
+    /// Body window rectangle widened by `earRadius` on both sides so top concave ears are never clipped.
+    var bodyWindowRect: NSRect {
+        logicalPanelRect.insetBy(dx: -PanelMetrics.earRadius, dy: 0)
+    }
     /// Panel rectangle in the shadow window's coordinates.
     var shadowLocal: CGRect { CGRect(x: PanelMetrics.shadowSide, y: PanelMetrics.shadowBottom, width: PanelMetrics.width, height: height) }
-    var bodyLocal: CGRect { CGRect(x: 0, y: 0, width: PanelMetrics.width, height: height) }
+    var bodyLocal: CGRect { CGRect(x: PanelMetrics.earRadius, y: 0, width: PanelMetrics.width, height: height) }
+    var rimLocal: CGRect { bodyLocal.insetBy(dx: 0.5, dy: 0.5) }
+    var contentLocal: CGRect { CGRect(x: 0, y: 0, width: PanelMetrics.width, height: height) }
 
     /// Start outline of the grow animation, in the given local rectangle.
     func startPath(in local: CGRect) -> CGPath {
         let w = placement.notchWidth ?? PanelMetrics.flatStartWidth
-        let h = placement.hasNotch ? placement.topRow : max(1, (height * 0.02).rounded())
+        let h = placement.hasNotch ? placement.topRow : max(4, (height * 0.03).rounded())
         let r = CGRect(x: local.midX - w / 2, y: local.maxY - h, width: w, height: h)
-        return PanelPath.make(r, radius: min(PanelMetrics.notchRadius, h / 2), yUp: true)
+        let startEar = placement.hasNotch ? PanelMetrics.startEarRadius : 2
+        return PanelPath.make(r, radius: min(PanelMetrics.notchRadius, h / 2), ear: startEar, yUp: true)
     }
     func finalPath(in local: CGRect) -> CGPath { PanelPath.make(local, radius: PanelMetrics.radius, yUp: true) }
 
+    /// Top-center anchored scale (0.86) + upward notch offset (10 pt) so content blooms out of and sucks back into the notch.
+    func collapsedContentTransform() -> CATransform3D {
+        let s: CGFloat = 0.86
+        let w = PanelMetrics.width
+        let h = height
+        let yUp = !(contentHolder.layer?.isGeometryFlipped ?? false)
+        let tx = (1 - s) * (w / 2)
+        let ty = yUp ? ((1 - s) * h + 10) : -10
+        return CATransform3DConcat(CATransform3DMakeScale(s, s, 1), CATransform3DMakeTranslation(tx, ty, 0))
+    }
+
     /// Frames and final outlines, no animation.
     func layout() {
-        let pr = panelRect
-        body.setFrame(pr, display: false)
-        shadow.setFrame(NSRect(x: pr.minX - PanelMetrics.shadowSide, y: pr.minY - PanelMetrics.shadowBottom,
-                               width: pr.width + 2 * PanelMetrics.shadowSide, height: pr.height + PanelMetrics.shadowBottom), display: false)
+        let lpr = logicalPanelRect
+        let bwr = bodyWindowRect
+        body.setFrame(bwr, display: false)
+        shadow.setFrame(NSRect(x: lpr.minX - PanelMetrics.shadowSide, y: lpr.minY - PanelMetrics.shadowBottom,
+                               width: lpr.width + 2 * PanelMetrics.shadowSide, height: lpr.height + PanelMetrics.shadowBottom), display: false)
+        contentHolder.frame = bodyLocal
+        content.frame = contentLocal
         CATransaction.begin(); CATransaction.setDisableActions(true)
-        bodyShape.frame = CGRect(origin: .zero, size: pr.size)
+        let bodyBounds = CGRect(origin: .zero, size: bwr.size)
+        bodyShape.frame = bodyBounds
         bodyShape.path = finalPath(in: bodyLocal)
+        rimGradient.frame = bodyBounds
+        rimMask.frame = bodyBounds
+        rimMask.path = finalPath(in: rimLocal)
+        contentMask.frame = contentLocal
+        contentMask.path = finalPath(in: contentLocal)
         shadowShape.frame = CGRect(origin: .zero, size: shadow.frame.size)
         let p = finalPath(in: shadowLocal)
         shadowShape.path = p; shadowShape.shadowPath = p
         CATransaction.commit()
-        content.frame = CGRect(origin: .zero, size: pr.size)
     }
 
     func orderFront() {
@@ -522,7 +629,11 @@ final class PreBreakController {
         } else {
             closePanel(removal)
         }
-        if s.showPill { showPill() } else { hidePill() }
+        if s.showPill {
+            if pill == nil { showPill() } else { follow() }
+        } else {
+            hidePill()
+        }
     }
 
     func dismissAll() { update(nil, removal: .immediate) }
@@ -587,22 +698,41 @@ final class PreBreakController {
             }
             return
         }
-        let curve = CAMediaTimingFunction(controlPoints: 0.34, 1.3, 0.64, 1)
+        let curve = CAMediaTimingFunction(controlPoints: 0.28, 1.22, 0.5, 1)
         func anim(_ key: String, from: CGPath, to: CGPath) -> CABasicAnimation {
             let a = CABasicAnimation(keyPath: key)
-            a.fromValue = from; a.toValue = to; a.duration = 0.35; a.timingFunction = curve
+            a.fromValue = from; a.toValue = to; a.duration = 0.42; a.timingFunction = curve
             return a
         }
-        let bodyFinal = p.finalPath(in: p.bodyLocal), shadowFinal = p.finalPath(in: p.shadowLocal)
+        let bodyFinal = p.finalPath(in: p.bodyLocal)
+        let shadowFinal = p.finalPath(in: p.shadowLocal)
+        let rimFinal = p.finalPath(in: p.rimLocal)
+        let contentFinal = p.finalPath(in: p.contentLocal)
+
         CATransaction.begin()
         p.bodyShape.add(anim("path", from: p.startPath(in: p.bodyLocal), to: bodyFinal), forKey: "move")
         p.shadowShape.add(anim("path", from: p.startPath(in: p.shadowLocal), to: shadowFinal), forKey: "move")
         p.shadowShape.add(anim("shadowPath", from: p.startPath(in: p.shadowLocal), to: shadowFinal), forKey: "moveShadow")
+        p.rimMask.add(anim("path", from: p.startPath(in: p.rimLocal), to: rimFinal), forKey: "move")
+        p.contentMask.add(anim("path", from: p.startPath(in: p.contentLocal), to: contentFinal), forKey: "move")
+
+        let rimFade = CABasicAnimation(keyPath: "opacity")
+        rimFade.fromValue = 0; rimFade.toValue = 1; rimFade.duration = 0.30
+        rimFade.timingFunction = CAMediaTimingFunction(name: .easeOut)
+        p.rimGradient.add(rimFade, forKey: "fade")
+
+        let contentMove = CABasicAnimation(keyPath: "transform")
+        contentMove.fromValue = NSValue(caTransform3D: p.collapsedContentTransform())
+        contentMove.toValue = NSValue(caTransform3D: CATransform3DIdentity)
+        contentMove.duration = 0.40
+        contentMove.timingFunction = curve
+        p.contentHolder.layer?.add(contentMove, forKey: "bloom")
+
         let fade = CABasicAnimation(keyPath: "opacity")
-        fade.fromValue = 0; fade.toValue = 1; fade.duration = 0.18
-        fade.beginTime = CACurrentMediaTime() + 0.14; fade.fillMode = .backwards
+        fade.fromValue = 0; fade.toValue = 1; fade.duration = 0.22
+        fade.beginTime = CACurrentMediaTime() + 0.03; fade.fillMode = .backwards
         fade.timingFunction = CAMediaTimingFunction(name: .easeOut)
-        p.content.layer?.add(fade, forKey: "fade")
+        p.contentHolder.layer?.add(fade, forKey: "fade")
         CATransaction.commit()
         p.orderFront()
     }
@@ -635,21 +765,40 @@ final class PreBreakController {
             let from = (layer.presentation()?.value(forKeyPath: key) as! CGPath?) ?? (layer.value(forKeyPath: key) as! CGPath?)
             layer.setValue(to, forKeyPath: key)
             let a = CABasicAnimation(keyPath: key)
-            a.fromValue = from; a.toValue = to; a.duration = 0.25; a.timingFunction = curve
+            a.fromValue = from; a.toValue = to; a.duration = 0.26; a.timingFunction = curve
             layer.add(a, forKey: "move" + key)
         }
         CATransaction.begin()
         CATransaction.setCompletionBlock(finish)
-        let bodyStart = p.startPath(in: p.bodyLocal), shadowStart = p.startPath(in: p.shadowLocal)
-        retract(p.bodyShape, "path", bodyStart)
-        retract(p.shadowShape, "path", shadowStart)
-        retract(p.shadowShape, "shadowPath", shadowStart)
-        let from = p.content.layer?.presentation()?.opacity ?? 1
-        p.content.layer?.opacity = 0
+        retract(p.bodyShape, "path", p.startPath(in: p.bodyLocal))
+        retract(p.shadowShape, "path", p.startPath(in: p.shadowLocal))
+        retract(p.shadowShape, "shadowPath", p.startPath(in: p.shadowLocal))
+        retract(p.rimMask, "path", p.startPath(in: p.rimLocal))
+        retract(p.contentMask, "path", p.startPath(in: p.contentLocal))
+
+        let rimFrom = p.rimGradient.presentation()?.opacity ?? 1
+        p.rimGradient.opacity = 0
+        let rimOut = CABasicAnimation(keyPath: "opacity")
+        rimOut.fromValue = rimFrom; rimOut.toValue = 0; rimOut.duration = 0.16
+        rimOut.timingFunction = CAMediaTimingFunction(name: .easeIn)
+        p.rimGradient.add(rimOut, forKey: "fadeOut")
+
+        let fromTransform = p.contentHolder.layer?.presentation()?.transform ?? CATransform3DIdentity
+        let toTransform = p.collapsedContentTransform()
+        p.contentHolder.layer?.transform = toTransform
+        let contentRetract = CABasicAnimation(keyPath: "transform")
+        contentRetract.fromValue = NSValue(caTransform3D: fromTransform)
+        contentRetract.toValue = NSValue(caTransform3D: toTransform)
+        contentRetract.duration = 0.24
+        contentRetract.timingFunction = curve
+        p.contentHolder.layer?.add(contentRetract, forKey: "retract")
+
+        let from = p.contentHolder.layer?.presentation()?.opacity ?? 1
+        p.contentHolder.layer?.opacity = 0
         let fade = CABasicAnimation(keyPath: "opacity")
-        fade.fromValue = from; fade.toValue = 0; fade.duration = 0.09
-        fade.timingFunction = CAMediaTimingFunction(name: .linear)
-        p.content.layer?.add(fade, forKey: "fadeOut")
+        fade.fromValue = from; fade.toValue = 0; fade.duration = 0.15
+        fade.timingFunction = CAMediaTimingFunction(name: .easeIn)
+        p.contentHolder.layer?.add(fade, forKey: "fadeOut")
         CATransaction.commit()
     }
 

@@ -68,10 +68,14 @@ struct MenuPopoverView: View {
             // Steve: the triggering app's own Dock icon, 16 pt, 6 pt before the text; none when unresolvable.
             // Bowen: line 1 the reason, line 2 the app's icon + name; both centred.
             VStack(spacing: 4) {
-                Text(s.held ? (s.status ?? "") : topLine)
-                    .font(.system(size: 15, weight: .semibold)).monospacedDigit()
-                    .foregroundColor(s.held ? .secondary : .primary)
-                    .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                if s.held {
+                    Text(s.status ?? "")
+                        .font(.system(size: 15, weight: .semibold)).monospacedDigit()
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
+                } else {
+                    PopoverCountdownLine(kind: s.kind, remaining: s.remaining, length: s.length)
+                }
                 if s.held, let name = s.statusAppName, !name.isEmpty {
                     HStack(alignment: .center, spacing: 6) {
                         if let icon = Self.appIcon(s.statusAppID) {
@@ -149,10 +153,6 @@ struct MenuPopoverView: View {
             .disabled(!s.canBreak).fixedSize()
     }
 
-    private var topLine: String {
-        L(s.kind == .long ? "menu.next.long" : "menu.next.short", AppController.clock(s.remaining), Self.lengthText(s.length))
-    }
-
     /// While paused, or at the hard line, only 「现在休息」 is left. 15 is hidden when the allowance can never reach it.
     private var postponeButtons: some View {
         ForEach(s.hardLine || s.held ? [] : (s.show15 ? [5, 15] : [5]), id: \.self) { m in
@@ -160,5 +160,73 @@ struct MenuPopoverView: View {
                 .buttonStyle(.bordered).fixedSize()
                 .disabled(m == 5 ? !s.can5 : !s.can15)
         }
+    }
+}
+
+@MainActor
+enum PopoverCountdownCopy {
+    static func parts(kind: BreakKind, remaining: Double, length: Double) -> (before: String, clock: String, after: String, spoken: String) {
+        let clock = AppController.clock(remaining)
+        let lenStr = MenuPopoverView.lengthText(length)
+        let sentinel = "\u{E000}"
+        let templated = L(kind == .long ? "menu.next.long" : "menu.next.short", sentinel, lenStr)
+        let spoken = templated.replacingOccurrences(of: sentinel, with: clock)
+        guard let r = templated.range(of: sentinel) else {
+            return ("", clock, "", spoken)
+        }
+        func keep(_ s: String, leading: Bool) -> String {
+            var t = s
+            if leading, t.hasSuffix(" ") { t.removeLast(); t += "\u{00A0}" }
+            if !leading, t.hasPrefix(" ") { t.removeFirst(); t = "\u{00A0}" + t }
+            return t
+        }
+        return (keep(String(templated[..<r.lowerBound]), leading: true),
+                clock,
+                keep(String(templated[r.upperBound...]), leading: false),
+                spoken)
+    }
+}
+
+private struct PopoverCountdownLine: View {
+    let kind: BreakKind
+    let remaining: Double
+    let length: Double
+
+    var body: some View {
+        let p = PopoverCountdownCopy.parts(kind: kind, remaining: remaining, length: length)
+        let numericSeconds = Double(max(0, Int(remaining.rounded())))
+
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                if !p.before.isEmpty { Text(p.before).font(.system(size: 15, weight: .semibold)) }
+                RollingDigits(text: p.clock, numericValue: numericSeconds, size: 15, weight: .semibold)
+                if !p.after.isEmpty { Text(p.after).font(.system(size: 15, weight: .semibold)) }
+            }
+            .lineLimit(1)
+            .fixedSize()
+
+            VStack(spacing: 2) {
+                if !p.before.isEmpty {
+                    Text(p.before.trimmingCharacters(in: CharacterSet(charactersIn: " \u{00A0}")))
+                        .font(.system(size: 15, weight: .semibold))
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                    HStack(alignment: .firstTextBaseline, spacing: 0) {
+                        RollingDigits(text: p.clock, numericValue: numericSeconds, size: 15, weight: .semibold)
+                        if !p.after.isEmpty { Text(p.after).font(.system(size: 15, weight: .semibold)) }
+                    }
+                    .lineLimit(1)
+                    .fixedSize()
+                } else {
+                    HStack(alignment: .firstTextBaseline, spacing: 0) {
+                        RollingDigits(text: p.clock, numericValue: numericSeconds, size: 15, weight: .semibold)
+                        Text(p.after).font(.system(size: 15, weight: .semibold))
+                    }
+                }
+            }
+        }
+        .foregroundColor(.primary)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(p.spoken)
     }
 }

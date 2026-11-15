@@ -107,6 +107,8 @@ struct GlassClock: View {
     var lines = 1
     /// Glass letter tone: white fill under the `.clear` glass, and the soft dark backing behind it.
     var tone: Tone = .standard
+    /// Non-nil enables per-digit spring-wheel rolling (Option B) for numeric countdowns.
+    var rollingValue: Double? = nil
     struct Tone {
         let fill: Double, backing: Double, flat: Double
         /// Default tone.
@@ -118,13 +120,21 @@ struct GlassClock: View {
         static let dim = Tone(fill: 0.18, backing: 0.28, flat: 0.55)
     }
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
+    @ViewBuilder private var digits: some View {
+        if let rollingValue {
+            RollingDigits(text: text, numericValue: rollingValue, size: size, weight: LongBreakView.countdownWeight)
+        } else {
+            let base = Font.system(size: size, weight: LongBreakView.countdownWeight)
+            Text(text)
+                .font(monospaced ? base.monospacedDigit() : base)
+                .lineLimit(lines).minimumScaleFactor(0.3)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     var body: some View {
-        let base = Font.system(size: size, weight: LongBreakView.countdownWeight)
-        let digits = Text(text)
-            .font(monospaced ? base.monospacedDigit() : base)
-            .lineLimit(lines).minimumScaleFactor(0.3)
-            .multilineTextAlignment(.center)
-            .fixedSize(horizontal: false, vertical: true)
         if !flat, !reduceTransparency, #available(macOS 26, *) {
             // Liquid Glass refracts strongest at its own edge. A glass rectangle the size of the text frame
             // put that edge band through the glyphs at the top/bottom of the line (bright, tinted streaks at
@@ -317,9 +327,12 @@ struct LongBreakView: View {
     var screenID: CGDirectDisplayID? = nil
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    private var remainingSeconds: Int {
+        Int((fixedRemaining ?? countdown.remaining).rounded(.up))
+    }
+
     private var timeText: String {
-        let s = Int((fixedRemaining ?? countdown.remaining).rounded(.up))
-        return AppController.colonPair(s)
+        AppController.colonPair(remainingSeconds)
     }
 
     var body: some View {
@@ -355,7 +368,7 @@ struct LongBreakView: View {
             if daypart == .midnight { Color.black.opacity(Self.midnightDim).allowsHitTesting(false) }
             if !bare {
             VStack(spacing: 0) {
-                GlassClock(text: timeText, size: clockSize, flat: flatControls, tone: textTone)
+                GlassClock(text: timeText, size: clockSize, flat: flatControls, tone: textTone, rollingValue: Double(remainingSeconds))
                     .accessibilityLabel(timeText)
                 // Glass prompt, same style as the clock at 1/3 size, one line.
                 // Rest quote (RestQuotes, unchanged) as glass text: 1/3 clock size, centered, max 2 lines.

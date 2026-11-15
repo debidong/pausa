@@ -177,7 +177,7 @@ private struct SnapshotDesktop: View {
     }
 }
 
-/// The panel as one SwiftUI picture, for renders: shadow, black, then the content.
+/// The panel as one SwiftUI picture, for renders: shadow, black, subtle bottom-weighted rim, then the content.
 struct PreBreakComposite: View {
     @ObservedObject var model: PreBreakModel
     var placement: PanelPlacement
@@ -187,6 +187,23 @@ struct PreBreakComposite: View {
             PanelShape().fill(Color.black)
                 .frame(width: PanelMetrics.width, height: height)
                 .shadow(color: .black.opacity(Double(PanelMetrics.shadowOpacity)), radius: PanelMetrics.shadowRadius, x: 0, y: PanelMetrics.shadowY)
+                .overlay(
+                    PanelShape()
+                        .stroke(
+                            LinearGradient(
+                                stops: [
+                                    .init(color: .clear, location: 0.0),
+                                    .init(color: .clear, location: 0.12),
+                                    .init(color: .white.opacity(0.07), location: 0.42),
+                                    .init(color: .white.opacity(0.16), location: 1.0),
+                                ],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            ),
+                            lineWidth: 1
+                        )
+                        .padding(0.5)
+                )
             PreBreakContentView(model: model, topRow: placement.topRow)
         }
         .frame(width: PanelMetrics.width, height: height, alignment: .top)
@@ -236,7 +253,7 @@ enum PreBreakSnapshots {
         return ZStack(alignment: .top) {
             backdrop
             if notch {
-                PanelShape(radius: PanelMetrics.notchRadius).fill(Color.black).frame(width: 185, height: 32)
+                PanelShape(radius: PanelMetrics.notchRadius, ear: PanelMetrics.startEarRadius).fill(Color.black).frame(width: 185, height: 32)
             }
             PreBreakComposite(model: PreBreakModel(s), placement: placement, height: h)
         }
