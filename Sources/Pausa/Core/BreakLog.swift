@@ -23,8 +23,11 @@ final class BreakLog {
         let kind: BreakKind
         let planned: Double
         let result: BreakResult
+        let appBundleID: String?
+        let appName: String?
         init(_ r: BreakRecord) {
             start = r.start; kind = r.kind; planned = r.planned; result = r.result
+            appBundleID = r.appBundleID; appName = r.appName
         }
     }
 
@@ -43,6 +46,8 @@ final class BreakLog {
         var kind: BreakKind?
         var planned: Double?
         var result: BreakResult?
+        var appBundleID: String?
+        var appName: String?
 
         enum Parsed {
             case breakRecord(BreakRecord, agedAt: Date)
@@ -53,13 +58,15 @@ final class BreakLog {
             switch row {
             case .break:
                 guard let kind, let planned, let result else { return nil }
-                return .breakRecord(BreakRecord(start: start, kind: kind, planned: planned, result: result), agedAt: start)
+                return .breakRecord(BreakRecord(start: start, kind: kind, planned: planned, result: result,
+                                                appBundleID: appBundleID, appName: appName), agedAt: start)
             case .work:
                 guard let end else { return nil }
                 return .workSpan(WorkSpan(start: start, end: end), agedAt: end)
             case nil:
                 if let kind, let planned, let result {
-                    return .breakRecord(BreakRecord(start: start, kind: kind, planned: planned, result: result), agedAt: start)
+                    return .breakRecord(BreakRecord(start: start, kind: kind, planned: planned, result: result,
+                                                    appBundleID: appBundleID, appName: appName), agedAt: start)
                 }
                 if let end {
                     return .workSpan(WorkSpan(start: start, end: end), agedAt: end)
@@ -69,20 +76,30 @@ final class BreakLog {
         }
     }
 
+    private struct DayAppKey: Hashable {
+        let day: Date
+        let bundleID: String
+    }
+
     private let url: URL
     private let openURL: URL
+    private let appsURL: URL
     private let ignoreDryRun: Bool
     private let calendar: Calendar
     private let encoder: JSONEncoder = { let e = JSONEncoder(); e.dateEncodingStrategy = .iso8601; return e }()
     private let decoder: JSONDecoder = { let d = JSONDecoder(); d.dateDecodingStrategy = .iso8601; return d }()
+    private var appBuffer: [DayAppKey: (name: String, seconds: Double)] = [:]
+    private var appDirty = false
 
     private var canWrite: Bool { ignoreDryRun || !Settings.dryRun }
 
     init(url: URL = BreakLog.defaultURL, now: Date = Date(), calendar: Calendar = .current, ignoreDryRun: Bool = false) {
         self.url = url
         self.openURL = url.deletingLastPathComponent().appendingPathComponent("work-open.json")
+        self.appsURL = url.deletingLastPathComponent().appendingPathComponent("apps.json")
         self.calendar = calendar
         self.ignoreDryRun = ignoreDryRun
+        loadAppUsage(now: now)
         recoverOpenSpan()
         _ = snapshot(now: now)
     }
@@ -161,9 +178,57 @@ final class BreakLog {
     func all(now: Date = Date()) -> [BreakRecord] { snapshot(now: now).breaks }
     func work(now: Date = Date()) -> [WorkSpan] { snapshot(now: now).work }
 
+    private func loadAppUsage(now: Date) {
+        guard let data = try? Data(contentsOf: appsURL),
+              let rows = try? decoder.decode([AppUsageRecord].self, from: data) else { return }
+        let cut = Stats.keepFrom(now: now, days: Self.keepDays, calendar: calendar)
+        var pruned = false
+        for r in rows where r.seconds > 0 && !r.bundleID.isEmpty {
+            let day = calendar.startOfDay(for: r.day)
+            guard day >= cut else { pruned = true; continue }
+            let key = DayAppKey(day: day, bundleID: r.bundleID)
+            let prev = appBuffer[key]
+            appBuffer[key] = (r.appName.isEmpty ? (prev?.name ?? r.bundleID) : r.appName, (prev?.seconds ?? 0) + r.seconds)
+        }
+        if pruned { appDirty = true; flushAppUsage(now: now) }
+    }
+
+    func recordAppUsage(bundleID: String, appName: String, seconds: Double, at date: Date) {
+        guard seconds > 0, !bundleID.isEmpty else { return }
+        let day = calendar.startOfDay(for: date)
+        let key = DayAppKey(day: day, bundleID: bundleID)
+        let prev = appBuffer[key]
+        appBuffer[key] = (appName.isEmpty ? (prev?.name ?? bundleID) : appName, (prev?.seconds ?? 0) + seconds)
+        appDirty = true
+    }
+
+    func flushAppUsage(now: Date = Date()) {
+        guard canWrite, appDirty else { return }
+        let cut = Stats.keepFrom(now: now, days: Self.keepDays, calendar: calendar)
+        appBuffer = appBuffer.filter { $0.key.day >= cut }
+        let records = appBuffer.map {
+            AppUsageRecord(day: $0.key.day, bundleID: $0.key.bundleID, appName: $0.value.name, seconds: $0.value.seconds)
+        }
+        guard let data = try? encoder.encode(records) else { return }
+        try? FileManager.default.createDirectory(at: appsURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? data.write(to: appsURL, options: .atomic)
+        appDirty = false
+    }
+
+    func appUsage(now: Date = Date()) -> [AppUsageRecord] {
+        let cut = Stats.keepFrom(now: now, days: Self.keepDays, calendar: calendar)
+        return appBuffer.compactMap { entry in
+            guard entry.key.day >= cut else { return nil }
+            return AppUsageRecord(day: entry.key.day, bundleID: entry.key.bundleID, appName: entry.value.name, seconds: entry.value.seconds)
+        }
+    }
+
     func clear() {
+        appBuffer.removeAll()
+        appDirty = false
         try? FileManager.default.removeItem(at: url)
         try? FileManager.default.removeItem(at: openURL)
+        try? FileManager.default.removeItem(at: appsURL)
     }
 
     /// The old per-day short-break counter (`DailyCount`) wrote one UserDefaults key a day and never read it.

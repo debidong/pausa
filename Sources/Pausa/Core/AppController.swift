@@ -262,6 +262,19 @@ final class AppController {
     var onStatsChanged: (() -> Void)?
     private var lastWorkCheckpoint: Double = 0
     private static let workCheckpointEvery: Double = 300
+    /// Injectable frontmost regular-app reader (public NSWorkspace API, zero TCC permissions).
+    var frontmostAppProvider: () -> (bundleID: String, name: String)? = AppController.systemFrontmostApp
+    private var lastAppSampleAt: Double?
+    private var lastActiveApp: (bundleID: String, name: String)?
+    private var breakTriggerApp: (bundleID: String, name: String)?
+
+    nonisolated static func systemFrontmostApp() -> (bundleID: String, name: String)? {
+        guard let app = NSWorkspace.shared.frontmostApplication,
+              app.activationPolicy == .regular,
+              let id = app.bundleIdentifier, !id.isEmpty else { return nil }
+        if id == Bundle.main.bundleIdentifier { return nil }
+        return (id, app.localizedName ?? id)
+    }
 
     private static let holds: Set<PausaCore.PauseReason> = [.meeting, .micInUse, .screenSharing, .video, .fullscreen]
 
@@ -270,10 +283,28 @@ final class AppController {
     private func trackWork(now: Double, idle: Double, inHours: Bool, holding: Bool) {
         var counting = inHours
         if case .onBreak = scheduler.phase { counting = false }
+        let activeWorking = counting && !holding && idle < scheduler.config.longLength
+        if activeWorking {
+            if let prev = lastAppSampleAt {
+                let dt = min(max(0, now - prev), 5.0)
+                if dt > 0, let app = frontmostAppProvider() {
+                    lastActiveApp = app
+                    log.recordAppUsage(bundleID: app.bundleID, appName: app.name, seconds: dt, at: clock.wallNow())
+                }
+            } else if let app = frontmostAppProvider() {
+                lastActiveApp = app
+            }
+            lastAppSampleAt = now
+        } else {
+            lastAppSampleAt = nil
+        }
+
         if let s = work.update(now: now, counting: counting, holding: holding, inputIdle: idle, idleLimit: scheduler.config.longLength) {
             log.append(span(s))
+            log.flushAppUsage(now: clock.wallNow())
         } else if let open = work.openedAt, now - lastWorkCheckpoint >= Self.workCheckpointEvery {
             log.checkpoint(span((open, now)))
+            log.flushAppUsage(now: clock.wallNow())
             lastWorkCheckpoint = now
         }
     }
@@ -283,6 +314,9 @@ final class AppController {
         log.clear()
         if work.openedAt != nil { _ = work.close(at: clock.continuousNow()) }
         lastWorkCheckpoint = 0
+        lastAppSampleAt = nil
+        lastActiveApp = nil
+        breakTriggerApp = nil
         onStatsChanged?()
     }
 
@@ -293,7 +327,9 @@ final class AppController {
     func endWork() { endWork(at: clock.continuousNow()) }
 
     private func endWork(at now: Double) {
+        lastAppSampleAt = nil
         if let s = work.close(at: now) { log.append(span(s)) }
+        log.flushAppUsage(now: clock.wallNow())
     }
 
     /// Monotonic seconds to dates, through the current offset between the two clocks.
@@ -310,16 +346,22 @@ final class AppController {
             case .showWarning:
                 break   // 面板由 `effectivePreBreak` 驱动 (refreshPreBreak below); the menu bar icon reflects .warning on the next refresh
             case .recorded(let kind, let planned, let result):
-                log.append(BreakRecord(start: breakStart ?? clock.wallNow(), kind: kind, planned: planned, result: result))
+                let skipApp = (result == .skipped) ? (breakTriggerApp ?? frontmostAppProvider() ?? lastActiveApp) : nil
+                log.append(BreakRecord(start: breakStart ?? clock.wallNow(), kind: kind, planned: planned, result: result,
+                                       appBundleID: skipApp?.bundleID, appName: skipApp?.name))
+                log.flushAppUsage(now: clock.wallNow())
                 breakStart = nil
+                breakTriggerApp = nil
                 onStatsChanged?()
             case .startBreak(.short, let len):
                 breakStart = clock.wallNow()
+                breakTriggerApp = frontmostAppProvider() ?? lastActiveApp
                 overlay.showShort(duration: len,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
                                   onFinish: { [weak self] in self?.finish(.completed) })
             case .startBreak(.long, let len):
                 breakStart = clock.wallNow()
+                breakTriggerApp = frontmostAppProvider() ?? lastActiveApp
                 overlay.showLong(duration: len,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },
                                  onSkip: { [weak self] in self?.finish(.skipped) },
@@ -367,7 +409,7 @@ final class AppController {
     /// Wall-clock start of the break on screen, for its stats row (the scheduler runs on a monotonic clock).
     private var breakStart: Date?
 
-    private func finish(_ o: BreakOutcome) { apply(scheduler.finish(o, now: clock.continuousNow())) }
+    func finish(_ o: BreakOutcome) { apply(scheduler.finish(o, now: clock.continuousNow())) }
 
     /// Break screen 「休息延后 N 分钟」: a snooze brings the break back in snoozeLength (5 min);
     /// 15 adds the rest from the shared postpone allowance.

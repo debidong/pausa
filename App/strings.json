@@ -1381,37 +1381,37 @@
     "vi": "Thống kê",
     "th": "สถิติ"
   },
-  "stats.breakTime": {
-    "zh-Hans": "休息时长",
-    "zh-Hant": "休息時長",
-    "en": "Time on break",
-    "es": "En descanso",
-    "ru": "Время перерывов",
-    "fr": "Temps de pause",
-    "vi": "Thời gian nghỉ",
-    "th": "เวลาพัก"
+  "stats.appSkipped.few": {
+    "ru": "%d пропуска"
   },
-  "stats.breaks.few": {
-    "ru": "%d раза"
+  "stats.appSkipped.many": {
+    "ru": "%d пропусков"
   },
-  "stats.breaks.many": {
-    "ru": "%d раз"
+  "stats.appSkipped.one": {
+    "en": "%d skip",
+    "es": "%d omitido",
+    "ru": "%d пропуск",
+    "fr": "%d ignorée"
   },
-  "stats.breaks.one": {
-    "en": "%d break",
-    "es": "%d pausa",
-    "ru": "%d раз",
-    "fr": "%d pause"
+  "stats.appSkipped.other": {
+    "zh-Hans": "跳过 %d 次",
+    "zh-Hant": "跳過 %d 次",
+    "en": "%d skips",
+    "es": "%d omitidos",
+    "ru": "%d пропуска",
+    "fr": "%d ignorées",
+    "vi": "Bỏ qua %d",
+    "th": "ข้าม %d ครั้ง"
   },
-  "stats.breaks.other": {
-    "zh-Hans": "%d 次",
-    "zh-Hant": "%d 次",
-    "en": "%d breaks",
-    "es": "%d pausas",
-    "ru": "%d раза",
-    "fr": "%d pauses",
-    "vi": "%d lần",
-    "th": "%d ครั้ง"
+  "stats.backToToday": {
+    "zh-Hans": "回到今天",
+    "zh-Hant": "回到今天",
+    "en": "Back to today",
+    "es": "Volver a hoy",
+    "ru": "На сегодня",
+    "fr": "Aujourd’hui",
+    "vi": "Về hôm nay",
+    "th": "กลับไปวันนี้"
   },
   "stats.clear.confirm": {
     "zh-Hans": "清除",
@@ -1453,16 +1453,6 @@
     "vi": "Xóa dữ liệu…",
     "th": "ล้างข้อมูล…"
   },
-  "stats.data.note": {
-    "zh-Hans": "Pausa 将过去 30 天的休息数据存储在本地。",
-    "zh-Hant": "Pausa 將過去 30 天的休息資料儲存在本機。",
-    "en": "Pausa stores the last 30 days of break data on this Mac.",
-    "es": "Pausa guarda en este Mac los datos de descanso de los últimos 30 días.",
-    "ru": "Pausa хранит данные о перерывах за последние 30 дней на этом Mac.",
-    "fr": "Pausa conserve sur ce Mac les données de pause des 30 derniers jours.",
-    "vi": "Pausa lưu dữ liệu nghỉ của 30 ngày gần nhất trên máy Mac này.",
-    "th": "Pausa เก็บข้อมูลการพัก 30 วันล่าสุดไว้ใน Mac เครื่องนี้"
-  },
   "stats.empty.message": {
     "zh-Hans": "完成第一次休息后，这里会显示您每天的工作时长和休息情况。",
     "zh-Hant": "完成第一次休息後，這裡會顯示您每天的工作時長和休息情況。",
@@ -1483,45 +1473,115 @@
     "vi": "Chưa có lần nghỉ nào",
     "th": "ยังไม่มีการพัก"
   },
-  "stats.footnote": {
-    "zh-Hans": "自动暂停期间不提醒，也不算跳过。",
-    "zh-Hant": "自動暫停期間不提醒，也不算跳過。",
-    "en": "Breaks paused automatically don't count as skipped.",
-    "es": "Durante la pausa automática no hay recordatorios y nada cuenta como omitido.",
-    "ru": "Во время автоматической приостановки напоминаний нет, и ничего не считается пропущенным.",
-    "fr": "Pendant la pause automatique, aucun rappel n’est affiché et rien n’est compté comme ignoré.",
-    "vi": "Trong lúc tự tạm dừng, Pausa không nhắc và cũng không tính là bỏ qua.",
-    "th": "ระหว่างหยุดชั่วคราวอัตโนมัติ จะไม่มีการเตือน และไม่นับเป็นการข้าม"
+  "stats.footer.retention": {
+    "zh-Hans": "本地保留最近 30 天记录",
+    "zh-Hant": "本機保留最近 30 天紀錄",
+    "en": "Kept locally for 30 days",
+    "es": "Se guarda localmente 30 días",
+    "ru": "Хранится локально 30 дней",
+    "fr": "Conservé localement 30 jours",
+    "vi": "Lưu cục bộ trong 30 ngày",
+    "th": "เก็บไว้ในเครื่อง 30 วันล่าสุด"
   },
-  "stats.legend.break": {
-    "zh-Hans": "休息",
-    "zh-Hant": "休息",
-    "en": "Break",
-    "es": "Descanso",
-    "ru": "Перерыв",
-    "fr": "Pause",
-    "vi": "Nghỉ",
-    "th": "พัก"
+  "stats.longestStretch": {
+    "zh-Hans": "最长连续",
+    "zh-Hant": "最長連續",
+    "en": "Longest stretch",
+    "es": "Tramo más largo",
+    "ru": "Макс. подряд",
+    "fr": "Plus longue session",
+    "vi": "Liên tục lâu nhất",
+    "th": "ต่อเนื่องนานสุด"
   },
-  "stats.legend.work": {
-    "zh-Hans": "工作",
-    "zh-Hant": "工作",
-    "en": "Work",
-    "es": "Trabajo",
-    "ru": "Работа",
-    "fr": "Travail",
-    "vi": "Làm việc",
-    "th": "ทำงาน"
+  "stats.range.30d": {
+    "zh-Hans": "30 天",
+    "zh-Hant": "30 天",
+    "en": "30D",
+    "es": "30 d",
+    "ru": "30 дн",
+    "fr": "30 j",
+    "vi": "30 ngày",
+    "th": "30 วัน"
   },
-  "stats.skipped": {
-    "zh-Hans": "跳过休息",
-    "zh-Hant": "跳過休息",
-    "en": "Skipped",
-    "es": "Omitidos",
-    "ru": "Пропущенные",
-    "fr": "Ignorées",
-    "vi": "Lần bỏ qua",
-    "th": "ข้าม"
+  "stats.range.7d": {
+    "zh-Hans": "7 天",
+    "zh-Hant": "7 天",
+    "en": "7D",
+    "es": "7 d",
+    "ru": "7 дн",
+    "fr": "7 j",
+    "vi": "7 ngày",
+    "th": "7 วัน"
+  },
+  "stats.score": {
+    "zh-Hans": "护眼节律分",
+    "zh-Hant": "護眼節律分",
+    "en": "Rhythm score",
+    "es": "Ritmo visual",
+    "ru": "Ритм отдыха",
+    "fr": "Score de rythme",
+    "vi": "Điểm nhịp nghỉ",
+    "th": "คะแนนจังหวะพักสายตา"
+  },
+  "stats.screenTime": {
+    "zh-Hans": "屏幕用眼",
+    "zh-Hant": "螢幕用眼",
+    "en": "Screen time",
+    "es": "Tiempo en pantalla",
+    "ru": "Экранное время",
+    "fr": "Temps d’écran",
+    "vi": "Thời gian nhìn màn hình",
+    "th": "เวลาหน้าจอ"
+  },
+  "stats.section.apps": {
+    "zh-Hans": "应用用眼",
+    "zh-Hant": "應用程式用眼",
+    "en": "Apps",
+    "es": "Aplicaciones",
+    "ru": "Приложения",
+    "fr": "Applications",
+    "vi": "Ứng dụng",
+    "th": "แอปที่ใช้"
+  },
+  "stats.section.stretches": {
+    "zh-Hans": "用眼分段",
+    "zh-Hant": "用眼分段",
+    "en": "Focus stretches",
+    "es": "Tramos de uso",
+    "ru": "Отрезки работы",
+    "fr": "Sessions d’écran",
+    "vi": "Chặng nhìn màn hình",
+    "th": "ช่วงการใช้สายตา"
+  },
+  "stats.section.trend": {
+    "zh-Hans": "用眼趋势",
+    "zh-Hant": "用眼趨勢",
+    "en": "Screen trend",
+    "es": "Tendencia",
+    "ru": "Динамика",
+    "fr": "Tendance",
+    "vi": "Xu hướng",
+    "th": "แนวโน้มการใช้สายตา"
+  },
+  "stats.stretch.tip": {
+    "zh-Hans": "连续用眼 %@",
+    "zh-Hant": "連續用眼 %@",
+    "en": "Continuous screen time: %@",
+    "es": "Pantalla continua: %@",
+    "ru": "Непрерывно у экрана: %@",
+    "fr": "Écran en continu : %@",
+    "vi": "Nhìn màn hình liên tục: %@",
+    "th": "ใช้หน้าจอต่อเนื่อง %@"
+  },
+  "stats.stretches.over40": {
+    "zh-Hans": "深色 > 40m",
+    "zh-Hant": "深色 > 40m",
+    "en": "Solid > 40m",
+    "es": "Oscuro > 40m",
+    "ru": "Тёмный > 40m",
+    "fr": "Foncé > 40m",
+    "vi": "Đậm > 40m",
+    "th": "สีเข้ม > 40m"
   },
   "stats.summary.one": {
     "en": "Last 7 days: %@ of work, %d break taken, %@ on break, %d skipped."
@@ -1559,16 +1619,6 @@
     "vi": "%@: làm việc %@, nghỉ %d lần, thời gian nghỉ %@, bỏ qua %d lần",
     "th": "%@: ทำงาน %@ พักครบ %d ครั้ง พักรวม %@ ข้าม %d ครั้ง"
   },
-  "stats.title": {
-    "zh-Hans": "过去 7 天",
-    "zh-Hant": "過去 7 天",
-    "en": "Last 7 days",
-    "es": "Últimos 7 días",
-    "ru": "Последние 7 дней",
-    "fr": "7 derniers jours",
-    "vi": "7 ngày qua",
-    "th": "7 วันที่ผ่านมา"
-  },
   "stats.today": {
     "zh-Hans": "今天",
     "zh-Hant": "今天",
@@ -1578,16 +1628,6 @@
     "fr": "Aujourd’hui",
     "vi": "Hôm nay",
     "th": "วันนี้"
-  },
-  "stats.work": {
-    "zh-Hans": "工作时长",
-    "zh-Hant": "工作時長",
-    "en": "Work time",
-    "es": "Tiempo de trabajo",
-    "ru": "Время работы",
-    "fr": "Temps de travail",
-    "vi": "Thời gian làm việc",
-    "th": "เวลาทำงาน"
   },
   "status.away": {
     "zh-Hans": "您已离开电脑",
@@ -1838,16 +1878,6 @@
     "fr": "%d h",
     "vi": "%d giờ",
     "th": "%d ชม."
-  },
-  "unit.hoursDecimal": {
-    "zh-Hans": "%@ 小时",
-    "zh-Hant": "%@ 小時",
-    "en": "%@ hr",
-    "es": "%@ h",
-    "ru": "%@ ч",
-    "fr": "%@ h",
-    "vi": "%@ giờ",
-    "th": "%@ ชม."
   },
   "unit.minutes": {
     "zh-Hans": "%d 分钟",

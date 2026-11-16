@@ -203,7 +203,7 @@ enum DebugCLI {
                     let need = w.frame.height - w.contentLayoutRect.height + SettingsView.contentHeight(.shared, p, width: w.contentLayoutRect.width) + 1
                     let cap = (w.screen ?? NSScreen.main)?.visibleFrame.height ?? .greatestFiniteMagnitude
                     let h = max(SettingsTabsController.minimumFrame(w).height, min(need, SettingsTabsController.maxFittedHeight, cap))
-                    let capped = min(need, SettingsTabsController.maxFittedHeight) > cap   // screen-capped: moves up only as far as it must
+                    let capped = min(need, SettingsTabsController.maxFittedHeight) > cap || (top - h < vis.minY - 0.5)   // screen-capped or bottom-clamped: moves up only as far as it must
                     check("\(p.rawValue) fits its page: 900 x \(Int(h)) (\(w.frame.size)), \(capped ? "capped, on screen" : "top kept")",
                           w.frame.width == 900 && abs(w.frame.height - h) <= 0.5
                           && (capped ? w.frame.maxY <= vis.maxY + 0.5 && w.frame.minY >= vis.minY - 0.5 : abs(w.frame.maxY - top) <= 0.5))
@@ -221,7 +221,8 @@ enum DebugCLI {
                     let m = StatsModel.shared, cal = Calendar.autoupdatingCurrent
                     let now = cal.date(from: DateComponents(year: 2026, month: 10, day: 19, hour: 15))!
                     let data = StatsSnapshot.rows(StatsSnapshot.example, now: now, cal: cal)
-                    m.frozen = true; m.calendar = cal; m.now = { now }; m.load = { (data.0, data.1, nil) }; m.reload()
+                    m.frozen = true; m.calendar = cal; m.now = { now }; m.range = .week
+                    m.load = { (data.breaks, data.work, nil, data.apps) }; m.reload()
                     let vis = (w.screen ?? NSScreen.main)?.visibleFrame ?? NSRect(x: 0, y: 0, width: 2000, height: 2000)
                     SettingsTabsController.visibleHeightOverride = 1200   // isolate from small laptop / CI virtual displays
                     w.setFrame(NSRect(x: vis.minX + 50, y: vis.maxY - 40 - 600, width: 500, height: 600), display: false)

@@ -9,8 +9,48 @@ public struct BreakRecord: Codable, Equatable {
   public var kind: BreakKind
   public var planned: Double   // seconds, the length set when the break started
   public var result: BreakResult
-  public init(start: Date, kind: BreakKind, planned: Double, result: BreakResult) {
-    self.start = start; self.kind = kind; self.planned = planned; self.result = result
+  /// Optional frontmost app active when this break was skipped (for skip attribution).
+  public var appBundleID: String?
+  public var appName: String?
+
+  public init(start: Date, kind: BreakKind, planned: Double, result: BreakResult,
+              appBundleID: String? = nil, appName: String? = nil) {
+    self.start = start
+    self.kind = kind
+    self.planned = planned
+    self.result = result
+    self.appBundleID = appBundleID
+    self.appName = appName
+  }
+}
+
+/// Per-day active screen seconds accumulated for one regular frontmost application.
+public struct AppUsageRecord: Codable, Equatable {
+  public var day: Date
+  public var bundleID: String
+  public var appName: String
+  public var seconds: Double
+
+  public init(day: Date, bundleID: String, appName: String, seconds: Double) {
+    self.day = day
+    self.bundleID = bundleID
+    self.appName = appName
+    self.seconds = seconds
+  }
+}
+
+/// Aggregated per-app usage and skip count for one calendar day, sorted descending by active screen time.
+public struct AppUsageSummary: Equatable {
+  public var bundleID: String
+  public var name: String
+  public var seconds: Double
+  public var skipped: Int
+
+  public init(bundleID: String, name: String, seconds: Double, skipped: Int) {
+    self.bundleID = bundleID
+    self.name = name
+    self.seconds = seconds
+    self.skipped = skipped
   }
 }
 
@@ -20,6 +60,14 @@ public struct DayStats: Equatable {
   public var seconds: Double = 0   // planned length of completed breaks only
   public var work: Double = 0      // seconds of work that fell on this day
   public var gaps: [Double] = []   // per completed break, this day's work before it started (chart §8)
+  /// Continuous unbroken work stretches (seconds) in chronological order, cut by completed breaks or away/idle gaps.
+  public var stretches: [Double] = []
+  public var longestStretch: Double = 0
+  /// Eye-care rhythm score in 0...100 (100 = ideal cadence; reduced by skipped breaks and >25m / >40m unbroken runs).
+  public var rhythmScore: Int = 100
+  /// Top active frontmost apps on this day, with skip counts attributed per app.
+  public var apps: [AppUsageSummary] = []
+
   public init(day: Date) { self.day = day }
 }
 
@@ -27,26 +75,49 @@ public enum Stats {
   /// The last `n` calendar days up to and including the day of `now`, oldest first.
   /// A break belongs to the day it started; days without breaks are zero rows.
   /// Work spans are cut at each midnight, so a span over 00:00 adds to both days.
-  public static func days(_ records: [BreakRecord], work: [WorkSpan] = [], endingAt now: Date, count n: Int,
-                          calendar: Calendar) -> [DayStats] {
+  public static func days(_ records: [BreakRecord], work: [WorkSpan] = [], appUsage: [AppUsageRecord] = [],
+                          endingAt now: Date, count n: Int, calendar: Calendar) -> [DayStats] {
     let today = calendar.startOfDay(for: now)
     let days = (0..<max(0, n)).reversed().compactMap { calendar.date(byAdding: .day, value: -$0, to: today) }
     var out = days.map(DayStats.init(day:))
     let index = Dictionary(uniqueKeysWithValues: days.enumerated().map { ($1, $0) })
+    var completedTimes = Array(repeating: [Date](), count: out.count)
+    var skipsByApp = Array(repeating: [String: (name: String, count: Int)](), count: out.count)
+
     for r in records {
       guard let i = index[calendar.startOfDay(for: r.start)] else { continue }
       switch r.result {
       case .completed:
         out[i].taken += 1; out[i].seconds += r.planned
         out[i].gaps.append(worked(work, from: days[i], to: r.start))
-      case .skipped: out[i].skipped += 1
+        completedTimes[i].append(r.start)
+      case .skipped:
+        out[i].skipped += 1
+        if let bid = r.appBundleID, !bid.isEmpty {
+          let prev = skipsByApp[i][bid]
+          let resolvedName = (r.appName?.isEmpty == false ? r.appName! : prev?.name) ?? bid
+          skipsByApp[i][bid] = (resolvedName, (prev?.count ?? 0) + 1)
+        }
       }
     }
+
+    var usageByDay = Array(repeating: [String: (name: String, seconds: Double)](), count: out.count)
+    for u in appUsage where u.seconds > 0 && !u.bundleID.isEmpty {
+      guard let i = index[calendar.startOfDay(for: u.day)] else { continue }
+      let prev = usageByDay[i][u.bundleID]
+      let name = u.appName.isEmpty ? (prev?.name ?? u.bundleID) : u.appName
+      usageByDay[i][u.bundleID] = (name, (prev?.seconds ?? 0) + u.seconds)
+    }
+
     for (i, day) in days.enumerated() {
       guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { continue }
       out[i].work = worked(work, from: day, to: next)
+      out[i].gaps.sort()
+      out[i].stretches = computeStretches(work: work, completed: completedTimes[i], from: day, to: next, totalWork: out[i].work)
+      out[i].longestStretch = out[i].stretches.max() ?? 0
+      out[i].rhythmScore = computeRhythmScore(work: out[i].work, taken: out[i].taken, skipped: out[i].skipped, stretches: out[i].stretches)
+      out[i].apps = mergeAppSummaries(usage: usageByDay[i], skips: skipsByApp[i], dayWork: out[i].work)
     }
-    for i in out.indices { out[i].gaps.sort() }
     return out
   }
 
@@ -56,6 +127,92 @@ public enum Stats {
       let s = max(w.start, from), e = min(w.end, to)
       return e > s ? sum + e.timeIntervalSince(s) : sum
     }
+  }
+
+  /// Slices clipped work spans by completed breaks and away/idle gaps (> 15 s) into chronological continuous stretches.
+  static func computeStretches(work: [WorkSpan], completed: [Date], from: Date, to: Date, totalWork: Double) -> [Double] {
+    guard totalWork > 0 else { return [] }
+    let clipped = work.compactMap { w -> (Date, Date)? in
+      let s = max(w.start, from), e = min(w.end, to)
+      return e > s ? (s, e) : nil
+    }.sorted { $0.0 < $1.0 }
+    guard !clipped.isEmpty else { return [] }
+
+    let cuts = completed.sorted()
+    // Merge micro-adjacent spans (< 15 s apart) only when no completed break fell between them.
+    var merged: [(Date, Date)] = []
+    for seg in clipped {
+      if let last = merged.last,
+         seg.0.timeIntervalSince(last.1) <= 15,
+         !cuts.contains(where: { $0 >= last.1 && $0 <= seg.0 }) {
+        merged[merged.count - 1].1 = max(last.1, seg.1)
+      } else {
+        merged.append(seg)
+      }
+    }
+
+    // Split any span that contains interior completed break timestamps.
+    var pieces: [Double] = []
+    for (segStart, segEnd) in merged {
+      var cursor = segStart
+      for cut in cuts where cut > cursor && cut < segEnd {
+        pieces.append(cut.timeIntervalSince(cursor))
+        cursor = cut
+      }
+      if segEnd > cursor {
+        pieces.append(segEnd.timeIntervalSince(cursor))
+      }
+    }
+
+    let meaningful = pieces.filter { $0 >= 30 }
+    return meaningful.isEmpty ? [totalWork] : meaningful
+  }
+
+  /// Objective 0–100 eye-care cadence score starting at 100, penalizing skipped breaks and >25m / >40m unbroken runs.
+  public static func computeRhythmScore(work: Double, taken: Int, skipped: Int, stretches: [Double]) -> Int {
+    if work <= 0 && taken == 0 && skipped == 0 { return 100 }
+    let prompts = taken + skipped
+    let skipRatioPenalty = prompts > 0 ? 24.0 * (Double(skipped) / Double(prompts)) : 0
+    let skipCountPenalty = Double(min(skipped, 8)) * 2.5
+
+    var stretchPenalty = 0.0
+    for sec in stretches {
+      let mins = sec / 60.0
+      if mins > 25 {
+        stretchPenalty += min(mins - 25, 15) * 0.25
+      }
+      if mins > 40 {
+        stretchPenalty += (mins - 40) * 0.70
+      }
+    }
+
+    let raw = 100.0 - skipRatioPenalty - skipCountPenalty - stretchPenalty
+    return max(20, min(100, Int(raw.rounded())))
+  }
+
+  private static func mergeAppSummaries(
+    usage: [String: (name: String, seconds: Double)],
+    skips: [String: (name: String, count: Int)],
+    dayWork: Double
+  ) -> [AppUsageSummary] {
+    let allIDs = Set(usage.keys).union(skips.keys)
+    let minSeconds = dayWork < 60 ? 1.0 : 15.0
+    var list: [AppUsageSummary] = []
+    for id in allIDs {
+      let u = usage[id]
+      let sk = skips[id]
+      let secs = u?.seconds ?? 0
+      let skipCount = sk?.count ?? 0
+      guard secs >= minSeconds || skipCount > 0 else { continue }
+      let name = u?.name ?? sk?.name ?? id
+      list.append(AppUsageSummary(bundleID: id, name: name, seconds: secs, skipped: skipCount))
+    }
+    list.sort {
+      if abs($0.seconds - $1.seconds) > 0.5 { return $0.seconds > $1.seconds }
+      if $0.skipped != $1.skipped { return $0.skipped > $1.skipped }
+      return $0.name.localizedStandardCompare($1.name) == .orderedAscending
+    }
+    return Array(list.prefix(5))
   }
 }
 
@@ -141,5 +298,22 @@ public enum StatsChart {
     guard work > 0 else { return nil }
     if work < 3600 { return .minutes(Int(work) / 60) }
     return .hours(String(format: "%.1f", locale: locale, work / 3600))
+  }
+}
+
+/// Adaptive y-axis scale for the redesigned 7-day / 30-day trend chart (eliminates dead headroom on 2–6 h weeks).
+public enum StatsTrendScale {
+  public static let hourSteps = [2, 4, 5, 6, 8, 10, 12, 16, 24]
+  public static let plotHeight: Double = 104
+
+  public static func ceilingHours(longest: Double) -> Int {
+    let target = max(2 * 3600.0, longest * 1.03)
+    return hourSteps.first { Double($0) * 3600.0 >= target } ?? 24
+  }
+
+  public static func barHeight(work: Double, longest: Double, maxHeight: Double = plotHeight) -> Double {
+    guard work > 0 else { return 0 }
+    let top = Double(ceilingHours(longest: longest)) * 3600.0
+    return max(3.5, maxHeight * min(work, top) / top)
   }
 }

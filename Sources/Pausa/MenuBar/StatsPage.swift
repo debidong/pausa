@@ -2,24 +2,45 @@ import AppKit
 import SwiftUI
 import PausaCore
 
-/// 统计 (spec v2 §3–4, §8): today's four numbers, the last 7 days, the footnote and the data card.
-/// Numbers are computed from the raw log each time it is read; nothing is cached on disk.
+/// 统计: unified single-card eye-care ledger (Style B uniform KPI tiles, bare frameless focus stretches,
+/// 7D/30D adaptive trend chart with bar-only selection, real NSWorkspace app icons with monogram fallback,
+/// and inline 30-day local retention footer).
 @MainActor
 final class StatsModel: ObservableObject {
+    enum RangeMode: Int, CaseIterable {
+        case week = 7
+        case month = 30
+    }
+
     static let shared = StatsModel()
     static let dayCount = 7
+    static let monthDayCount = 30
 
-    @Published private(set) var days: [DayStats] = []
-    /// Per day (same order as `days`): work seconds before each completed break, one cut in that day's bar.
-    /// Any record at all in the log (30 days). Without one the page shows its empty card.
+    @Published private(set) var monthDays: [DayStats] = []
     @Published private(set) var hasData = false
+    @Published var range: RangeMode = .week {
+        didSet {
+            guard oldValue != range else { return }
+            if range == .week, let d = selectedDay, !weekDays.contains(where: { $0.day == d }) {
+                selectedDay = nil
+            }
+            onContentChange?()
+        }
+    }
     /// Start of the day picked on the chart; nil = today. Kept as a date so midnight doesn't shift it.
-    @Published var selectedDay: Date?
+    @Published var selectedDay: Date? {
+        didSet {
+            if oldValue != selectedDay { onContentChange?() }
+        }
+    }
 
-    /// Where the rows come from: the log, plus the work span still running (live app, see `bind`).
-    var load: () -> (records: [BreakRecord], work: [WorkSpan], open: WorkSpan?) = {
+    var weekDays: [DayStats] { Array(monthDays.suffix(Self.dayCount)) }
+    var days: [DayStats] { range == .week ? weekDays : monthDays }
+
+    /// Where the rows come from: the log, the work span still running, and per-day frontmost app usage.
+    var load: () -> (records: [BreakRecord], work: [WorkSpan], open: WorkSpan?, apps: [AppUsageRecord]) = {
         let s = BreakLog.shared.snapshot()
-        return (s.breaks, s.work, nil)
+        return (s.breaks, s.work, nil, BreakLog.shared.appUsage())
     }
     var clearAll: () -> Void = { BreakLog.shared.clear() }
     var now: () -> Date = Date.init
@@ -32,22 +53,23 @@ final class StatsModel: ObservableObject {
 
     func bind(_ app: AppController) {
         load = { [weak app] in
-            let s = BreakLog.shared.snapshot()
-            return (s.breaks, s.work, app?.openWorkSpan)
+            let now = app?.clock.wallNow() ?? Date()
+            let s = BreakLog.shared.snapshot(now: now)
+            return (s.breaks, s.work, app?.openWorkSpan, BreakLog.shared.appUsage(now: now))
         }
         clearAll = { [weak app] in app?.clearStats() }
         app.onStatsChanged = { [weak self] in self?.reload() }
     }
 
-    /// The window re-fits 统计 to its content after every reload (set by the settings window).
+    /// The window re-fits 统计 to its content after every reload or height-affecting selection change.
     var onContentChange: (() -> Void)?
 
     func reload() {
-        let (records, work, open) = load()
-        let all = work + (open.map { [$0] } ?? [])   // today's numbers and cuts include the span running now
-        days = Stats.days(records, work: all, endingAt: now(), count: Self.dayCount, calendar: calendar)
-        // Spec §4 空状态: the full page as soon as the log holds one row, work or break.
-        hasData = !records.isEmpty || !work.isEmpty
+        let (records, work, open, apps) = load()
+        let openLive = open.flatMap { $0.end > $0.start ? $0 : nil }
+        let all = work + (openLive.map { [$0] } ?? [])
+        monthDays = Stats.days(records, work: all, appUsage: apps, endingAt: now(), count: Self.monthDayCount, calendar: calendar)
+        hasData = !records.isEmpty || !work.isEmpty || (openLive.map { $0.end.timeIntervalSince($0.start) >= 60 } ?? false)
         if !hasData { selectedDay = nil }
         onContentChange?()
     }
@@ -86,12 +108,24 @@ final class StatsModel: ObservableObject {
         guard let d = selectedDay, let i = days.firstIndex(where: { $0.day == d }) else { return todayIndex }
         return i
     }
-    var selected: DayStats { days.indices.contains(selectedIndex) ? days[selectedIndex] : DayStats(day: calendar.startOfDay(for: now())) }
-    var isToday: Bool { selectedIndex == todayIndex }
+    var selected: DayStats {
+        let active = days
+        if active.indices.contains(selectedIndex) { return active[selectedIndex] }
+        return DayStats(day: calendar.startOfDay(for: now()))
+    }
+    var isToday: Bool {
+        guard let d = selectedDay else { return true }
+        return d == calendar.startOfDay(for: now())
+    }
 
     func select(_ i: Int) {
-        guard days.indices.contains(i) else { return }
-        selectedDay = i == todayIndex ? nil : days[i].day
+        let active = days
+        guard active.indices.contains(i) else { return }
+        selectedDay = (i == active.count - 1) ? nil : active[i].day
+    }
+
+    func selectToday() {
+        selectedDay = nil
     }
 
     // MARK: 清除数据…
@@ -139,9 +173,47 @@ final class StatsModel: ObservableObject {
     }
 }
 
-// MARK: - text
+// MARK: - App Icon Resolver (Zero Permissions)
 
-/// A value as drawn in the number card: big numbers, small units, in the language's own order.
+@MainActor
+enum AppIconResolver {
+    private static var cache: [String: NSImage] = [:]
+    private static var missing: Set<String> = []
+
+    /// Reads the application's real macOS bundle icon via public NSWorkspace APIs (zero permissions required).
+    /// Returns nil when `bundleID` is empty or the app bundle cannot be found on disk.
+    static func icon(for bundleID: String) -> NSImage? {
+        guard !bundleID.isEmpty else { return nil }
+        if let hit = cache[bundleID] { return hit }
+        if missing.contains(bundleID) { return nil }
+        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: bundleID) else {
+            missing.insert(bundleID)
+            return nil
+        }
+        let img = NSWorkspace.shared.icon(forFile: url.path)
+        img.size = NSSize(width: 18, height: 18)
+        cache[bundleID] = img
+        return img
+    }
+
+    /// Clean monogram fallback when an app bundle is uninstalled or unresolvable.
+    static func monogram(for appName: String) -> String {
+        let trimmed = appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return "Ap" }
+        let words = trimmed.split(whereSeparator: { $0.isWhitespace || $0 == "-" || $0 == "_" || $0 == "." })
+        if words.count >= 2, let a = words[0].first, let b = words[1].first, a.isASCII, b.isASCII {
+            return String(a).uppercased() + String(b).uppercased()
+        }
+        let chars = Array(trimmed)
+        if chars.count >= 2, chars[0].isASCII, chars[1].isASCII {
+            return String(chars[0]).uppercased() + String(chars[1])
+        }
+        return String(chars[0]).uppercased()
+    }
+}
+
+// MARK: - Text & Formatting
+
 struct ValuePiece: Equatable {
     var pre: String
     var num: String
@@ -149,7 +221,7 @@ struct ValuePiece: Equatable {
 }
 
 enum StatsText {
-    /// 「4 小时 12 分钟」 as (number, unit template) pairs, from PausaCore's DurationParts.
+    /// 「4 小时 12 分钟」 as (number, unit template) pairs, from PausaCore's DurationParts (used in status lines & VoiceOver).
     static func parts(_ seconds: Double) -> [(Int, String)] {
         switch DurationParts(seconds) {
         case .seconds(let n): return [(n, "unit.seconds")]
@@ -157,24 +229,65 @@ enum StatsText {
         case .hours(let h, let m): return [(h, "unit.hours")] + (m > 0 ? [(m, "unit.minutes")] : [])
         }
     }
-    /// A number and its unit never break apart.
+
     static func glue(_ s: String) -> String { s.replacingOccurrences(of: " ", with: "\u{00A0}") }
 
     static func duration(_ s: Double) -> String {
         parts(s).map { glue(L($0.1, $0.0)) }.joined(separator: " ")
     }
 
-    /// "%d 分钟" -> ("", "18", "分钟"); English "%d" (counts) -> ("", "6", "").
+    /// Compact `h` / `m` / `s` pieces for KPI tiles so numbers never overflow in any language.
+    static func compactDurationPieces(_ seconds: Double) -> [ValuePiece] {
+        switch DurationParts(seconds) {
+        case .seconds(let s):
+            return [ValuePiece(pre: "", num: "\(s)", post: "s")]
+        case .minutes(let m):
+            return [ValuePiece(pre: "", num: "\(m)", post: "m")]
+        case .hours(let h, let m):
+            var out = [ValuePiece(pre: "", num: "\(h)", post: "h")]
+            if m > 0 { out.append(ValuePiece(pre: "", num: "\(m)", post: "m")) }
+            return out
+        }
+    }
+
+    /// Longest continuous stretch KPI: keeps minutes up to 99m (`47m`, `58m`) and compact `h`/`m` above that.
+    static func stretchPieces(_ seconds: Double) -> [ValuePiece] {
+        guard seconds > 0 else { return [ValuePiece(pre: "", num: "0", post: "m")] }
+        if seconds < 60 {
+            return [ValuePiece(pre: "", num: "\(max(1, Int(seconds.rounded())))", post: "s")]
+        }
+        let mins = Int((seconds / 60).rounded())
+        if mins < 100 {
+            return [ValuePiece(pre: "", num: "\(mins)", post: "m")]
+        }
+        return compactDurationPieces(seconds)
+    }
+
+    /// "%d 次" -> ("", "14", "次"); English "%d" -> ("", "14", "").
     static func pieces(_ template: String, _ n: Int) -> ValuePiece {
         let parts = L(template).components(separatedBy: "%d")
         let trim: (String) -> String = { $0.trimmingCharacters(in: .whitespaces) }
         return ValuePiece(pre: trim(parts.first ?? ""), num: "\(n)", post: parts.count > 1 ? trim(parts[1]) : "")
     }
-    static func durationPieces(_ s: Double) -> [ValuePiece] { parts(s).map { pieces($0.1, $0.0) } }
     static func countPieces(_ n: Int) -> [ValuePiece] { [pieces("unit.count", n)] }
 
-    /// A sentence template with each "%d" glued to the word after it, then filled in.
-    /// `template` is already localized (a `Plural.pick` result).
+    /// Compact plain duration for app rows (`2h 22m`, `54m`, `0m`).
+    static func compactPlainDuration(_ seconds: Double) -> String {
+        compactDurationPieces(seconds).map { "\($0.num)\($0.post)" }.joined(separator: " ")
+    }
+
+    /// Compact bar top label in 7-day trend (`4.7h`, `46m`, nil when 0).
+    static func compactBarLabel(_ work: Double) -> String? {
+        guard work > 0 else { return nil }
+        if work < 60 { return "\(max(1, Int(work.rounded())))s" }
+        if work < 3600 { return "\(Int((work / 60).rounded()))m" }
+        return String(format: "%.1fh", locale: AppLanguage.current.locale, work / 3600)
+    }
+
+    static func appSkipped(_ n: Int) -> String {
+        glue(String(format: Plural.pick("stats.appSkipped", n), locale: AppLanguage.current.locale, n))
+    }
+
     static func sentence(_ template: String, _ args: CVarArg...) -> String {
         let t = template.replacingOccurrences(of: "%d ", with: "%d\u{00A0}")
         return String(format: t, locale: AppLanguage.current.locale, arguments: args)
@@ -185,109 +298,121 @@ enum StatsText {
         f.setLocalizedDateFormatFromTemplate(template)
         return f
     }
-    /// 「10月19日 周一」 / "Mon, Oct 19".
+
+    /// 「11月16日 周一」 / "Mon, Nov 16".
     static func date(_ d: Date) -> String { formatter("MMMdEEE").string(from: d) }
     static func weekday(_ d: Date) -> String { formatter("EEE").string(from: d) }
+    static func shortMonthDay(_ d: Date) -> String { formatter("Md").string(from: d) }
 
-    /// Hover tip and VoiceOver: 「10月15日 周四：工作 6 小时 20 分钟，完成 13 次休息，休息 23 分钟，跳过 4 次」.
+    /// Hover tip and VoiceOver: 「今天：工作 4 小时 42 分钟，完成 14 次休息，休息 23 分钟，跳过 3 次」.
     static func tip(_ s: DayStats, isToday: Bool) -> String {
         sentence(Plural.pick("stats.tip", s.taken), isToday ? L("stats.today") : date(s.day),
                  duration(s.work), s.taken, duration(s.seconds), s.skipped)
     }
+
     static func summary(_ days: [DayStats]) -> String {
         sentence(Plural.pick("stats.summary", days.reduce(0) { $0 + $1.taken }),
                  duration(days.reduce(0) { $0 + $1.work }), days.reduce(0) { $0 + $1.taken },
                  duration(days.reduce(0) { $0 + $1.seconds }), days.reduce(0) { $0 + $1.skipped })
     }
-
-    /// Over a bar: 「6.3 小时」 / "6.3 hr" from 1 hour, 「45 分钟」 / "45 min" below; nil without work.
-    static func barLabel(_ work: Double) -> String? {
-        switch StatsChart.label(work, locale: AppLanguage.current.locale) {
-        case .hours(let h)?: return glue(L("unit.hoursDecimal", h))
-        case .minutes(let m)?: return glue(L("unit.minutes", m))
-        case nil: return nil
-        }
-    }
-    /// Under a bar: 「18 次」 / "18 breaks", "1 break".
-    static func breaks(_ n: Int) -> String { glue(String(format: Plural.pick("stats.breaks", n), locale: AppLanguage.current.locale, n)) }
-
-    /// Chinese has no spaces, so CoreText may break inside a word (免/打扰). Glue each word's characters
-    /// with WORD JOINER (U+2060), using Foundation's own word segmentation plus a few compounds it splits;
-    /// other languages unchanged.
-    static func keepWords(_ text: String) -> String {
-        guard [.zhHans, .zhHant].contains(AppLanguage.current) else { return text }
-        var out = "", last = text.startIndex
-        text.enumerateSubstrings(in: text.startIndex..., options: .byWords) { word, r, _, _ in
-            guard let word, word.count > 1 else { return }
-            out += text[last..<r.lowerBound] + word.map(String.init).joined(separator: "\u{2060}")
-            last = r.upperBound
-        }
-        out += text[last...]
-        // Words the system segmenter splits (it gives 免|打扰 and 跳|过).
-        for term in ["免打扰", "跳过"] {
-            let pattern = term.map { NSRegularExpression.escapedPattern(for: String($0)) }.joined(separator: "\u{2060}?")
-            out = out.replacingOccurrences(of: pattern, with: term.map(String.init).joined(separator: "\u{2060}"), options: .regularExpression)
-        }
-        return out
-    }
-
-    static let footnote = "stats.footnote"
 }
 
-// MARK: - page
+// MARK: - Surface Palette
+
+private struct StatsPalette {
+    let dark: Bool
+    var tileFill: Color { dark ? Color.white.opacity(0.048) : Color.black.opacity(0.033) }
+    var slotFill: Color { dark ? Color.white.opacity(0.065) : Color.black.opacity(0.044) }
+    var divider: Color { dark ? Color.white.opacity(0.085) : Color.black.opacity(0.072) }
+    var softLine: Color { dark ? Color.white.opacity(0.052) : Color.black.opacity(0.046) }
+    var segActiveFill: Color { dark ? Color.white.opacity(0.13) : Color.white }
+}
+
+// MARK: - Page
 
 struct StatsPage: View {
     @ObservedObject var model: StatsModel = .shared
     @Environment(\.pausaAccent) private var accent
+    @Environment(\.colorScheme) private var colorScheme
+
+    private var palette: StatsPalette { StatsPalette(dark: colorScheme == .dark) }
 
     var body: some View {
         Form {
-            if model.hasData {
-                // The picked day on top (today by default), the week under it; tapping a bar changes the top card.
-                Section {
-                    VStack(spacing: 0) {
-                        titleRow.padding(.horizontal, 16).padding(.top, 8)
-                        StatsNumbers(day: model.selected)
-                        Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 1).padding(.horizontal, 16)
-                        HStack {
-                            Text(L("stats.title")).font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
-                            Spacer()
-                            legend
-                        }
-                        .frame(minHeight: 28)
-                        .padding(.horizontal, 16).padding(.top, 8)
-                        StatsWeekChart(days: model.days, selected: model.selectedIndex, today: model.todayIndex,
-                                       accent: accent, onSelect: model.select)
-                            .padding(.horizontal, 16)
-                    }
-                    .padding(-10).listRowInsets(EdgeInsets())
-                } footer: { footnote }
-            } else {
-                Section {
-                    VStack(spacing: 6) {
-                        Text(L("stats.empty.title")).font(.system(size: 15, weight: .semibold))
-                        Text(L("stats.empty.message"))
-                            .font(.system(size: 12)).foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center).fixedSize(horizontal: false, vertical: true)
-                    }
-                    .padding(.horizontal, 48)
-                    .frame(maxWidth: .infinity).frame(height: 236)
-                    .padding(-10).listRowInsets(EdgeInsets())
-                } header: { titleRow } footer: { footnote }
-            }
             Section {
-                HStack(alignment: .center, spacing: 16) {
-                    Text(L("stats.data.note")).font(.system(size: 13))
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    Button(L("stats.data.clear")) { model.confirmClear(in: NSApp.keyWindow) }
-                        .disabled(!model.hasData)
-                        .statsProbe("data.button")
+                if model.hasData {
+                    VStack(spacing: 0) {
+                        headerRow
+                            .padding(.horizontal, 18)
+                            .padding(.top, 14)
+                            .padding(.bottom, 4)
+
+                        StatsKPIGrid(day: model.selected, palette: palette)
+                            .padding(.horizontal, 18)
+                            .padding(.top, 8)
+                            .padding(.bottom, 15)
+
+                        dividerLine
+
+                        StatsStretchesSection(day: model.selected, accent: accent, palette: palette)
+                            .padding(.horizontal, 18)
+                            .padding(.top, 13)
+                            .padding(.bottom, 14)
+
+                        dividerLine
+
+                        StatsTrendSection(
+                            days: model.days,
+                            range: $model.range,
+                            selected: model.selectedIndex,
+                            today: model.todayIndex,
+                            accent: accent,
+                            palette: palette,
+                            onSelect: model.select
+                        )
+                        .padding(.horizontal, 18)
+                        .padding(.top, 13)
+                        .padding(.bottom, 14)
+
+                        if !model.selected.apps.isEmpty {
+                            dividerLine
+
+                            StatsAppsSection(apps: model.selected.apps, accent: accent, palette: palette)
+                                .padding(.horizontal, 18)
+                                .padding(.top, 13)
+                                .padding(.bottom, 15)
+                        }
+                    }
+                    .padding(-10)
+                    .listRowInsets(EdgeInsets())
+                } else {
+                    VStack(spacing: 0) {
+                        headerRow
+                            .padding(.horizontal, 18)
+                            .padding(.top, 14)
+                            .padding(.bottom, 6)
+
+                        dividerLine
+
+                        VStack(spacing: 6) {
+                            Text(L("stats.empty.title"))
+                                .font(.system(size: 15, weight: .semibold))
+                                .foregroundStyle(.primary)
+                            Text(L("stats.empty.message"))
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                        .padding(.horizontal, 44)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 212)
+                    }
+                    .padding(-10)
+                    .listRowInsets(EdgeInsets())
                 }
-                .padding(.horizontal, 16).padding(.vertical, 10)
-                .frame(minHeight: 48)
-                .statsProbe("data.card")
-                .padding(-10).listRowInsets(EdgeInsets())
+            } footer: {
+                footerRow
             }
         }
         .formStyle(.grouped)
@@ -295,202 +420,453 @@ struct StatsPage: View {
         .onDisappear { model.close() }
     }
 
-    /// 「今天 · 10月19日 周一」 or 「10月15日 周四」, always in the same place. The 今天 bar goes back to today.
-    private var titleRow: some View {
-        let date = StatsText.date(model.selected.day)
-        return Text(model.isToday ? L("stats.today") + " · " + date : date)
-            .font(.system(size: 13, weight: .semibold)).foregroundStyle(.primary)
-            .frame(maxWidth: .infinity, minHeight: 28, alignment: .leading)
+    private var dividerLine: some View {
+        Rectangle()
+            .fill(palette.divider)
+            .frame(height: 1)
     }
 
-    /// Solid swatch 「工作时长」, swatch with a cut 「休息」: the picture says which part is which.
-    private var legend: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 5) { GappedBar(cuts: [], radius: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("stats.legend.work")) }
-            HStack(spacing: 5) { GappedBar(cuts: [5.5], radius: 1.5, cut: 1.5).fill(accent).frame(width: 9, height: 12); Text(L("stats.legend.break")) }
+    private var headerRow: some View {
+        let dateText = StatsText.date(model.selected.day)
+        let fullTitle = model.isToday ? L("stats.today") + " · " + dateText : dateText
+        return HStack(alignment: .center, spacing: 10) {
+            Text(fullTitle)
+                .font(.system(size: 13.5, weight: .semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            if model.hasData && !model.isToday {
+                Button(action: model.selectToday) {
+                    Text(L("stats.backToToday"))
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(accent)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 3.5)
+                        .background(
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(accent.opacity(0.11))
+                        )
+                }
+                .buttonStyle(.plain)
+                .statsProbe("header.backToToday")
+            }
         }
-        .font(.system(size: 12)).foregroundStyle(.secondary)
-        .accessibilityElement(children: .combine)
+        .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
     }
 
-    private var footnote: some View {
-        // Grouped-form footers are trailing by default; this one reads as a paragraph.
-        Text(StatsText.keepWords(L(StatsText.footnote))).font(.system(size: 11)).foregroundStyle(.secondary)
-            .multilineTextAlignment(.leading)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: .infinity, alignment: .leading)
+    private var footerRow: some View {
+        HStack(alignment: .center, spacing: 12) {
+            Text(L("stats.footer.retention"))
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+
+            Spacer(minLength: 8)
+
+            Button {
+                model.confirmClear(in: NSApp.keyWindow)
+            } label: {
+                Text(L("stats.data.clear"))
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(model.hasData ? accent : Color(nsColor: .tertiaryLabelColor))
+            }
+            .buttonStyle(.plain)
+            .disabled(!model.hasData)
+            .statsProbe("data.button")
+        }
+        .padding(.top, 3)
+        .frame(maxWidth: .infinity)
+        .statsProbe("data.card")
     }
 }
 
-/// 工作时长 / 完成休息 / 休息时长 / 跳过休息: four equal columns, numbers on one baseline, names on another.
-struct StatsNumbers: View {
+// MARK: - Style B KPI Tiles (4 Uniform Neutral Tiles)
+
+private struct StatsKPIGrid: View {
     let day: DayStats
-    static let height: CGFloat = 88
-    /// The widest value a column must hold: 12 小时 59 分钟.
-    static let widest: Double = 12 * 3600 + 59 * 60
-    /// 19 pt, or 18 pt for all four when the widest value at 19 pt leaves under 8 pt on a side (spec §8).
-    static func numberSize(column: CGFloat, widestAt19: CGFloat) -> CGFloat { (column - widestAt19) / 2 >= 8 ? 19 : 18 }
+    let palette: StatsPalette
 
     var body: some View {
-        GeometryReader { g in
-            let col = g.size.width / 4
-            let size = Self.numberSize(column: col, widestAt19: StatsValue.width(StatsText.durationPieces(Self.widest), size: 19))
-            HStack(spacing: 0) {
-                cell(0, StatsText.durationPieces(day.work), L("stats.work"), size, col)
-                cell(1, StatsText.countPieces(day.taken), L("stats.taken"), size, col)
-                cell(2, StatsText.durationPieces(day.seconds), L("stats.breakTime"), size, col)
-                cell(3, StatsText.countPieces(day.skipped), L("stats.skipped"), size, col)
-            }
-            .overlay(alignment: .topLeading) {
-                ForEach(1..<4, id: \.self) { i in
-                    Rectangle().fill(Color(nsColor: .separatorColor))
-                        .frame(width: 1, height: Self.height - 40)
-                        .offset(x: col * CGFloat(i), y: 20)
-                }
-            }
+        HStack(spacing: 8) {
+            tile(0, label: L("stats.score"), pieces: [ValuePiece(pre: "", num: "\(day.rhythmScore)", post: "")])
+            tile(1, label: L("stats.screenTime"), pieces: StatsText.compactDurationPieces(day.work))
+            tile(2, label: L("stats.taken"), pieces: StatsText.countPieces(day.taken))
+            tile(3, label: L("stats.longestStretch"), pieces: StatsText.stretchPieces(day.longestStretch))
         }
-        .frame(height: Self.height)
+        .frame(maxWidth: .infinity)
     }
 
-    private func cell(_ i: Int, _ v: [ValuePiece], _ name: String, _ size: CGFloat, _ col: CGFloat) -> some View {
-        VStack(spacing: 4) {
-            StatsValue(pieces: v, size: size).statsProbe("num.value.\(i)")
-            Text(name).font(.system(size: 12)).foregroundStyle(.secondary).lineLimit(1)
-                .statsProbe("num.label.\(i)")
+    private func tile(_ index: Int, label: String, pieces: [ValuePiece]) -> some View {
+        let spoken = pieces.map { [$0.pre, $0.num, $0.post].filter { !$0.isEmpty }.joined(separator: " ") }.joined(separator: " ")
+        return VStack(alignment: .leading, spacing: 4) {
+            Text(label)
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.82)
+                .statsProbe("num.label.\(index)")
+
+            StatsKPIValue(pieces: pieces)
+                .statsProbe("num.value.\(index)")
         }
-        .frame(width: col, height: Self.height)
-        .statsProbe("num.col.\(i)")
+        .padding(.horizontal, 11)
+        .padding(.top, 10)
+        .padding(.bottom, 9)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(palette.tileFill)
+        )
+        .statsProbe("num.col.\(index)")
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(name) \(v.map { [$0.pre, $0.num, $0.post].filter { !$0.isEmpty }.joined(separator: " ") }.joined(separator: " "))")
+        .accessibilityLabel("\(label) \(spoken)")
     }
 }
 
-/// 「4 小时 12 分钟」: number 19 pt semibold (monospaced digits), unit 11 pt secondary,
-/// 2 pt between a number and its unit, 4 pt before the next number. One shared text baseline.
-struct StatsValue: View {
+private struct StatsKPIValue: View {
     let pieces: [ValuePiece]
-    let size: CGFloat
-    static let unitGap: CGFloat = 2, pieceGap: CGFloat = 4
-
-    static func numberFont(_ size: CGFloat) -> NSFont { .monospacedDigitSystemFont(ofSize: size, weight: .semibold) }
-    static let unitFont = NSFont.systemFont(ofSize: 11, weight: .medium)
-
-    /// Drawn width, for the 8 pt rule (same fonts and gaps as `body`).
-    static func width(_ pieces: [ValuePiece], size: CGFloat) -> CGFloat {
-        func w(_ s: String, _ f: NSFont) -> CGFloat { s.isEmpty ? 0 : ceil((s as NSString).size(withAttributes: [.font: f]).width) }
-        return pieces.enumerated().reduce(0) { acc, e in
-            let p = e.element
-            return acc + (e.offset > 0 ? pieceGap : 0)
-                + (p.pre.isEmpty ? 0 : w(p.pre, unitFont) + unitGap) + w(p.num, numberFont(size))
-                + (p.post.isEmpty ? 0 : unitGap + w(p.post, unitFont))
-        }
-    }
 
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             ForEach(pieces.indices, id: \.self) { i in
                 let p = pieces[i]
-                if !p.pre.isEmpty { unit(p.pre).padding(.leading, i > 0 ? Self.pieceGap : 0).padding(.trailing, Self.unitGap) }
-                Text(p.num).font(Font(Self.numberFont(size)))
-                    .padding(.leading, i > 0 && p.pre.isEmpty ? Self.pieceGap : 0)
-                if !p.post.isEmpty { unit(p.post).padding(.leading, Self.unitGap) }
+                if !p.pre.isEmpty {
+                    unitText(p.pre)
+                        .padding(.leading, i > 0 ? 4 : 0)
+                        .padding(.trailing, 2)
+                }
+                Text(p.num)
+                    .font(.system(size: 21.5, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.primary)
+                    .padding(.leading, i > 0 && p.pre.isEmpty ? 4 : 0)
+                if !p.post.isEmpty {
+                    unitText(p.post)
+                        .padding(.leading, 2)
+                }
             }
         }
-        .lineLimit(1).fixedSize()
+        .lineLimit(1)
+        .minimumScaleFactor(0.78)
     }
-    private func unit(_ s: String) -> some View {
-        Text(s).font(Font(Self.unitFont)).foregroundStyle(.secondary)
+
+    private func unitText(_ s: String) -> some View {
+        Text(s)
+            .font(.system(size: 11.5, weight: .regular))
+            .foregroundStyle(.secondary)
     }
 }
 
-// MARK: - chart
+// MARK: - Section 1: Bare Frameless Focus Stretches
 
-/// The 7-day chart, self-contained: fed `[DayStats]`, the cut offsets and the selection; reports taps
-/// and arrow keys. Hover tip, VoiceOver label and selection live here, so the drawing can change alone.
-/// Spec v2 §8: bar height is work time (PausaCore `StatsChart` owns the scale); every completed break
-/// cuts a 1 pt gap at the work time before it. Skips cut nothing. Weekday and breaks taken underneath.
-struct StatsWeekChart: View {
+private struct StatsStretchesSection: View {
+    let day: DayStats
+    let accent: Color
+    let palette: StatsPalette
+
+    private var hasOverwork: Bool {
+        day.stretches.contains { $0 >= 40 * 60 }
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .center, spacing: 8) {
+                Text(L("stats.section.stretches"))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 8)
+
+                if hasOverwork {
+                    HStack(spacing: 5) {
+                        RoundedRectangle(cornerRadius: 2, style: .continuous)
+                            .fill(accent)
+                            .frame(width: 7, height: 7)
+                        Text(L("stats.stretches.over40"))
+                            .font(.system(size: 11))
+                            .foregroundStyle(.tertiary)
+                    }
+                }
+            }
+
+            GeometryReader { geo in
+                let totalW = max(0, geo.size.width)
+                if day.stretches.isEmpty || totalW <= 0 {
+                    Rectangle()
+                        .fill(palette.softLine)
+                        .frame(width: totalW, height: 1)
+                        .frame(width: totalW, height: 18, alignment: .center)
+                } else {
+                    stretchesRow(availableWidth: totalW)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 18)
+            .statsProbe("stretches.row")
+        }
+    }
+
+    private func stretchesRow(availableWidth: CGFloat) -> some View {
+        let n = day.stretches.count
+        let weights = day.stretches.map { max(10.0, $0 / 60.0) }
+        let sumWeight = weights.reduce(0, +)
+        let padWeight = max(0.0, 160.0 - sumWeight)
+        let hasPad = padWeight > 0.5
+        let itemCount = n + (hasPad ? 1 : 0)
+
+        let gap: CGFloat = n <= 18 ? 4 : max(1.5, min(4, availableWidth * 0.22 / CGFloat(max(1, itemCount - 1))))
+        let usable = max(0, availableWidth - gap * CGFloat(max(0, itemCount - 1)))
+        let denom = max(1.0, sumWeight + (hasPad ? padWeight : 0))
+
+        return HStack(alignment: .center, spacing: gap) {
+            ForEach(day.stretches.indices, id: \.self) { idx in
+                let sec = day.stretches[idx]
+                let over = sec >= 40 * 60
+                let mins = max(1, Int((sec / 60).rounded()))
+                let w = max(2, usable * CGFloat(weights[idx] / denom))
+                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                    .fill(over ? accent : accent.opacity(0.28))
+                    .frame(width: w, height: 18)
+                    .overlay {
+                        if over && w >= 26 {
+                            Text("\(mins)m")
+                                .font(.system(size: 10, weight: .semibold).monospacedDigit())
+                                .foregroundStyle(.white)
+                                .lineLimit(1)
+                        }
+                    }
+                    .help(L("stats.stretch.tip", StatsText.duration(sec)))
+                    .statsProbe("stretch.pill.\(idx)")
+            }
+
+            if hasPad {
+                let padW = max(0, usable * CGFloat(padWeight / denom))
+                Rectangle()
+                    .fill(palette.softLine)
+                    .frame(width: padW, height: 1)
+            }
+        }
+        .frame(width: availableWidth, height: 18, alignment: .leading)
+    }
+}
+
+// MARK: - Section 2: Adaptive 7D / 30D Trend Chart (Bar-Only Selection)
+
+private struct StatsTrendSection: View {
     let days: [DayStats]
+    @Binding var range: StatsModel.RangeMode
     let selected: Int
     let today: Int
     let accent: Color
+    let palette: StatsPalette
     let onSelect: (Int) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 8) {
+                Text(L("stats.section.trend"))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: 8)
+
+                rangePicker
+            }
+
+            StatsTrendChart(
+                days: days,
+                range: range,
+                selected: selected,
+                today: today,
+                accent: accent,
+                palette: palette,
+                onSelect: onSelect
+            )
+        }
+    }
+
+    private var rangePicker: some View {
+        HStack(spacing: 2) {
+            rangeButton(.week, title: L("stats.range.7d"))
+            rangeButton(.month, title: L("stats.range.30d"))
+        }
+        .padding(1.5)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(palette.tileFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(palette.softLine, lineWidth: 0.5)
+                )
+        )
+    }
+
+    private func rangeButton(_ mode: StatsModel.RangeMode, title: String) -> some View {
+        let active = (range == mode)
+        return Button {
+            range = mode
+        } label: {
+            Text(title)
+                .font(.system(size: 11, weight: active ? .semibold : .medium))
+                .foregroundStyle(active ? .primary : .secondary)
+                .padding(.horizontal, 9)
+                .padding(.vertical, 2.5)
+                .background {
+                    if active {
+                        RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                            .fill(palette.segActiveFill)
+                            .shadow(color: .black.opacity(0.08), radius: 1.5, x: 0, y: 0.5)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct StatsTrendChart: View {
+    let days: [DayStats]
+    let range: StatsModel.RangeMode
+    let selected: Int
+    let today: Int
+    let accent: Color
+    fileprivate let palette: StatsPalette
+    let onSelect: (Int) -> Void
+
     @FocusState private var focused: Bool
+    @State private var hoveredIndex: Int?
     @Environment(\.displayScale) private var scale
 
-    /// Room over the tallest bar for its label (and ≥ 8 pt to the card edge): 240 pt bars -> 280 pt area.
-    static let labelRoom: CGFloat = 40
-    static var plotHeight: CGFloat { CGFloat(StatsChart.plotHeight) + labelRoom }
+    static let topLabelBand: CGFloat = 18
+    static let barPlotHeight: CGFloat = 100
+    static let bottomLabelBand: CGFloat = 22
+    static let rightAxisGutter: CGFloat = 28
+    static var totalHeight: CGFloat { topLabelBand + barPlotHeight + bottomLabelBand }
 
     var body: some View {
         let longest = days.map(\.work).max() ?? 0
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(days.indices, id: \.self) { i in plotColumn(i, longest) }
+        let ceilH = StatsTrendScale.ceilingHours(longest: longest)
+        let ceilSec = Double(ceilH) * 3600.0
+        let midText = ceilH % 2 == 0 ? "\(ceilH / 2)h" : String(format: "%.1fh", Double(ceilH) / 2.0)
+
+        ZStack(alignment: .topLeading) {
+            referenceLines(topText: "\(ceilH)h", midText: midText)
+
+            VStack(spacing: 0) {
+                HStack(spacing: 0) {
+                    ForEach(days.indices, id: \.self) { i in
+                        barColumn(i, ceilSec: ceilSec)
+                    }
+                }
+                .frame(height: Self.topLabelBand + Self.barPlotHeight)
+                .padding(.trailing, Self.rightAxisGutter)
+
+                bottomAxisLabels
+                    .frame(height: Self.bottomLabelBand)
+                    .padding(.trailing, Self.rightAxisGutter)
             }
-            .frame(height: Self.plotHeight)
-            Rectangle().fill(Color(nsColor: .separatorColor)).frame(height: 1)
-            HStack(spacing: 0) {
-                ForEach(days.indices, id: \.self) { i in labels(i) }
-            }
-            .padding(.top, 6).padding(.bottom, 8)
-            .accessibilityHidden(true)   // each bar already reads its day
         }
+        .frame(maxWidth: .infinity)
+        .frame(height: Self.totalHeight)
         .focusable()
         .focused($focused)
-        .noFocusRing()   // the darker picked bar already shows where arrow keys act
-        .onMoveCommand { d in
-            switch d {
+        .noFocusRing()
+        .accessibilityLabel(StatsText.summary(days))
+        .onMoveCommand { dir in
+            switch dir {
             case .left: onSelect(max(0, selected - 1))
-            case .right: onSelect(min(days.count - 1, selected + 1))
+            case .right: onSelect(min(max(0, days.count - 1), selected + 1))
             default: break
             }
         }
     }
 
-    /// Each completed break's cut (`DayStats.gaps`, placed by `StatsChart.barHeight`): the bottom edge of
-    /// a 1 pt cut centred on that height, snapped to whole device pixels. A cut at or above the bar's
-    /// top is not drawn (the count line still says every break); cuts on the same row draw as one.
-    static func cutRows(_ d: DayStats, longest: Double, scale: CGFloat) -> [CGFloat] {
-        func snap(_ v: CGFloat) -> CGFloat { (v * scale).rounded() / scale }
-        let top = snap(CGFloat(StatsChart.barHeight(work: d.work, longest: longest)))
-        return d.gaps.map { CGFloat(StatsChart.barHeight(work: $0, longest: longest)) }
-            .filter { $0 < top }
-            .map { snap($0 - 0.5) }
+    private func snap(_ v: CGFloat) -> CGFloat {
+        let s = max(1, scale)
+        return (v * s).rounded() / s
     }
 
-    private func tap(_ i: Int) { focused = true; onSelect(i) }
-    private func hasRecords(_ d: DayStats) -> Bool { d.work > 0 || d.taken + d.skipped > 0 }
-    /// Points to whole device pixels, so a 1 pt cut is one clean line, never two half-tone ones.
-    private func snap(_ v: CGFloat) -> CGFloat { (v * scale).rounded() / scale }
+    private func referenceLines(topText: String, midText: String) -> some View {
+        ZStack(alignment: .topLeading) {
+            gridLine(y: Self.topLabelBand, label: topText, dashed: true)
+            gridLine(y: Self.topLabelBand + Self.barPlotHeight / 2, label: midText, dashed: true)
+            gridLine(y: Self.topLabelBand + Self.barPlotHeight, label: "0h", dashed: false)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
+    }
 
-    private func plotColumn(_ i: Int, _ longest: Double) -> some View {
-        let d = days[i], on = i == selected
-        let h = snap(CGFloat(StatsChart.barHeight(work: d.work, longest: longest)))
-        let cuts = Self.cutRows(d, longest: longest, scale: scale)
+    private func gridLine(y: CGFloat, label: String, dashed: Bool) -> some View {
+        ZStack(alignment: .bottomTrailing) {
+            Path { p in
+                p.move(to: CGPoint(x: 0, y: 0.5))
+                p.addLine(to: CGPoint(x: 2000, y: 0.5))
+            }
+            .stroke(
+                dashed ? palette.softLine : palette.divider,
+                style: StrokeStyle(lineWidth: 1, dash: dashed ? [3, 3] : [])
+            )
+            .frame(height: 1)
+            .clipped()
+
+            Text(label)
+                .font(.system(size: 10).monospacedDigit())
+                .foregroundStyle(.tertiary)
+                .padding(.bottom, 3)
+        }
+        .frame(maxWidth: .infinity)
+        .offset(y: y - 14)
+        .frame(height: 15, alignment: .bottom)
+    }
+
+    private func barColumn(_ i: Int, ceilSec: Double) -> some View {
+        let d = days[i]
+        let on = (i == selected)
+        let hovered = (hoveredIndex == i)
+        let rawH = d.work <= 0 ? 0 : max(4, Self.barPlotHeight * CGFloat(min(1.0, d.work / ceilSec)))
+        let h = d.work <= 0 ? 0 : snap(rawH)
+
         return GeometryReader { g in
-            let w = snap(g.size.width * CGFloat(StatsChart.barWidthRatio))
+            let barW: CGFloat = range == .week
+                ? snap(min(24, g.size.width * 0.56))
+                : snap(min(7.5, max(3.5, g.size.width * 0.58)))
+            let radius: CGFloat = range == .week ? 4.5 : 2.0
+
             VStack(spacing: 3) {
                 Spacer(minLength: 0)
-                if let label = StatsText.barLabel(d.work), h > 0 {
-                    Text(label)
-                        .font(.system(size: 11, weight: on ? .semibold : .regular).monospacedDigit())
-                        .foregroundStyle(on ? .primary : .secondary)
-                        .lineLimit(1).fixedSize()
+
+                if range == .week, let topLabel = StatsText.compactBarLabel(d.work), h > 0 {
+                    Text(topLabel)
+                        .font(.system(size: 10, weight: on ? .semibold : .regular).monospacedDigit())
+                        .foregroundStyle(on ? .primary : .tertiary)
+                        .lineLimit(1)
+                        .fixedSize()
                         .statsProbe("chart.top.\(i)")
-                    GappedBar(cuts: cuts, radius: 4, cut: 1, pixel: 1 / scale).fill(accent.opacity(on ? 1 : 0.38))
-                        .frame(width: w, height: h)
+                }
+
+                if h > 0 {
+                    TopRounded(radius: radius)
+                        .fill(on ? accent : (hovered ? accent.opacity(0.44) : accent.opacity(0.28)))
+                        .frame(width: barW, height: h)
                         .statsProbe("chart.bar.\(i)")
                 } else {
-                    RoundedRectangle(cornerRadius: 1).fill(Color(nsColor: .quaternaryLabelColor))
-                        .frame(width: w, height: 2)
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(on ? accent : palette.divider)
+                        .frame(width: barW, height: 2)
                 }
             }
             .frame(width: g.size.width, height: g.size.height)
         }
         .statsProbe("chart.col.\(i)")
         .contentShape(Rectangle())
-        .onTapGesture { tap(i) }
+        .onHover { isIn in
+            if isIn { hoveredIndex = i } else if hoveredIndex == i { hoveredIndex = nil }
+        }
+        .onTapGesture {
+            focused = true
+            onSelect(i)
+        }
         .help(StatsText.tip(d, isToday: i == today))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(StatsText.tip(d, isToday: i == today))
@@ -498,53 +874,58 @@ struct StatsWeekChart: View {
         .accessibilityAction { onSelect(i) }
     }
 
-    /// 「周四」 / 「13 次」: both bold on the picked day; no count line on a day without records.
-    private func labels(_ i: Int) -> some View {
-        let d = days[i], on = i == selected
-        return VStack(spacing: 0) {
-            Text(i == today ? L("stats.today") : StatsText.weekday(d.day))
-                .foregroundStyle(on ? .primary : .secondary)
-            Text(hasRecords(d) ? StatsText.breaks(d.taken) : " ")
-                .foregroundStyle(.secondary)
-                .statsProbe("chart.count.\(i)")
+    @ViewBuilder
+    private var bottomAxisLabels: some View {
+        if range == .week {
+            HStack(spacing: 0) {
+                ForEach(days.indices, id: \.self) { i in
+                    let d = days[i]
+                    let on = (i == selected)
+                    Text(i == today ? L("stats.today") : StatsText.weekday(d.day))
+                        .font(.system(size: 11, weight: on ? .semibold : .regular).monospacedDigit())
+                        .foregroundStyle(on ? .primary : .secondary)
+                        .lineLimit(1)
+                        .fixedSize()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                        .padding(.bottom, 1)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            focused = true
+                            onSelect(i)
+                        }
+                        .help(StatsText.tip(d, isToday: i == today))
+                        .statsProbe("chart.day.\(i)")
+                }
+            }
+            .accessibilityHidden(true)
+        } else {
+            GeometryReader { g in
+                let count = max(1, days.count)
+                let colW = g.size.width / CGFloat(count)
+                let anchors = [0, 9, 19, count - 1].filter { days.indices.contains($0) }
+                ZStack(alignment: .bottomLeading) {
+                    ForEach(anchors, id: \.self) { idx in
+                        let on = (idx == selected)
+                        let text = idx == today ? L("stats.today") : StatsText.shortMonthDay(days[idx].day)
+                        let center = (CGFloat(idx) + 0.5) * colW
+                        Text(text)
+                            .font(.system(size: 10, weight: on ? .semibold : .regular).monospacedDigit())
+                            .foregroundStyle(on ? .primary : .secondary)
+                            .lineLimit(1)
+                            .fixedSize()
+                            .position(
+                                x: max(12, center),
+                                y: g.size.height - 6
+                            )
+                    }
+                }
+            }
+            .accessibilityHidden(true)
         }
-        .font(.system(size: 11, weight: on ? .semibold : .regular).monospacedDigit())
-        .lineLimit(1).fixedSize()
-        .frame(maxWidth: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture { tap(i) }
-        .help(StatsText.tip(d, isToday: i == today))
     }
 }
 
-/// A bar with its top corners rounded and horizontal cuts taken OUT of the shape (not painted over),
-/// so they show the card through them at any opacity and in dark mode. `cuts` are each cut's bottom
-/// edge in points from the bar's bottom; overlapping cuts simply join (each is still drawn).
-struct GappedBar: Shape {
-    let cuts: [CGFloat]
-    let radius: CGFloat
-    var cut: CGFloat = 1
-    var pixel: CGFloat = 0.5
-
-    func path(in r: CGRect) -> Path {
-        // Solid runs between cuts, bottom up, in the shape's own coordinates (y grows downward).
-        var runs: [(lo: CGFloat, hi: CGFloat)] = []   // from the bottom
-        var y: CGFloat = 0
-        for c in cuts.map({ min(max(0, $0), max(0, r.height - cut)) }).sorted() {
-            if c > y { runs.append((y, c)) }
-            y = max(y, c + cut)
-        }
-        if r.height > y { runs.append((y, r.height)) }
-        var p = Path()
-        for run in runs where run.hi - run.lo >= pixel / 2 {
-            let rect = CGRect(x: r.minX, y: r.maxY - run.hi, width: r.width, height: run.hi - run.lo)
-            if run.hi >= r.height { p.addPath(TopRounded(radius: radius).path(in: rect)) } else { p.addRect(rect) }
-        }
-        return p
-    }
-}
-
-/// Rectangle with only the top corners rounded (UnevenRoundedRectangle needs macOS 14).
+/// Rectangle with only the top corners rounded (compatible with macOS 13+).
 struct TopRounded: Shape {
     let radius: CGFloat
     func path(in r: CGRect) -> Path {
@@ -561,7 +942,140 @@ struct TopRounded: Shape {
     }
 }
 
-// MARK: - layout probe (debug renders measure the alignment rules from these)
+// MARK: - Section 3: App Screen Time (Real NSWorkspace Icon + Un-clipped Skip Badge)
+
+private struct StatsAppsSection: View {
+    let apps: [AppUsageSummary]
+    let accent: Color
+    let palette: StatsPalette
+
+    var body: some View {
+        let maxSec = max(30 * 60.0, apps.map(\.seconds).max() ?? 0)
+        VStack(alignment: .leading, spacing: 10) {
+            Text(L("stats.section.apps"))
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.primary)
+
+            VStack(spacing: 9) {
+                ForEach(Array(apps.enumerated()), id: \.element.bundleID) { idx, app in
+                    StatsAppRow(index: idx, app: app, maxSeconds: maxSec, accent: accent, palette: palette)
+                }
+            }
+        }
+    }
+}
+
+private struct StatsAppRow: View {
+    let index: Int
+    let app: AppUsageSummary
+    let maxSeconds: Double
+    let accent: Color
+    let palette: StatsPalette
+
+    static let rowHeight: CGFloat = 22
+    static let durationWidth: CGFloat = 56
+    static let columnGap: CGFloat = 12
+
+    var body: some View {
+        GeometryReader { g in
+            let idWidth = min(220, max(188, floor(g.size.width * 0.46)))
+            let trackWidth = max(40, g.size.width - idWidth - Self.durationWidth - Self.columnGap * 2)
+            let fillRatio = maxSeconds > 0 ? min(1.0, max(0, app.seconds / maxSeconds)) : 0
+            let fillWidth = app.seconds > 0 ? max(5.5, round(trackWidth * CGFloat(fillRatio))) : 0
+
+            HStack(alignment: .center, spacing: Self.columnGap) {
+                // Leading column: [18x18 real icon or monogram] + [truncatable name] + [guaranteed un-clipped skip badge]
+                HStack(alignment: .center, spacing: 7) {
+                    StatsAppIconView(bundleID: app.bundleID, appName: app.name, accent: accent)
+
+                    Text(app.name)
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .layoutPriority(0)
+
+                    if app.skipped > 0 {
+                        Text(StatsText.appSkipped(app.skipped))
+                            .font(.system(size: 10.5, weight: .medium).monospacedDigit())
+                            .foregroundStyle(accent)
+                            .lineLimit(1)
+                            .padding(.horizontal, 6.5)
+                            .padding(.vertical, 2.5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                                    .fill(accent.opacity(0.11))
+                            )
+                            .fixedSize(horizontal: true, vertical: false)
+                            .layoutPriority(2)
+                            .statsProbe("app.badge.\(index)")
+                    }
+                }
+                .frame(width: idWidth, alignment: .leading)
+                .help(app.name)
+
+                // Middle column: capsule bar starting on a strict vertical plumb line
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(palette.slotFill)
+                        .frame(width: trackWidth, height: 5.5)
+                    if fillWidth > 0 {
+                        Capsule()
+                            .fill(index == 0 ? accent : accent.opacity(0.56))
+                            .frame(width: min(trackWidth, fillWidth), height: 5.5)
+                    }
+                }
+                .frame(width: trackWidth, height: 5.5)
+                .statsProbe("app.track.\(index)")
+
+                // Trailing column: right-aligned tabular duration
+                Text(StatsText.compactPlainDuration(app.seconds))
+                    .font(.system(size: 11.5, weight: index == 0 ? .semibold : .medium).monospacedDigit())
+                    .foregroundStyle(index == 0 ? .primary : .secondary)
+                    .lineLimit(1)
+                    .frame(width: Self.durationWidth, alignment: .trailing)
+            }
+            .frame(width: g.size.width, height: Self.rowHeight)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: Self.rowHeight)
+        .statsProbe("app.row.\(index)")
+        .accessibilityElement(children: .combine)
+    }
+}
+
+private struct StatsAppIconView: View {
+    let bundleID: String
+    let appName: String
+    let accent: Color
+
+    var body: some View {
+        if let nsImage = AppIconResolver.icon(for: bundleID) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: 20, height: 20)
+                .frame(width: 18, height: 18)
+                .accessibilityHidden(true)
+        } else {
+            Text(AppIconResolver.monogram(for: appName))
+                .font(.system(size: 9.5, weight: .bold))
+                .foregroundStyle(accent)
+                .frame(width: 18, height: 18)
+                .background(
+                    RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                        .fill(accent.opacity(0.12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4.5, style: .continuous)
+                                .strokeBorder(accent.opacity(0.22), lineWidth: 0.5)
+                        )
+                )
+                .accessibilityHidden(true)
+        }
+    }
+}
+
+// MARK: - Layout Probe (Debug Renders Measure Alignment Rules From These)
 
 enum StatsProbe {
     static var on = false
