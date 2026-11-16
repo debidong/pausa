@@ -217,6 +217,7 @@
     .dl-btn:focus-visible,
     .signal-btn:focus-visible,
     .glass-btn:focus-visible,
+    .island-btn:focus-visible,
     .stage-reset:focus-visible,
     .quote-cycle:focus-visible,
     .nav-arrow:focus-visible {
@@ -247,9 +248,14 @@
       --extra-dim: 0.32;
       --scene-dim: 0.12;
       --midnight-dim: 0;
-      --text-fill: 0.68;
+      --text-fill: 0.62;
       --text-backing: 0.36;
       --rim-alpha: 0.34;
+    }
+
+    .break-stage[data-mode="short"] {
+      --text-fill: 0.68;
+      --text-backing: 0.42;
     }
 
     .break-stage[data-scene="tahoe"]    { --extra-dim: 0.32; }
@@ -325,7 +331,12 @@
     .break-stage[data-mode="short"] .shade-contrast,
     .break-stage[data-mode="short"] .shade-daypart,
     .break-stage[data-mode="short"] .shade-midnight,
-    .break-stage[data-mode="short"] .shade-bottom {
+    .break-stage[data-mode="short"] .shade-bottom,
+    .break-stage[data-mode="heads-up"] .shade-contrast,
+    .break-stage[data-mode="heads-up"] .shade-daypart,
+    .break-stage[data-mode="heads-up"] .shade-midnight,
+    .break-stage[data-mode="heads-up"] .shade-bottom,
+    .break-stage[data-mode="heads-up"] .shade-short {
       opacity: 0;
     }
 
@@ -441,6 +452,63 @@
       white-space: nowrap;
     }
 
+    /* Per-digit spring wheel (matches RollingDigits.swift Option B) */
+    .roll-row {
+      display: inline-flex;
+      align-items: baseline;
+      vertical-align: baseline;
+    }
+
+    .roll-slot {
+      position: relative;
+      display: inline-grid;
+      place-items: center;
+      overflow: hidden;
+      height: 1.18em;
+      line-height: 1.18;
+      vertical-align: bottom;
+    }
+
+    .roll-slot > span {
+      grid-area: 1 / 1;
+      display: inline-block;
+    }
+
+    .roll-enter {
+      animation: digit-roll-in 0.42s cubic-bezier(0.22, 1.18, 0.36, 1) both;
+    }
+
+    .roll-exit {
+      pointer-events: none;
+      animation: digit-roll-out 0.34s cubic-bezier(0.32, 0, 0.38, 1) both;
+    }
+
+    @keyframes digit-roll-in {
+      from {
+        transform: translateY(-88%);
+        opacity: 0;
+        filter: blur(1.5px);
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+        filter: blur(0);
+      }
+    }
+
+    @keyframes digit-roll-out {
+      from {
+        transform: translateY(0);
+        opacity: 1;
+        filter: blur(0);
+      }
+      to {
+        transform: translateY(88%);
+        opacity: 0;
+        filter: blur(1.5px);
+      }
+    }
+
     .break-quote {
       margin: calc(16 * var(--pt)) 0 0;
       font-size: calc(var(--clock-size) / 3);
@@ -475,6 +543,192 @@
 
     .break-stage[data-mode="short"] .short-prompt {
       display: block;
+      cursor: pointer;
+    }
+
+    .break-stage[data-mode="heads-up"] .break-overlay {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Pre-Break Dynamic Island & Frosted Cursor Pill (matches PreBreak.swift v0.6.9) */
+    .prebreak-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.22s ease;
+    }
+
+    .break-stage[data-mode="heads-up"]:not(.is-dismissed) .prebreak-layer {
+      opacity: 1;
+    }
+
+    .island-shell {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: min(92%, max(312px, calc(376 * var(--pt))));
+      padding: calc(20 * var(--pt)) calc(16 * var(--pt)) calc(16 * var(--pt));
+      background: #000;
+      border-radius: 0 0 calc(22 * var(--pt)) calc(22 * var(--pt));
+      box-shadow:
+        inset 0 -0.75px 0 rgba(255, 255, 255, 0.16),
+        0 calc(12 * var(--pt)) calc(32 * var(--pt)) rgba(0, 0, 0, 0.42);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: calc(12 * var(--pt));
+      transform: translateX(-50%) scaleX(0.56) scaleY(0.5);
+      transform-origin: top center;
+      transition: transform 0.42s cubic-bezier(0.22, 1.14, 0.36, 1);
+      pointer-events: auto;
+    }
+
+    .break-stage[data-mode="heads-up"]:not(.is-dismissed) .island-shell {
+      transform: translateX(-50%) scale(1);
+    }
+
+    /* Concave top fillet ears melting into top screen bezel */
+    .island-shell::before,
+    .island-shell::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      width: calc(12 * var(--pt));
+      height: calc(12 * var(--pt));
+      pointer-events: none;
+    }
+
+    .island-shell::before {
+      left: calc(-12 * var(--pt));
+      background: radial-gradient(
+        circle at 0 100%,
+        transparent calc(12 * var(--pt) - 0.6px),
+        #000 calc(12 * var(--pt))
+      );
+    }
+
+    .island-shell::after {
+      right: calc(-12 * var(--pt));
+      background: radial-gradient(
+        circle at 100% 100%,
+        transparent calc(12 * var(--pt) - 0.6px),
+        #000 calc(12 * var(--pt))
+      );
+    }
+
+    .island-sentence {
+      margin: 0;
+      display: inline-flex;
+      align-items: baseline;
+      font-size: max(12px, calc(14.5 * var(--pt)));
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.78);
+      line-height: 1.2;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .island-num {
+      display: inline-flex;
+      justify-content: center;
+      min-width: 1.45em;
+      font-size: max(15px, calc(19 * var(--pt)));
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .island-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: calc(7 * var(--pt));
+    }
+
+    .island-btn {
+      appearance: none;
+      margin: 0;
+      border: 0;
+      border-radius: 999px;
+      height: max(26px, calc(32 * var(--pt)));
+      padding: 0 calc(13 * var(--pt));
+      font-family: inherit;
+      font-size: max(11px, calc(13 * var(--pt)));
+      font-weight: 500;
+      line-height: 1;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform 0.18s cubic-bezier(0.22, 1.25, 0.36, 1), background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .island-btn:active {
+      transform: scale(0.94);
+    }
+
+    .island-btn.skip {
+      background: transparent;
+      color: rgba(255, 255, 255, 0.54);
+    }
+
+    .island-btn.skip:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .island-btn.snooze {
+      background: rgba(255, 255, 255, 0.10);
+      color: rgba(255, 255, 255, 0.88);
+      box-shadow: inset 0 0 0 0.6px rgba(255, 255, 255, 0.15);
+    }
+
+    .island-btn.snooze:hover {
+      background: rgba(255, 255, 255, 0.17);
+      color: #fff;
+    }
+
+    .island-btn.now {
+      padding: 0 calc(18 * var(--pt));
+      background: #fff;
+      color: #000;
+      font-weight: 600;
+    }
+
+    .island-btn.now:hover {
+      background: #eaeaea;
+    }
+
+    .cursor-pill {
+      position: absolute;
+      left: var(--pill-x, 62%);
+      top: var(--pill-y, 62%);
+      transform: translate(-50%, -50%);
+      display: inline-flex;
+      align-items: baseline;
+      padding: calc(5.5 * var(--pt)) calc(11 * var(--pt));
+      border-radius: 999px;
+      background: rgba(14, 16, 20, 0.54);
+      box-shadow:
+        inset 0 0 0 0.6px rgba(255, 255, 255, 0.22),
+        0 4px 16px rgba(0, 0, 0, 0.28);
+      backdrop-filter: blur(14px) saturate(145%);
+      -webkit-backdrop-filter: blur(14px) saturate(145%);
+      color: rgba(255, 255, 255, 0.95);
+      font-size: max(10.5px, calc(12 * var(--pt)));
+      font-weight: 600;
+      line-height: 1.2;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      transition: left 0.14s ease-out, top 0.14s ease-out;
+      pointer-events: none;
+    }
+
+    .pill-num {
+      display: inline-flex;
+      justify-content: center;
+      min-width: 1.25em;
     }
 
     /* Bottom Controls (QuietButtonStyle + HoldCapsule) */
@@ -704,8 +958,8 @@
       padding-top: 2.2rem;
       border-top: 1px solid var(--line-soft);
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 330px;
-      gap: 2rem 3rem;
+      grid-template-columns: minmax(0, 1fr) 384px;
+      gap: 2rem 2.8rem;
       align-items: start;
     }
 
@@ -736,12 +990,39 @@
       text-wrap: pretty;
     }
 
+    .stats-stage {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .stats-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.4rem 0.75rem;
+    }
+
+    .stats-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
     .stats-shot {
       display: block;
       width: 100%;
       height: auto;
-      border-radius: 10px;
-      border: 1px solid var(--line-soft);
+      border-radius: 11px;
+      border: 1px solid var(--line);
+    }
+
+    .stats-caption {
+      color: var(--muted);
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      line-height: 1.55;
     }
 
     /* Zero-Permission Auto-Pause Interactive List + Real Popover */
@@ -975,8 +1256,8 @@
         grid-template-columns: 1fr;
       }
 
-      .stats-shot {
-        max-width: 360px;
+      .stats-stage {
+        max-width: 400px;
       }
 
       .popover-stage {
@@ -1122,6 +1403,7 @@
                 <span class="ctrl-label">Mode</span>
                 <button type="button" class="ctrl-btn" data-mode-btn="long" aria-pressed="true">long</button>
                 <button type="button" class="ctrl-btn" data-mode-btn="short" aria-pressed="false">short</button>
+                <button type="button" class="ctrl-btn" data-mode-btn="heads-up" aria-pressed="false">heads-up</button>
                 <button type="button" class="ctrl-btn" data-mode-btn="hardline" aria-pressed="false">90m limit</button>
               </div>
             </div>
@@ -1142,10 +1424,27 @@
             <div class="shade-short" aria-hidden="true"></div>
             <div class="shade-bottom" aria-hidden="true"></div>
 
+            <div class="prebreak-layer" id="prebreak-layer">
+              <div class="island-shell" role="group" aria-label="Pre-break notch reminder">
+                <p class="island-sentence">
+                  <span>Long break in&nbsp;</span><span class="island-num" id="island-sec">10</span><span>&nbsp;s</span>
+                </p>
+                <div class="island-actions">
+                  <button type="button" class="island-btn skip" id="island-skip">Skip Break</button>
+                  <button type="button" class="island-btn snooze" id="island-snooze">Snooze 5 Min</button>
+                  <button type="button" class="island-btn now" id="island-now">Break now</button>
+                </div>
+              </div>
+
+              <div class="cursor-pill" id="cursor-pill" aria-hidden="true">
+                <span>Long break in&nbsp;</span><span class="pill-num" id="pill-sec">10</span><span>&nbsp;s</span>
+              </div>
+            </div>
+
             <div class="break-overlay">
-              <p class="break-clock" id="break-clock"><span class="sr-only">4:47</span><span class="glass-text" aria-hidden="true" data-text="4:47">4:47</span></p>
+              <p class="break-clock" id="break-clock"><span class="sr-only">4:47</span><span class="roll-row" aria-hidden="true"></span></p>
               <p class="break-quote" id="break-quote" title="Click for another rest prompt"><span class="sr-only">Look far. Then a little farther.</span><span class="glass-text" aria-hidden="true" data-text="Look far. Then a little farther.">Look far. Then a little farther.</span></p>
-              <p class="short-prompt" id="short-prompt"><span class="sr-only">Look far away</span><span class="glass-text" aria-hidden="true" data-text="Look far away">Look far away</span></p>
+              <p class="short-prompt" id="short-prompt" title="Click for another short prompt"><span class="sr-only">Look far away</span><span class="glass-text" aria-hidden="true" data-text="Look far away">Look far away</span></p>
 
               <div class="break-controls">
                 <button type="button" class="glass-btn snooze-btn" data-snooze="5">Snooze 5 Min</button>
@@ -1208,24 +1507,35 @@
         <div class="rhythm-split">
           <ul class="rhythm-points">
             <li>
-              <strong>Heads-up before anything covers your screen</strong>
-              <span>A quiet top card and a small countdown pill near the pointer appear seconds before a break, so you can finish a thought or snooze without breaking stride.</span>
+              <strong>Dynamic Island heads-up &amp; pointer pill</strong>
+              <span>Ten seconds before a break, a top-bezel notch panel with spring-wheel digits and a frosted pill near the cursor let you wrap up a thought, snooze, or start right away.</span>
             </li>
             <li>
-              <strong>Waits until you stop typing or dragging</strong>
-              <span>If a break arrives mid-sentence or mid-drag, Pausa holds up to two minutes for a natural pause in keyboard and mouse input before fading in.</span>
+              <strong>Waits until you stop typing, chimes gently</strong>
+              <span>If a break arrives mid-sentence or mid-drag, Pausa holds up to two minutes for a natural pause in input, accompanied by optional stereo acoustic harp cues.</span>
             </li>
             <li>
-              <strong>Dims after dark and nudges you to bed</strong>
-              <span>Scenes soften at 18:00. After 23:00, the break screen drops to low-luminance midnight glass and switches its prompts to gentle reminders to close the lid.</span>
+              <strong>Dims after dark across 124 time-aware prompts</strong>
+              <span>Scenes soften at 18:00. After 23:00, the break screen drops to low-luminance midnight glass and shifts its prompts toward closing the lid for the night.</span>
             </li>
             <li>
-              <strong>30-day local rhythm log</strong>
-              <span>Work spans and completed breaks stay strictly on your Mac. Breaks held automatically for meetings or videos never count against you as skipped.</span>
+              <strong>30-day local eye-care ledger</strong>
+              <span>Tracks your daily rhythm score, continuous focus stretches, 7-day and 30-day screen trends, and frontmost app time with real icons and skip counts—kept strictly on your Mac with zero permissions.</span>
             </li>
           </ul>
 
-          <img class="stats-shot" src="./assets/stats-today-dark.png" width="1000" height="1418" loading="lazy" alt="Pausa Statistics tab in macOS Dark Mode showing 2 hours work time, 6 breaks taken, 11 minutes on break, and 7-day bar chart with per-break cuts.">
+          <div class="stats-stage">
+            <div class="stats-head">
+              <span class="popover-label">Real macOS stats</span>
+              <div class="stats-tabs" role="tablist" aria-label="Statistics views">
+                <button type="button" class="ctrl-btn" role="tab" aria-pressed="true" data-stats-src="./assets/stats-today-dark.png" data-stats-caption="Today · Rhythm score, continuous focus stretches (>40m highlighted), and app skips">today · 7d</button>
+                <button type="button" class="ctrl-btn" role="tab" aria-pressed="false" data-stats-src="./assets/stats-30d-dark.png" data-stats-caption="30-day adaptive screen trend · kept locally on your Mac">30d trend</button>
+                <button type="button" class="ctrl-btn" role="tab" aria-pressed="false" data-stats-src="./assets/stats-picked-dark.png" data-stats-caption="Click any bar to inspect that day's stretches, score, and apps">picked day</button>
+              </div>
+            </div>
+            <img class="stats-shot" id="stats-shot" src="./assets/stats-today-dark.png" width="1000" height="1220" loading="lazy" alt="Pausa Statistics ledger in macOS Dark Mode showing Rhythm score 78, Screen time 4h 42m, Focus stretches, 7-day Screen trend, and Apps with real macOS icons and skip badges.">
+            <span class="stats-caption" id="stats-caption">Today · Rhythm score, continuous focus stretches (&gt;40m highlighted), and app skips</span>
+          </div>
         </div>
       </section>
 
@@ -1260,10 +1570,10 @@
               </button>
             </li>
             <li class="signal-row">
-              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-video.png" data-popover-caption="Video playing in IINA · resumes 2 minutes after playback ends">
+              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-video.png" data-popover-caption="Video playing in IINA · debounces brief wake pulses, resumes 2m after playback">
                 <span class="signal-body">
                   <span class="signal-name">Video playback</span>
-                  <span class="signal-note">Watches display wake assertions held by media players and browsers; waits two minutes after a video ends before resuming breaks.</span>
+                  <span class="signal-note">Watches sustained display wake assertions held by media players and browsers—ignoring brief UI wake pulses—and waits two minutes after playback ends before resuming breaks.</span>
                 </span>
                 <span class="signal-tag">IOPMAssertion</span>
               </button>
@@ -1287,10 +1597,10 @@
               </button>
             </li>
             <li class="signal-row">
-              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-countdown.png" data-popover-caption="Standard menu-bar popover · Break now, Snooze 5 Min, or manual pause">
+              <button type="button" class="signal-btn" role="tab" aria-selected="false" data-popover="./assets/popover-countdown.png" data-popover-caption="Standard menu-bar popover · spring-wheel countdown, Break now, Snooze, or pause">
                 <span class="signal-body">
                   <span class="signal-name">Everyday countdown</span>
-                  <span class="signal-note">Lives quietly in the menu bar as a progress ring or timer, stepping out of the way automatically if hidden behind a MacBook notch.</span>
+                  <span class="signal-note">Lives quietly in the menu bar as a progress ring or rolling timer, stepping out of the way automatically if hidden behind a MacBook notch.</span>
                 </span>
                 <span class="signal-tag">NSStatusItem</span>
               </button>
@@ -1299,7 +1609,7 @@
 
           <div class="popover-stage" role="tabpanel" aria-live="polite">
             <span class="popover-label">Real macOS popover</span>
-            <img class="popover-shot" id="popover-shot" src="./assets/popover-meeting.png" width="616" height="332" alt="Pausa menu bar popover in macOS Dark Mode">
+            <img class="popover-shot" id="popover-shot" src="./assets/popover-meeting.png" width="600" height="324" alt="Pausa menu bar popover in macOS Dark Mode">
             <span class="popover-caption" id="popover-caption">Zoom active · CoreAudio input + Camera hardware state</span>
           </div>
         </div>
@@ -1368,13 +1678,13 @@
 
   <script>
     (() => {
-      // Exact 36 English rest prompts from App/rest-quotes.json
+      // Curated rest prompts from App/rest-quotes.json (124 time-aware long & short prompts)
       const QUOTES = {
         day: [
           "Look far. Then a little farther.",
           "The window beats the screen.",
           "Find a bit of green. Your eyes remember it.",
-          "The sunlight's good. Go borrow a little.",
+          "The light is good outside. Go borrow a little.",
           "Clouds are never in a hurry, and never late.",
           "Drink some water. Your brain is mostly made of it.",
           "The problem isn't going anywhere. It'll wait for you.",
@@ -1385,10 +1695,10 @@
           "You're doing better than you think."
         ],
         evening: [
-          "You've done plenty today. Rest a bit.",
-          "Stretch. Your shoulders will thank you.",
-          "Dim the screen. Your eyes are off the clock too.",
-          "Have some water. Nothing's running away.",
+          "You've covered plenty of ground today. Rest a bit.",
+          "Stretch slowly and let half the day's tension slide off.",
+          "Turn the brightness down two notches; evening mode for your eyes too.",
+          "Have a sip of warm water. Nothing on screen is running away.",
           "It's dark out. Let your eyes find a faraway light.",
           "Evenings are for going slow.",
           "Take a little walk. Let dinner settle.",
@@ -1399,11 +1709,11 @@
           "Rub your shoulders. They carried a lot today."
         ],
         midnight: [
-          "Time to sleep. Tomorrow's problems can wait until tomorrow.",
-          "Turn it off and go to sleep now.",
+          "It's late. Leave tomorrow's knots for a rested mind.",
+          "Hit save, close the lid, and call it a night.",
+          "Edits made after midnight usually get rewritten at nine a.m. Sleep first.",
+          "It's quiet enough to hear the cooling fan. Time to rest your eyes.",
           "Sleeping now is the best gift to tomorrow's you.",
-          "It's late. Even the screen wants to sleep.",
-          "Leave the rest for tomorrow. Sleep now.",
           "Lights off. Lie down. Close your eyes.",
           "The world is asleep. Go join it.",
           "Your pillow has been waiting for you.",
@@ -1411,6 +1721,16 @@
           "A good night's sleep comes first. Go now.",
           "No more screens. Off to bed.",
           "Tomorrow's you will thank you for sleeping now."
+        ],
+        short: [
+          "Look far away",
+          "Blink slowly",
+          "Drop your shoulders",
+          "Unclench your jaw",
+          "Take one slow breath",
+          "Soften your gaze",
+          "Rest your eyes on the farthest wall",
+          "Let your hands leave the keyboard"
         ]
       };
 
@@ -1421,6 +1741,7 @@
           midnight: "Between 23:00 and 05:59, midnight mode drops screen brightness and nudges you to get some sleep."
         },
         short: "Short break (20 seconds every 20 minutes): blurs the screen click-through and wipes the prompt left to right as time passes.",
+        "heads-up": "10 seconds before a break: a Dynamic Island notch bar with concave liquid ears and a frosted pill near your pointer.",
         hardline: "Past 90 minutes of continuous screen time, Snooze and Space-to-skip step aside so a real rest finally happens."
       };
 
@@ -1436,6 +1757,11 @@
       const afterMsg = document.getElementById("stage-after-msg");
       const resetBtn = document.getElementById("stage-reset");
       const urgentBtn = document.getElementById("urgent-btn");
+      const islandSecEl = document.getElementById("island-sec");
+      const pillSecEl = document.getElementById("pill-sec");
+      const islandSkipBtn = document.getElementById("island-skip");
+      const islandSnoozeBtn = document.getElementById("island-snooze");
+      const islandNowBtn = document.getElementById("island-now");
 
       let scene = "tahoe";
       let daypart = (() => {
@@ -1444,9 +1770,13 @@
         if (h >= 18) return "evening";
         return "day";
       })();
-      let mode = "long";
-      let quoteIdx = { day: 0, evening: 0, midnight: 0 };
+      let mode = (() => {
+        const q = new URLSearchParams(window.location.search).get("mode");
+        return ["long", "short", "heads-up", "hardline"].includes(q) ? q : "long";
+      })();
+      let quoteIdx = { day: 0, evening: 0, midnight: 0, short: 0 };
       let remaining = 4 * 60 + 47;
+      let preBreakSec = 10;
       let shortStart = performance.now();
       let shortRaf = 0;
       let dismissed = false;
@@ -1465,6 +1795,90 @@
         window.addEventListener("resize", syncScale, { passive: true });
       }
 
+      // Per-digit spring wheel controller (matches RollingDigits.swift Option B)
+      const createRoller = (rowEl, initialText, useGlass = false) => {
+        let prevChars = [];
+        const makeGlyph = (ch) => {
+          const span = document.createElement("span");
+          span.textContent = ch;
+          if (useGlass) {
+            span.className = "glass-text";
+            span.setAttribute("data-text", ch);
+          }
+          return span;
+        };
+
+        const set = (nextText, animate = true) => {
+          const nextChars = Array.from(nextText);
+          if (reduceMotion || !animate || prevChars.length !== nextChars.length) {
+            rowEl.textContent = "";
+            nextChars.forEach((ch) => {
+              const slot = document.createElement("span");
+              slot.className = "roll-slot";
+              slot.appendChild(makeGlyph(ch));
+              rowEl.appendChild(slot);
+            });
+            prevChars = nextChars;
+            return;
+          }
+
+          const slots = rowEl.children;
+          let staggerIdx = 0;
+          for (let i = nextChars.length - 1; i >= 0; i--) {
+            if (prevChars[i] === nextChars[i]) continue;
+            const slot = slots[i];
+            if (!slot) continue;
+            const delayMs = staggerIdx * 18;
+            staggerIdx++;
+
+            Array.from(slot.querySelectorAll(".roll-exit")).forEach((n) => n.remove());
+            const oldSpan = slot.firstElementChild;
+            const newSpan = makeGlyph(nextChars[i]);
+            newSpan.classList.add("roll-enter");
+            if (delayMs > 0) newSpan.style.animationDelay = `${delayMs}ms`;
+
+            if (oldSpan) {
+              oldSpan.classList.remove("roll-enter");
+              oldSpan.classList.add("roll-exit");
+              if (delayMs > 0) oldSpan.style.animationDelay = `${delayMs}ms`;
+              oldSpan.addEventListener("animationend", () => oldSpan.remove(), { once: true });
+            }
+            slot.appendChild(newSpan);
+          }
+          prevChars = nextChars;
+        };
+
+        set(initialText, false);
+        return { set };
+      };
+
+      const clockRow = clockEl.querySelector(".roll-row");
+      const clockSR = clockEl.querySelector(".sr-only");
+      const clockRoller = createRoller(clockRow, "4:47", true);
+
+      islandSecEl.textContent = "";
+      const islandRow = document.createElement("span");
+      islandRow.className = "roll-row";
+      islandSecEl.appendChild(islandRow);
+      const islandRoller = createRoller(islandRow, "10", false);
+
+      pillSecEl.textContent = "";
+      const pillRow = document.createElement("span");
+      pillRow.className = "roll-row";
+      pillSecEl.appendChild(pillRow);
+      const pillRoller = createRoller(pillRow, "10", false);
+
+      const setClockDisplay = (text, animate = true) => {
+        if (clockSR) clockSR.textContent = text;
+        clockRoller.set(text, animate);
+      };
+
+      const setPreBreakDisplay = (sec, animate = true) => {
+        const s = String(sec);
+        islandRoller.set(s, animate);
+        pillRoller.set(s, animate);
+      };
+
       const setGlassText = (el, text) => {
         const sr = el.querySelector(".sr-only");
         const glyph = el.querySelector(".glass-text");
@@ -1482,16 +1896,29 @@
       };
 
       const updateQuote = (advance = false) => {
+        if (mode === "short") {
+          const pool = QUOTES.short;
+          if (advance) {
+            quoteIdx.short = (quoteIdx.short + 1) % pool.length;
+            shortStart = performance.now();
+          }
+          setGlassText(shortEl, pool[quoteIdx.short]);
+          return;
+        }
         const pool = QUOTES[daypart];
         if (advance) {
           quoteIdx[daypart] = (quoteIdx[daypart] + 1) % pool.length;
         }
         setGlassText(quoteEl, pool[quoteIdx[daypart]]);
+        setGlassText(shortEl, QUOTES.short[quoteIdx.short]);
       };
 
       const updateCaption = () => {
         if (mode === "short") {
           captionEl.textContent = CAPTIONS.short;
+          quoteCycleBtn.hidden = false;
+        } else if (mode === "heads-up") {
+          captionEl.textContent = CAPTIONS["heads-up"];
           quoteCycleBtn.hidden = true;
         } else if (mode === "hardline") {
           captionEl.textContent = CAPTIONS.hardline;
@@ -1564,11 +1991,17 @@
         shortRaf = requestAnimationFrame(step);
       };
 
-      // Live 1s countdown tick for long break
+      // Live 1s countdown tick for long break & heads-up Dynamic Island
       setInterval(() => {
-        if (reduceMotion || dismissed || document.hidden || mode === "short") return;
+        if (reduceMotion || dismissed || document.hidden) return;
+        if (mode === "heads-up") {
+          preBreakSec = preBreakSec > 1 ? preBreakSec - 1 : 10;
+          setPreBreakDisplay(preBreakSec, true);
+          return;
+        }
+        if (mode === "short") return;
         remaining = remaining > 1 ? remaining - 1 : 5 * 60;
-        setGlassText(clockEl, formatClock(remaining));
+        setClockDisplay(formatClock(remaining), true);
       }, 1000);
 
       // Toolbar button handlers
@@ -1590,14 +2023,30 @@
         btn.addEventListener("click", () => {
           mode = btn.dataset.modeBtn;
           remaining = 4 * 60 + 47;
-          setGlassText(clockEl, formatClock(remaining));
+          preBreakSec = 10;
+          setClockDisplay(formatClock(remaining), false);
+          setPreBreakDisplay(preBreakSec, false);
           applyState();
         });
       });
 
       quoteEl.addEventListener("click", () => updateQuote(true));
+      shortEl.addEventListener("click", () => updateQuote(true));
       quoteCycleBtn.addEventListener("click", () => updateQuote(true));
       resetBtn.addEventListener("click", resumeStage);
+
+      islandSkipBtn.addEventListener("click", () => {
+        dismissStage("Break skipped from the heads-up bar.");
+      });
+      islandSnoozeBtn.addEventListener("click", () => {
+        dismissStage("Snoozed 5 min — deferred from the Dynamic Island without leaving your window.");
+      });
+      islandNowBtn.addEventListener("click", () => {
+        mode = "long";
+        remaining = 5 * 60;
+        setClockDisplay(formatClock(remaining), false);
+        applyState();
+      });
 
       document.querySelectorAll("[data-snooze]").forEach((btn) => {
         btn.addEventListener("click", () => {
@@ -1656,12 +2105,26 @@
       holdBtn.addEventListener("lostpointercapture", cancelHold);
 
       stage.addEventListener("pointerenter", () => { pointerInsideStage = true; });
-      stage.addEventListener("pointerleave", () => { pointerInsideStage = false; });
+      stage.addEventListener("pointerleave", () => {
+        pointerInsideStage = false;
+        stage.style.setProperty("--pill-x", "62%");
+        stage.style.setProperty("--pill-y", "62%");
+      });
+      stage.addEventListener("pointermove", (e) => {
+        if (mode !== "heads-up" || reduceMotion) return;
+        const r = stage.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        const px = Math.min(84, Math.max(18, ((e.clientX - r.left + 44) / r.width) * 100));
+        const py = Math.min(86, Math.max(36, ((e.clientY - r.top + 26) / r.height) * 100));
+        stage.style.setProperty("--pill-x", px.toFixed(1) + "%");
+        stage.style.setProperty("--pill-y", py.toFixed(1) + "%");
+      });
 
       window.addEventListener("keydown", (e) => {
         if (e.code !== "Space" || e.metaKey || e.ctrlKey || e.altKey) return;
         const activeInStage = stage.contains(document.activeElement);
         if (!pointerInsideStage && !activeInStage) return;
+        if (mode === "heads-up") return;
         e.preventDefault();
         if (!e.repeat) beginHold();
       });
@@ -1671,6 +2134,19 @@
       });
 
       window.addEventListener("blur", cancelHold);
+
+      // Stats ledger view switcher (Today 7D / 30D Trend / Picked Day)
+      const statsShot = document.getElementById("stats-shot");
+      const statsCap = document.getElementById("stats-caption");
+      const statsBtns = document.querySelectorAll("[data-stats-src]");
+
+      statsBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          statsBtns.forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+          statsShot.src = btn.dataset.statsSrc;
+          statsCap.textContent = btn.dataset.statsCaption;
+        });
+      });
 
       // Auto-pause popover switcher
       const popShot = document.getElementById("popover-shot");
