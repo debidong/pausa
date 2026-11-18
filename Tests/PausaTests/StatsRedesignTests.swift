@@ -189,4 +189,125 @@ final class StatsRedesignTests: XCTestCase {
         XCTAssertEqual(m.days.count, 7)
         XCTAssertTrue(m.isToday)
     }
+
+    func testThreeClockIdleRollbackScreenEngagementAndSkipRedemption() {
+        let isolated = PausaDefaults.makeIsolated()
+        defer { isolated.defaults.removePersistentDomain(forName: isolated.suiteName) }
+
+        let clock = StatsTestClock()
+        var currentIdle: Double = 0
+        let settings = Settings(defaults: isolated.defaults)
+        let detector = PauseDetector(defaults: isolated.defaults, clock: clock.pausaClock)
+        let log = BreakLog(url: tempDir.appendingPathComponent("breaks.jsonl"), now: clock.wall, calendar: cal, ignoreDryRun: true)
+        let app = AppController(
+            settings: settings,
+            detector: detector,
+            log: log,
+            clock: clock.pausaClock,
+            defaults: isolated.defaults,
+            inputIdle: { currentIdle },
+            showUI: false
+        )
+        app.frontmostAppProvider = { ("com.apple.Safari", "Safari") }
+
+        // 1. Active work for 10m (600s), then 5m (300s) unengaged zero input -> all 3 clocks roll back to 600s!
+        for _ in 0..<600 {
+            currentIdle = 0
+            app.tick()
+            clock.advance(1)
+        }
+        for step in 1...300 {
+            currentIdle = Double(step)
+            app.tick()
+            clock.advance(1)
+        }
+        XCTAssertTrue(app.scheduler.isAway)
+        XCTAssertEqual(app.scheduler.sinceLastLongBreak, 600, accuracy: 3)
+        let snapAfterIdle = log.snapshot(now: clock.wall)
+        XCTAssertEqual(snapAfterIdle.work.reduce(0) { $0 + $1.end.timeIntervalSince($1.start) }, 600, accuracy: 3)
+        XCTAssertEqual(log.appUsage(now: clock.wall).first?.seconds ?? 0, 600, accuracy: 3)
+
+        // Return to desk and verify `screenEngagedOverride = true` prevents idle freeze even with pauseForBrowserVideo OFF.
+        currentIdle = 0
+        app.tick()
+        clock.advance(1)
+        settings.pauseForBrowserVideo = false
+        detector.screenEngagedOverride = true
+        for step in 1...360 {
+            currentIdle = Double(step)
+            app.tick()
+            clock.advance(1)
+        }
+        XCTAssertFalse(app.scheduler.isAway)
+        detector.screenEngagedOverride = nil
+
+        // 2. Skip a short break, then take a manual short break within 5 minutes -> skip is redeemed!
+        currentIdle = 1
+        app.breakNow(.short)
+        app.finish(.skipped)
+        XCTAssertEqual(Stats.days(log.all(now: clock.wall), endingAt: clock.wall, count: 1, calendar: cal)[0].skipped, 1)
+
+        clock.advance(60)
+        app.breakNow(.short)
+        app.finish(.completed)
+        let dayAfterRedeem = Stats.days(log.all(now: clock.wall), endingAt: clock.wall, count: 1, calendar: cal)[0]
+        XCTAssertEqual(dayAfterRedeem.skipped, 0)
+        XCTAssertEqual(dayAfterRedeem.taken, 1)
+    }
+
+    func testUrgentPauseExpiresAfterThirtyMinutesAndHoursGateClearsManualPause() throws {
+        let isolated = PausaDefaults.makeIsolated()
+        defer { isolated.defaults.removePersistentDomain(forName: isolated.suiteName) }
+
+        let clock = StatsTestClock()
+        clock.wall = cal.date(from: DateComponents(year: 2026, month: 11, day: 16, hour: 10, minute: 0))!
+        let settings = Settings(defaults: isolated.defaults)
+        settings.hardLineMinutes = 60
+        let log = BreakLog(url: tempDir.appendingPathComponent("breaks.jsonl"), now: clock.wall, calendar: cal, ignoreDryRun: true)
+        let app = AppController(
+            settings: settings,
+            detector: PauseDetector(defaults: isolated.defaults, clock: clock.pausaClock),
+            log: log,
+            clock: clock.pausaClock,
+            defaults: isolated.defaults,
+            inputIdle: { 1 },
+            showUI: false
+        )
+
+        // Reach 60m hard line via meeting, end meeting -> forced long break starts, trigger urgentPause.
+        app.simulateReasons([.meeting])
+        for _ in 0..<3610 {
+            clock.advance(1)
+            app.tick()
+        }
+        app.simulateReasons([])
+        XCTAssertTrue(app.isOnBreak)
+        app.urgentPause()
+        XCTAssertTrue(app.manualPaused)
+
+        // 29 minutes later: still manually paused. At 30m + 1s: auto-recovers and enforces the owed long break!
+        clock.advance(29 * 60)
+        app.tick()
+        XCTAssertTrue(app.manualPaused)
+        clock.advance(65)
+        app.tick()
+        XCTAssertFalse(app.manualPaused)
+        XCTAssertTrue(app.isOnBreak)
+        app.finish(.completed)
+
+        // Manual pause outside active hours clears automatically when the morning window opens.
+        let sysCal = Calendar.autoupdatingCurrent
+        settings.schedule = PausaSchedule(
+            enabled: true,
+            rules: [PausaWindow(start: ClockTime(9, 0), end: ClockTime(18, 0), weekdays: Set(1...7))]
+        )
+        clock.wall = sysCal.date(from: DateComponents(year: 2026, month: 11, day: 17, hour: 8, minute: 50))!
+        app.tick()
+        app.pause()
+        XCTAssertTrue(app.manualPaused)
+
+        clock.advance(15 * 60)   // 09:05 -> window opens
+        app.tick()
+        XCTAssertFalse(app.manualPaused)
+    }
 }

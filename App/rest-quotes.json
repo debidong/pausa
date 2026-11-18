@@ -9,7 +9,10 @@
     "ru": "Смотри вдаль. Ещё дальше.",
     "fr": "Regarde loin. Puis encore plus loin.",
     "vi": "Nhìn xa, rồi xa thêm chút nữa.",
-    "th": "มองไกลๆ แล้วไกลออกไปอีกนิด"
+    "th": "มองไกลๆ แล้วไกลออกไปอีกนิด",
+    "de": "Schau weit hinaus. Und dann noch ein Stück weiter.",
+    "ja": "少し遠くを見て、さらにもう少し遠くへ。",
+    "uk": "Подивись удалечінь. І ще трохи далі."
   },
   {
     "id": "break.long.quote.day.1",
@@ -21,7 +24,10 @@
     "ru": "За окном интереснее, чем на экране.",
     "fr": "La fenêtre bat l'écran.",
     "vi": "Ngoài cửa sổ đẹp hơn màn hình.",
-    "th": "นอกหน้าต่างสวยกว่าหน้าจอ"
+    "th": "นอกหน้าต่างสวยกว่าหน้าจอ",
+    "de": "Das Fenster schlägt jeden Bildschirm.",
+    "ja": "窓の外の景色には、どんな画面もかなわない。",
+    "uk": "За вікном завжди цікавіше, ніж на екрані."
   },
   {
     "id": "break.long.quote.day.2",
@@ -33,7 +39,10 @@
     "ru": "Найди немного зелени. Глаза её узнают.",
     "fr": "Trouve un peu de vert. Tes yeux s'en souviennent.",
     "vi": "Tìm một chút xanh lá, mắt bạn nhận ra nó.",
-    "th": "หาสีเขียวสักนิด ตาคุณจำมันได้"
+    "th": "หาสีเขียวสักนิด ตาคุณจำมันได้",
+    "de": "Such dir ein Stück Grün. Deine Augen kennen es noch.",
+    "ja": "緑をひとつ探してみて。目がほっと思い出すから。",
+    "uk": "Знайди очима трохи зелені — вони її впізнають."
   },
   {
     "id": "break.long.quote.day.3",
@@ -45,7 +54,10 @@
     "ru": "Свет хороший. Поймай хоть немного.",
     "fr": "La lumière est belle. Va en profiter un peu.",
     "vi": "Nắng đang đẹp, ra hưởng ké chút đi.",
-    "th": "แสงกำลังดี ไปขอแบ่งมาสักหน่อย"
+    "th": "แสงกำลังดี ไปขอแบ่งมาสักหน่อย",
+    "de": "Draußen ist gutes Licht. Hol dir ein wenig davon.",
+    "ja": "外の光がいい感じ。少し分けてもらおう。",
+    "uk": "Надворі гарне світло — злови хоч трохи."
   },
   {
     "id": "break.long.quote.day.4",
@@ -57,7 +69,10 @@
     "ru": "Облака никогда не спешат и никогда не опаздывают.",
     "fr": "Les nuages ne sont jamais pressés, ni jamais en retard.",
     "vi": "Mây chẳng bao giờ vội, cũng chưa từng trễ.",
-    "th": "เมฆไม่เคยรีบ และไม่เคยมาสาย"
+    "th": "เมฆไม่เคยรีบ และไม่เคยมาสาย",
+    "de": "Wolken haben es nie eilig und kommen doch nie zu spät.",
+    "ja": "雲は急がないけれど、遅刻したこともない。",
+    "uk": "Хмари ніколи не поспішають і ніколи не запізнюються."
   },
   {
     "id": "break.long.quote.day.5",
@@ -69,7 +84,10 @@
     "ru": "Выпей воды. Мозг в основном из неё и состоит.",
     "fr": "Bois un peu d'eau. Ton cerveau en est surtout fait.",
     "vi": "Uống ngụm nước đi, não phần lớn là nước mà.",
-    "th": "จิบน้ำหน่อย สมองส่วนใหญ่ก็คือน้ำ"
+    "th": "จิบน้ำหน่อย สมองส่วนใหญ่ก็คือน้ำ",
+    "de": "Trink einen Schluck Wasser. Dein Kopf besteht fast nur daraus.",
+    "ja": "ひと口お水をどうぞ。脳の大半は水でできているから。",
+    "uk": "Випий води — мозок здебільшого з неї й складається."
   },
   {
     "id": "break.long.quote.day.6",
@@ -81,7 +99,10 @@
     "ru": "Задача никуда не убежит. Подождёт на месте.",
     "fr": "Le problème ne va pas s'envoler. Il t'attendra.",
     "vi": "Vấn đề không chạy đâu, nó sẽ đứng đợi bạn.",
-    "th": "ปัญหาไม่หนีไปไหนหรอก มันจะรออยู่ตรงนั้น"
+    "th": "ปัญหาไม่หนีไปไหนหรอก มันจะรออยู่ตรงนั้น",
+    "de": "Das Problem läuft nicht weg. Es wartet brav auf dich.",
+    "ja": "課題はどこへも逃げない。戻ってくるまで待っていてくれる。",
+    "uk": "Задача нікуди не втече — спокійно зачекає на тебе."
   },
   {
     "id": "break.long.quote.day.7",
@@ -93,7 +114,10 @@
     "ru": "Встань и потянись без стеснения, как кот.",
     "fr": "Lève-toi et étire-toi sans complexe, comme un chat.",
     "vi": "Đứng dậy vươn vai, ngang nhiên như một chú mèo.",
-    "th": "ลุกขึ้นบิดขี้เกียจ แบบแมวที่ไม่เคยเกรงใจใคร"
+    "th": "ลุกขึ้นบิดขี้เกียจ แบบแมวที่ไม่เคยเกรงใจใคร",
+    "de": "Steh auf und streck dich ausgiebig – ganz selbstverständlich wie eine Katze.",
+    "ja": "立ち上がって、猫みたいに堂々と伸びをしよう。",
+    "uk": "Устань і солодко потягнися, без жодного сорому, мов кіт."
   },
   {
     "id": "break.long.quote.day.8",
@@ -105,7 +129,10 @@
     "ru": "Подними руки вверх, будто только что победил.",
     "fr": "Lève les bras comme si tu venais de gagner.",
     "vi": "Giơ hai tay qua đầu như vừa thắng một trận.",
-    "th": "ชูมือสองข้างขึ้นสูง ทำเหมือนเพิ่งชนะมา"
+    "th": "ชูมือสองข้างขึ้นสูง ทำเหมือนเพิ่งชนะมา",
+    "de": "Heb beide Arme hoch, als hättest du gerade gewonnen.",
+    "ja": "試合に勝ったみたいに、両手をぐっと頭の上へ。",
+    "uk": "Підніми обидві руки вгору, ніби щойно переміг."
   },
   {
     "id": "break.long.quote.day.9",
@@ -117,7 +144,10 @@
     "ru": "Опусти плечи. Да, вот так.",
     "fr": "Baisse les épaules. Oui, comme ça.",
     "vi": "Hạ vai xuống. Đúng rồi, vậy đó.",
-    "th": "ปล่อยไหล่ลง ใช่ แบบนั้นแหละ"
+    "th": "ปล่อยไหล่ลง ใช่ แบบนั้นแหละ",
+    "de": "Lass die Schultern sinken. Ja, genau so.",
+    "ja": "肩をすとんと落として。そう、その感じ。",
+    "uk": "Опусти плечі. Так, саме так."
   },
   {
     "id": "break.long.quote.day.10",
@@ -129,7 +159,10 @@
     "ru": "Ты не комнатное растение. Пройдись немного.",
     "fr": "Tu n'es pas une plante verte. Marche deux pas.",
     "vi": "Bạn không phải chậu cây, đứng dậy đi vài bước nhé.",
-    "th": "คุณไม่ใช่ไม้กระถาง ลุกเดินสักสองก้าวก็ได้"
+    "th": "คุณไม่ใช่ไม้กระถาง ลุกเดินสักสองก้าวก็ได้",
+    "de": "Du bist keine Zimmerpflanze. Geh ruhig ein paar Schritte.",
+    "ja": "鉢植えじゃないんだから、椅子を離れて二、三歩歩こう。",
+    "uk": "Ти ж не кімнатна рослина — підведися й пройдися трохи."
   },
   {
     "id": "break.long.quote.day.11",
@@ -141,7 +174,10 @@
     "ru": "Снова сжал зубы? Разомкни челюсть.",
     "fr": "Les mâchoires encore serrées ? Relâche-les.",
     "vi": "Lại nghiến răng hàm rồi phải không? Thả lỏng ra.",
-    "th": "เผลอกัดกรามอีกแล้วใช่ไหม คลายออกหน่อย"
+    "th": "เผลอกัดกรามอีกแล้วใช่ไหม คลายออกหน่อย",
+    "de": "Beißt du wieder die Backenzähne zusammen? Lass locker.",
+    "ja": "奥歯をかみしめていない？ ふっと緩めよう。",
+    "uk": "Знову стискаєш щелепи? Розслаб їх."
   },
   {
     "id": "break.long.quote.day.12",
@@ -153,7 +189,10 @@
     "ru": "Сосчитай этажи самого дальнего дома за окном.",
     "fr": "Compte les étages de l'immeuble le plus loin.",
     "vi": "Thử đếm xem tòa nhà xa nhất ngoài kia mấy tầng.",
-    "th": "ลองนับชั้นของตึกที่ไกลที่สุดนอกหน้าต่างดู"
+    "th": "ลองนับชั้นของตึกที่ไกลที่สุดนอกหน้าต่างดู",
+    "de": "Zähl die Stockwerke am weitesten Gebäude vor dem Fenster.",
+    "ja": "窓から一番遠くに見えるビルの階数を数えてみて。",
+    "uk": "Порахуй поверхи найдальшого будинку за вікном."
   },
   {
     "id": "break.long.quote.day.13",
@@ -165,7 +204,10 @@
     "ru": "Чуть подай подбородок назад — шее сразу легче.",
     "fr": "Recule légèrement le menton. Ta nuque respirera.",
     "vi": "Thu nhẹ cằm vào một chút, cổ sẽ đỡ mỏi hẳn.",
-    "th": "เก็บคางกลับเข้ามานิดหนึ่ง คอจะเบาขึ้นเยอะ"
+    "th": "เก็บคางกลับเข้ามานิดหนึ่ง คอจะเบาขึ้นเยอะ",
+    "de": "Zieh das Kinn leicht zurück – dein Nacken atmet sofort auf.",
+    "ja": "あごをほんの少し引くと、首がふっと軽くなる。",
+    "uk": "Трохи подай підборіддя назад — шия одразу видихне."
   },
   {
     "id": "break.long.quote.day.14",
@@ -177,7 +219,10 @@
     "ru": "Убери руку с трекпада, положи ладони на колени.",
     "fr": "Ôte ta main du pavé tactile, pose-la sur tes genoux.",
     "vi": "Nhấc tay khỏi bàn di, đặt ngửa lên đùi nghỉ chút.",
-    "th": "วางมือจากแทร็กแพด พักไว้บนตักสักครู่"
+    "th": "วางมือจากแทร็กแพด พักไว้บนตักสักครู่",
+    "de": "Nimm die Hand vom Trackpad und leg sie ruhig in den Schoß.",
+    "ja": "トラックパッドから手を離して、膝の上で休ませよう。",
+    "uk": "Прибери руку з трекпада й спокійно поклади долоні на коліна."
   },
   {
     "id": "break.long.quote.day.15",
@@ -189,7 +234,10 @@
     "ru": "Посмотри на верхушки деревьев: куда сегодня дует ветер?",
     "fr": "Regarde la cime des arbres : d'où vient le vent ?",
     "vi": "Nhìn ngọn cây ngoài kia xem gió đang thổi hướng nào.",
-    "th": "มองยอดไม้ข้างนอกดูสิ วันนี้ลมพัดไปทางไหน"
+    "th": "มองยอดไม้ข้างนอกดูสิ วันนี้ลมพัดไปทางไหน",
+    "de": "Schau in die Baumkronen draußen: Wohin weht heute der Wind?",
+    "ja": "外の梢を見てみて。今日の風はどっち向き？",
+    "uk": "Глянь на верхівки дерев: куди сьогодні віє вітер?"
   },
   {
     "id": "break.long.quote.day.16",
@@ -201,7 +249,10 @@
     "ru": "Налей воды, а заодно сполосни пустую кружку.",
     "fr": "Va remplir ton verre et rince ta tasse au passage.",
     "vi": "Đi rót cốc nước, tiện tay tráng luôn chiếc ly trống.",
-    "th": "ลุกไปเติมน้ำ แล้วถือโอกาสล้างแก้วเปล่าด้วยเลย"
+    "th": "ลุกไปเติมน้ำ แล้วถือโอกาสล้างแก้วเปล่าด้วยเลย",
+    "de": "Hol dir frisches Wasser und spül nebenbei die leere Tasse aus.",
+    "ja": "水を注ぎに行って、ついでに空いたマグもゆすごう。",
+    "uk": "Налий собі води й заодно сполосни порожню чашку."
   },
   {
     "id": "break.long.quote.day.17",
@@ -213,7 +264,10 @@
     "ru": "То, на чём застрял, часто решается за две минуты вдали от стола.",
     "fr": "Ce qui coinçait se dénoue souvent à deux pas du bureau.",
     "vi": "Chỗ vừa bí thường tự thông sau hai phút rời bàn.",
-    "th": "เรื่องที่เพิ่งติดอยู่ เดินหนีสักสองนาทีเดี๋ยวก็ออก"
+    "th": "เรื่องที่เพิ่งติดอยู่ เดินหนีสักสองนาทีเดี๋ยวก็ออก",
+    "de": "Was eben noch feststeckte, löst sich oft zwei Minuten weg vom Tisch.",
+    "ja": "詰まっていたことも、席を2分離れると案外すっと解ける。",
+    "uk": "Те, на чому щойно застряг, часто розплутується за дві хвилини від столу."
   },
   {
     "id": "break.long.quote.day.18",
@@ -225,7 +279,10 @@
     "ru": "Двадцать вкладок в браузере — не повод держать столько же в голове.",
     "fr": "Vingt onglets ouverts ne veulent pas dire vingt pensées à la fois.",
     "vi": "Trình duyệt mở hai mươi tab, đầu óc đừng mở theo nhé.",
-    "th": "เปิดไว้ยี่สิบแท็บ แต่สมองไม่ต้องเปิดตามยี่สิบอันนะ"
+    "th": "เปิดไว้ยี่สิบแท็บ แต่สมองไม่ต้องเปิดตามยี่สิบอันนะ",
+    "de": "Zwanzig offene Tabs im Browser heißen nicht zwanzig Tabs im Kopf.",
+    "ja": "タブが20個開いていても、頭の中まで20個開かなくていい。",
+    "uk": "Двадцять відкритих вкладок у браузері — не привід тримати стільки ж у голові."
   },
   {
     "id": "break.long.quote.day.19",
@@ -237,7 +294,10 @@
     "ru": "Если ответить на три минуты позже, Земля не остановится.",
     "fr": "Répondre trois minutes plus tard n'arrêtera pas la Terre.",
     "vi": "Trả lời tin nhắn muộn ba phút, trái đất vẫn quay đều.",
-    "th": "ตอบช้าไปสามนาที โลกก็ยังหมุนเหมือนเดิม"
+    "th": "ตอบช้าไปสามนาที โลกก็ยังหมุนเหมือนเดิม",
+    "de": "Drei Minuten später antworten hält die Erde nicht an.",
+    "ja": "返信が3分遅れても、地球はちゃんと回り続ける。",
+    "uk": "Якщо відповісти на три хвилини пізніше, Земля не зупиниться."
   },
   {
     "id": "break.long.quote.day.20",
@@ -249,7 +309,10 @@
     "ru": "Задержи взгляд на самом дальнем углу комнаты на пять секунд.",
     "fr": "Pose le regard sur le coin le plus éloigné pendant cinq secondes.",
     "vi": "Đưa mắt về góc xa nhất trong phòng, giữ năm giây.",
-    "th": "มองไปยังมุมที่ไกลที่สุดของห้อง ค้างไว้ห้าวินาที"
+    "th": "มองไปยังมุมที่ไกลที่สุดของห้อง ค้างไว้ห้าวินาที",
+    "de": "Lass den Blick fünf Sekunden in der fernsten Ecke des Raums ruhen.",
+    "ja": "部屋の一番遠い角に視線を置いて、5秒だけそのまま。",
+    "uk": "Затримай погляд на найдальшому кутку кімнати на п’ять секунд."
   },
   {
     "id": "break.long.quote.day.21",
@@ -261,7 +324,10 @@
     "ru": "Когда сосредоточен, в первую очередь забываешь моргать.",
     "fr": "Cligner des yeux est la première chose qu'on oublie en travaillant.",
     "vi": "Chớp mắt là việc nhỏ dễ quên nhất lúc đang tập trung.",
-    "th": "การกะพริบตาคือเรื่องเล็กๆ ที่เรามักลืมเวลาเพ่งงาน"
+    "th": "การกะพริบตาคือเรื่องเล็กๆ ที่เรามักลืมเวลาเพ่งงาน",
+    "de": "Blinzeln ist das Erste, was wir bei tiefer Konzentration vergessen.",
+    "ja": "集中していると、まばたきほど真っ先に忘れがち。",
+    "uk": "Коли глибоко зосереджуєшся, найперше забуваєш кліпати."
   },
   {
     "id": "break.long.quote.day.22",
@@ -273,7 +339,10 @@
     "ru": "Поставь обе стопы ровно на пол, не поджимай ноги под стул.",
     "fr": "Pose les deux pieds bien à plat au sol.",
     "vi": "Đặt hai bàn chân chạm hẳn xuống sàn, đừng treo lơ lửng.",
-    "th": "วางเท้าทั้งสองข้างให้เต็มพื้น อย่าเกร็งลอยไว้ใต้เก้าอี้"
+    "th": "วางเท้าทั้งสองข้างให้เต็มพื้น อย่าเกร็งลอยไว้ใต้เก้าอี้",
+    "de": "Stell beide Füße flach auf den Boden, statt sie unter den Stuhl zu ziehen.",
+    "ja": "足を椅子の下に引かず、両足の裏を床にぺたりとつけよう。",
+    "uk": "Постав обидві стопи рівно на підлогу, не підгинай їх під стілець."
   },
   {
     "id": "break.long.quote.day.23",
@@ -285,7 +354,10 @@
     "ru": "Повращай запястьями: от долгой печати связки каменеют.",
     "fr": "Fais tourner tes poignets, le clavier finit par raidir les tendons.",
     "vi": "Xoay chậm cổ tay, gõ phím lâu gân cốt dễ căng.",
-    "th": "หมุนข้อมือช้าๆ พิมพ์งานนานเส้นเอ็นมักตึง"
+    "th": "หมุนข้อมือช้าๆ พิมพ์งานนานเส้นเอ็นมักตึง",
+    "de": "Kreise langsam mit den Handgelenken – langes Tippen macht die Sehnen fest.",
+    "ja": "手首をゆっくり回そう。長く打っていると筋がこわばるから。",
+    "uk": "Покрути зап’ястями: від довгого друку сухожилля дерев’яніють."
   },
   {
     "id": "break.long.quote.day.24",
@@ -297,7 +369,10 @@
     "ru": "Постой полминуты у окна — без телефона в руке.",
     "fr": "Reste trente secondes près de la fenêtre, sans téléphone.",
     "vi": "Ra đứng cạnh cửa sổ ba mươi giây, để điện thoại lại bàn.",
-    "th": "ไปยืนริมหน้าต่างสักสามสิบวินาที ทิ้งมือถือไว้ที่โต๊ะ"
+    "th": "ไปยืนริมหน้าต่างสักสามสิบวินาที ทิ้งมือถือไว้ที่โต๊ะ",
+    "de": "Steh dreißig Sekunden am Fenster. Das Handy bleibt auf dem Tisch.",
+    "ja": "スマホは机に置いたまま、窓辺に30秒だけ立ってみよう。",
+    "uk": "Постій пів хвилини біля вікна — без телефона в руці."
   },
   {
     "id": "break.long.quote.day.25",
@@ -309,7 +384,10 @@
     "ru": "Маленькую складку между бровями сейчас можно разгладить.",
     "fr": "Ce petit pli entre les sourcils peut se détendre maintenant.",
     "vi": "Nếp nhăn nhỏ giữa hai chân mày giờ có thể giãn ra rồi.",
-    "th": "รอยขมวดเล็กๆ ระหว่างคิ้ว คลายออกได้แล้วนะ"
+    "th": "รอยขมวดเล็กๆ ระหว่างคิ้ว คลายออกได้แล้วนะ",
+    "de": "Die kleine Falte zwischen den Augenbrauen darf sich jetzt glätten.",
+    "ja": "眉間の小さなシワ、今のうちにほどいておこう。",
+    "uk": "Маленьку складку між бровами зараз можна розгладити."
   },
   {
     "id": "break.long.quote.day.26",
@@ -321,7 +399,10 @@
     "ru": "Вдох на четыре счёта, выдох на шесть. Попробуй два круга.",
     "fr": "Inspire quatre secondes, expire six. Essaie deux fois.",
     "vi": "Hít vào bốn giây, thở ra sáu giây. Thử hai nhịp nhé.",
-    "th": "หายใจเข้าสี่วินาที ผ่อนออกหกวินาที ลองสักสองรอบ"
+    "th": "หายใจเข้าสี่วินาที ผ่อนออกหกวินาที ลองสักสองรอบ",
+    "de": "Vier Sekunden einatmen, sechs Sekunden aus. Zwei ruhige Runden.",
+    "ja": "4秒吸って、6秒吐く。静かに2回だけやってみよう。",
+    "uk": "Вдих на чотири рахунки, видих на шість. Спробуй два спокійні кола."
   },
   {
     "id": "break.long.quote.day.27",
@@ -333,7 +414,10 @@
     "ru": "Глянь на небо: сегодня ясно, пасмурно или собирается дождь?",
     "fr": "Jette un œil au ciel : grand bleu, grisaille ou pluie en vue ?",
     "vi": "Nhìn trời một thoáng xem nắng trong, âm u hay sắp mưa.",
-    "th": "มองท้องฟ้าสักนิด วันนี้แดดออก ครึ้ม หรือทำท่าจะตก"
+    "th": "มองท้องฟ้าสักนิด วันนี้แดดออก ครึ้ม หรือทำท่าจะตก",
+    "de": "Ein kurzer Blick in den Himmel: klar, bedeckt oder schon nach Regen?",
+    "ja": "ちょっと空を見上げてみて。晴れ、曇り、それとも雨模様？",
+    "uk": "Поглянь на небо: сьогодні ясно, хмарно чи збирається на дощ?"
   },
   {
     "id": "break.long.quote.day.28",
@@ -345,7 +429,10 @@
     "ru": "Сядь ровно, а потом отпусти треть усилия — в самый раз.",
     "fr": "Redresse-toi, puis relâche un tiers de l'effort. Voilà.",
     "vi": "Ngồi thẳng lên, rồi thả lỏng bớt ba phần sức là vừa đẹp.",
-    "th": "นั่งยืดตัวขึ้น แล้วคลายแรงลงสักสามส่วน กำลังพอดี"
+    "th": "นั่งยืดตัวขึ้น แล้วคลายแรงลงสักสามส่วน กำลังพอดี",
+    "de": "Setz dich aufrecht hin und lass dann ein Drittel der Spannung los.",
+    "ja": "背筋をすっと伸ばしてから、力を3割だけ抜くとちょうどいい。",
+    "uk": "Сядь рівно, а потім відпусти третину напруги — саме те, що треба."
   },
   {
     "id": "break.long.quote.day.29",
@@ -357,7 +444,10 @@
     "ru": "Код не отрастит ноги и не сбежит. Спокойно передохни.",
     "fr": "Le code ne va pas prendre ses jambes à son cou. Souffle un peu.",
     "vi": "Code chẳng mọc chân chạy mất đâu, cứ yên tâm nghỉ chút.",
-    "th": "โค้ดไม่งอกขาวิ่งหนีไปไหนหรอก พักได้สบายใจ"
+    "th": "โค้ดไม่งอกขาวิ่งหนีไปไหนหรอก พักได้สบายใจ",
+    "de": "Dein Code bekommt keine Beine. Gönn dir ruhig die zwei Minuten.",
+    "ja": "コードに足は生えないから、安心して少し休もう。",
+    "uk": "Код не відростить ноги й не втече. Спокійно перепочинь."
   },
   {
     "id": "break.long.quote.day.30",
@@ -369,7 +459,10 @@
     "ru": "Согрей ладони друг о друга и мягко прикрой закрытые глаза.",
     "fr": "Frotte tes paumes et pose-les doucement sur tes yeux fermés.",
     "vi": "Xoa ấm hai lòng bàn tay rồi áp nhẹ lên mắt đang nhắm.",
-    "th": "ถูฝ่ามือให้อุ่น แล้ววางประคบเบาๆ บนเปลือกตา"
+    "th": "ถูฝ่ามือให้อุ่น แล้ววางประคบเบาๆ บนเปลือกตา",
+    "de": "Reib die Handflächen warm und leg sie sanft über die geschlossenen Augen.",
+    "ja": "手のひらをこすって温め、閉じたまぶたにそっと重ねよう。",
+    "uk": "Розітри долоні до тепла й лагідно прикрий ними заплющені очі."
   },
   {
     "id": "break.long.quote.day.31",
@@ -381,7 +474,10 @@
     "ru": "Прислушайся к комнате на минуту: тихий гул, улица, тишина.",
     "fr": "Écoute la pièce un instant : le souffle, la rue, le calme.",
     "vi": "Lắng nghe căn phòng một lát: tiếng gió, tiếng phố, khoảng lặng.",
-    "th": "ลองฟังเสียงรอบห้องสักพัก เสียงลม เสียงถนน ความเงียบ"
+    "th": "ลองฟังเสียงรอบห้องสักพัก เสียงลม เสียงถนน ความเงียบ",
+    "de": "Hör kurz in den Raum hinein – das Summen, die Straße, die Stille.",
+    "ja": "少しだけ部屋の音に耳を澄ませて。風の音、外の気配、静けさ。",
+    "uk": "Прислухайся на мить до кімнати: тихий гул, вулиця, спокій."
   },
   {
     "id": "break.long.quote.day.32",
@@ -393,7 +489,10 @@
     "ru": "Медленно поверни голову к левому плечу, затем к правому.",
     "fr": "Tourne lentement la tête vers la gauche, puis vers la droite.",
     "vi": "Quay đầu thật chậm sang vai trái, rồi sang vai phải.",
-    "th": "ค่อยๆ หันศีรษะมองข้ามไหล่ซ้าย แล้วสลับไปทางขวา"
+    "th": "ค่อยๆ หันศีรษะมองข้ามไหล่ซ้าย แล้วสลับไปทางขวา",
+    "de": "Dreh den Kopf langsam über die linke Schulter, dann über die rechte.",
+    "ja": "ゆっくり左の肩越しを見て、次は右へ。",
+    "uk": "Повільно поверни голову до лівого плеча, а потім до правого."
   },
   {
     "id": "break.long.quote.day.33",
@@ -405,7 +504,10 @@
     "ru": "Сделай плечами три больших круга назад.",
     "fr": "Fais trois grands cercles vers l'arrière avec les épaules.",
     "vi": "Xoay vai ra sau ba vòng thật rộng xem đỡ cứng chưa.",
-    "th": "หมุนไหล่ไปด้านหลังเป็นวงกว้างสักสามรอบ"
+    "th": "หมุนไหล่ไปด้านหลังเป็นวงกว้างสักสามรอบ",
+    "de": "Roll die Schultern in drei weiten Kreisen nach hinten.",
+    "ja": "肩を後ろへ、大きく3回ぐるりと回そう。",
+    "uk": "Зроби плечима три широкі кола назад."
   },
   {
     "id": "break.long.quote.day.34",
@@ -417,7 +519,10 @@
     "ru": "Если сегодня уже был кофе, самое время запить его стаканом воды.",
     "fr": "Si tu as pris un café, pense à boire un verre d'eau plate.",
     "vi": "Uống cà phê rồi thì nhớ bù thêm một cốc nước lọc nhé.",
-    "th": "ถ้าวันนี้ดื่มกาแฟไปแล้ว อย่าลืมตามด้วยน้ำเปล่าสักแก้ว"
+    "th": "ถ้าวันนี้ดื่มกาแฟไปแล้ว อย่าลืมตามด้วยน้ำเปล่าสักแก้ว",
+    "de": "Schon Kaffee gehabt heute? Stell ihm ein Glas klares Wasser zur Seite.",
+    "ja": "朝のコーヒーを飲んだなら、お水も一杯足しておこう。",
+    "uk": "Якщо сьогодні вже була кава, саме час запити її склянкою води."
   },
   {
     "id": "break.long.quote.day.35",
@@ -429,7 +534,10 @@
     "ru": "Глаза — не веб-камера, им вредно весь день держать фокус в полуметре.",
     "fr": "Tes yeux ne sont pas faits pour fixer à cinquante centimètres sans arrêt.",
     "vi": "Mắt không phải ống kính cố định ở khoảng cách nửa mét đâu.",
-    "th": "ดวงตาไม่ใช่กล้องเว็บแคม ไม่ต้องโฟกัสระยะครึ่งเมตรตลอดเวลาก็ได้"
+    "th": "ดวงตาไม่ใช่กล้องเว็บแคม ไม่ต้องโฟกัสระยะครึ่งเมตรตลอดเวลาก็ได้",
+    "de": "Deine Augen sind keine Webcam – sie sind nicht für fünfzig Zentimeter Dauerfokus gebaut.",
+    "ja": "目はカメラじゃないから、ずっと30センチ先にピントを固定しなくていい。",
+    "uk": "Очі — не вебкамера, їм не варто весь день тримати фокус за пів метра."
   },
   {
     "id": "break.long.quote.day.36",
@@ -441,7 +549,10 @@
     "ru": "Пройдись по коридору, дай глазам сменить освещение.",
     "fr": "Fais quelques pas dans le couloir pour changer de lumière.",
     "vi": "Đi dọc hành lang một vòng cho mắt đổi sang ánh sáng khác.",
-    "th": "ลองเดินออกไปตรงโถงทางเดิน ให้สายตาได้เปลี่ยนแสงบ้าง"
+    "th": "ลองเดินออกไปตรงโถงทางเดิน ให้สายตาได้เปลี่ยนแสงบ้าง",
+    "de": "Geh kurz den Flur entlang und gönn deinen Augen anderes Licht.",
+    "ja": "廊下をひと回り歩いて、違う明るさに目を慣らそう。",
+    "uk": "Пройдися коридором і дай очам змінити освітлення."
   },
   {
     "id": "break.long.quote.day.37",
@@ -453,7 +564,10 @@
     "ru": "Опусти руки свободно вдоль тела хотя бы на десять секунд.",
     "fr": "Laisse pendre tes bras le long du corps dix secondes.",
     "vi": "Buông thõng hai cánh tay dọc thân người mười giây nhé.",
-    "th": "ปล่อยแขนทิ้งตัวลงข้างลำตัวสบายๆ สักสิบวินาที"
+    "th": "ปล่อยแขนทิ้งตัวลงข้างลำตัวสบายๆ สักสิบวินาที",
+    "de": "Lass die Arme zehn Sekunden lang locker neben dem Körper hängen.",
+    "ja": "ひじを机から離して、10秒だけ腕をだらんと下げよう。",
+    "uk": "Опусти руки вільно вздовж тіла хоча б на десять секунд."
   },
   {
     "id": "break.long.quote.day.38",
@@ -465,7 +579,10 @@
     "ru": "Мягко коснись языком нёба — челюсть расслабится сама.",
     "fr": "Pose la langue au palais, la mâchoire se relâche toute seule.",
     "vi": "Đặt nhẹ đầu lưỡi lên vòm miệng, hàm sẽ tự khắc thả lỏng.",
-    "th": "แตะปลายลิ้นเบาๆ ที่เพดานปาก แล้วกรามจะคลายตัวเอง"
+    "th": "แตะปลายลิ้นเบาๆ ที่เพดานปาก แล้วกรามจะคลายตัวเอง",
+    "de": "Leg die Zungenspitze locker an den Gaumen – der Kiefer entspannt von selbst.",
+    "ja": "舌先を上あごにそっと添えると、あごの力は自然に抜ける。",
+    "uk": "Легенько торкнися язиком піднебіння — щелепа розслабиться сама."
   },
   {
     "id": "break.long.quote.day.39",
@@ -477,7 +594,10 @@
     "ru": "Посмотри, не сидит ли птица на проводе или карнизе за окном.",
     "fr": "Regarde s'il y a un oiseau sur un fil ou un toit dehors.",
     "vi": "Nhìn thử ngoài kia có chú chim nào đậu trên mái nhà không.",
-    "th": "ลองมองดูนอกหน้าต่างว่ามีนกเกาะอยู่ตามสายไฟหรือชายคาไหม"
+    "th": "ลองมองดูนอกหน้าต่างว่ามีนกเกาะอยู่ตามสายไฟหรือชายคาไหม",
+    "de": "Schau mal, ob draußen ein Vogel auf einer Leitung oder Dachkante sitzt.",
+    "ja": "外の電線や屋根の端に、鳥が止まっていないか探してみて。",
+    "uk": "Подивись, чи не сидить пташка на дроті або даху за вікном."
   },
   {
     "id": "break.long.quote.day.40",
@@ -489,7 +609,10 @@
     "ru": "Дел много, но пусть дыхание от этого не становится поверхностным.",
     "fr": "Être occupé, soit ; mais garde une respiration ample.",
     "vi": "Bận thì bận, đừng để hơi thở nông theo công việc.",
-    "th": "ยุ่งได้แต่อย่าเผลอหายใจสั้นตามงานล่ะ"
+    "th": "ยุ่งได้แต่อย่าเผลอหายใจสั้นตามงานล่ะ",
+    "de": "Viel zu tun ist okay – lass nur deinen Atem dabei nicht flach werden.",
+    "ja": "忙しくても大丈夫。呼吸まで浅くならないようにしよう。",
+    "uk": "Справ багато, але нехай дихання від цього не стає поверхневим."
   },
   {
     "id": "break.long.quote.day.41",
@@ -501,7 +624,10 @@
     "ru": "Распрями скрещённые ноги — пояснице станет заметно свободнее.",
     "fr": "Décroise les jambes un moment, le bas du dos te dira merci.",
     "vi": "Hạ chân đang bắt chéo xuống nhé, lưng dưới sẽ dễ chịu hơn.",
-    "th": "คลายขาที่ไขว่ห้างออกหน่อย หลังส่วนล่างจะได้พักบ้าง"
+    "th": "คลายขาที่ไขว่ห้างออกหน่อย หลังส่วนล่างจะได้พักบ้าง",
+    "de": "Schlag die Beine kurz auseinander – dein unterer Rücken freut sich.",
+    "ja": "組んでいた足を下ろして、腰と背中を少し楽にしよう。",
+    "uk": "Розплети схрещені ноги — поперек одразу подякує."
   },
   {
     "id": "break.long.quote.day.42",
@@ -513,7 +639,10 @@
     "ru": "Широко растопырь пальцы, мягко сожми в кулак и отпусти.",
     "fr": "Écarte grand les doigts, referme sans forcer, puis relâche.",
     "vi": "Xòe rộng mười đầu ngón tay, nắm nhẹ lại rồi buông ra.",
-    "th": "กางนิ้วมือออกกว้างๆ กำหลวมๆ แล้วคลายออก"
+    "th": "กางนิ้วมือออกกว้างๆ กำหลวมๆ แล้วคลายออก",
+    "de": "Spreiz die Finger weit, schließ sie locker zur Faust und lass wieder los.",
+    "ja": "指を大きく開いて、軽く握り、またふわっと開こう。",
+    "uk": "Широко розчепір пальці, м’яко стисни в кулак і відпусти."
   },
   {
     "id": "break.long.quote.day.43",
@@ -525,7 +654,10 @@
     "ru": "Выбери предмет метрах в шести и спокойно обведи взглядом его контур.",
     "fr": "Choisis un objet à six mètres et suis doucement son contour.",
     "vi": "Chọn một vật cách sáu mét và nhìn rõ đường viền của nó.",
-    "th": "เลือกวัตถุที่ห่างออกไปสักหกเมตร แล้วไล่สายตาตามขอบช้าๆ"
+    "th": "เลือกวัตถุที่ห่างออกไปสักหกเมตร แล้วไล่สายตาตามขอบช้าๆ",
+    "de": "Such dir etwas in sechs Metern Entfernung und fahr mit dem Blick die Kontur nach.",
+    "ja": "6メートル以上先のものをひとつ選び、輪郭をゆっくり目でなぞろう。",
+    "uk": "Вибери предмет метрів за шість і спокійно обведи поглядом його контур."
   },
   {
     "id": "break.long.quote.day.44",
@@ -537,7 +669,10 @@
     "ru": "Если в комнате душно, приоткрой окно хотя бы на щёлку.",
     "fr": "Si l'air est un peu lourd, entrouvre la fenêtre une minute.",
     "vi": "Nếu phòng hơi bí, ra hé nhẹ cửa sổ đón gió tươi nhé.",
-    "th": "ถ้าอากาศในห้องเริ่มอับ ลองแง้มหน้าต่างรับลมสักนิด"
+    "th": "ถ้าอากาศในห้องเริ่มอับ ลองแง้มหน้าต่างรับลมสักนิด",
+    "de": "Wenn die Luft im Zimmer steht, kipp kurz das Fenster einen Spalt.",
+    "ja": "部屋の空気がこもっていたら、窓を少しだけ開けて風を入れよう。",
+    "uk": "Якщо в кімнаті душно, прочини вікно бодай на щілину."
   },
   {
     "id": "break.long.quote.day.45",
@@ -549,7 +684,10 @@
     "ru": "Только дописал кусок? Дай тексту остыть пару минут.",
     "fr": "Tu viens de finir un passage ? Laisse-le reposer deux minutes.",
     "vi": "Vừa viết xong một đoạn? Đứng dậy để nó nguội hai phút đã.",
-    "th": "เพิ่งเขียนเสร็จใช่ไหม ทิ้งไว้สักสองนาทีค่อยกลับมาแก้"
+    "th": "เพิ่งเขียนเสร็จใช่ไหม ทิ้งไว้สักสองนาทีค่อยกลับมาแก้",
+    "de": "Gerade einen Absatz fertig? Lass ihn zwei Minuten abkühlen, bevor du feilst.",
+    "ja": "ひと段落書き終えたら、すぐ直さずに2分だけ寝かせておこう。",
+    "uk": "Щойно дописав фрагмент? Дай тексту охолонути пару хвилин перед правками."
   },
   {
     "id": "break.long.quote.day.46",
@@ -561,7 +699,10 @@
     "ru": "Беспорядок на столе подождёт — сначала расправь плечи.",
     "fr": "Le bureau en désordre attendra ; replace d'abord tes épaules.",
     "vi": "Bàn hơi bừa chút chưa sao, chỉnh lại hai vai cho ngay đã.",
-    "th": "โต๊ะรกนิดหน่อยช่างมันก่อน จัดไหล่ให้ตรงก่อนดีกว่า"
+    "th": "โต๊ะรกนิดหน่อยช่างมันก่อน จัดไหล่ให้ตรงก่อนดีกว่า",
+    "de": "Ein voller Schreibtisch kann warten – richte zuerst deine Schultern auf.",
+    "ja": "机の上の散らかりは後回しでいい。まずは肩の位置を整えよう。",
+    "uk": "Безлад на столі зачекає — спершу розправ плечі."
   },
   {
     "id": "break.long.quote.day.47",
@@ -573,7 +714,10 @@
     "ru": "Закрой глаза, улови три далёких звука и открывай.",
     "fr": "Ferme les yeux, repère trois bruits lointains, puis rouvre-les.",
     "vi": "Nhắm mắt lại, lắng nghe ba âm thanh ở xa rồi mở mắt.",
-    "th": "หลับตาลง ลองฟังเสียงไกลๆ ให้ครบสามเสียงแล้วค่อยลืมตา"
+    "th": "หลับตาลง ลองฟังเสียงไกลๆ ให้ครบสามเสียงแล้วค่อยลืมตา",
+    "de": "Schließ die Augen, fang drei ferne Geräusche ein und öffne sie wieder.",
+    "ja": "目を閉じて、遠くの音を3つ聞き取ってから目を開けよう。",
+    "uk": "Заплющ очі, злови три далекі звуки й розплющуй."
   },
   {
     "id": "break.long.quote.day.48",
@@ -585,7 +729,10 @@
     "ru": "Верни голову ровно над плечами — шея ведь не вешалка.",
     "fr": "Ramène la tête dans l'axe ; ta nuque n'est pas un portemanteau.",
     "vi": "Đưa đầu về thẳng trục lưng nhé, cổ đâu phải móc treo.",
-    "th": "ดึงศีรษะกลับมาให้อยู่ตรงแนวไหล่ คอไม่ใช่ไม้แขวนเสื้อนะ"
+    "th": "ดึงศีรษะกลับมาให้อยู่ตรงแนวไหล่ คอไม่ใช่ไม้แขวนเสื้อนะ",
+    "de": "Hol den Kopf zurück über die Wirbelsäule – dein Nacken ist kein Kleiderhaken.",
+    "ja": "頭を背骨の上に戻そう。首はコート掛けじゃないから。",
+    "uk": "Поверни голову рівно над плечима — шия ж не вішак."
   },
   {
     "id": "break.long.quote.day.49",
@@ -597,7 +744,10 @@
     "ru": "Заметь, насколько сдвинулось пятно света на стене или полу.",
     "fr": "Regarde de combien la tache de lumière a bougé sur le mur.",
     "vi": "Nhìn vệt nắng trên tường xem đã dịch đi bao xa rồi.",
-    "th": "สังเกตดูสิว่าเงาแดดบนผนังขยับไปจากเดิมแค่ไหนแล้ว"
+    "th": "สังเกตดูสิว่าเงาแดดบนผนังขยับไปจากเดิมแค่ไหนแล้ว",
+    "de": "Schau, wie weit das Tageslicht an Wand oder Boden inzwischen gewandert ist.",
+    "ja": "壁や床に落ちる日差しが、さっきよりどれだけ動いたか見てみて。",
+    "uk": "Поміть, наскільки зсунулася пляма світла на стіні чи підлозі."
   },
   {
     "id": "break.long.quote.day.50",
@@ -609,7 +759,10 @@
     "ru": "Проголодался? Перекуси горстью орехов или яблоком.",
     "fr": "Un petit creux ? Prends quelques amandes ou un fruit.",
     "vi": "Bụng hơi trống thì kiếm ít hạt hay miếng trái cây lót dạ nhé.",
-    "th": "ถ้าท้องเริ่มว่าง ไปหาถั่วสักกำมือหรือผลไม้กินรองท้องหน่อย"
+    "th": "ถ้าท้องเริ่มว่าง ไปหาถั่วสักกำมือหรือผลไม้กินรองท้องหน่อย",
+    "de": "Magen leer? Hol dir eine Handvoll Nüsse oder ein Stück Obst.",
+    "ja": "小腹が空いていたら、ナッツを少しつまむか果物を半分どうぞ。",
+    "uk": "Зголоднів? Перекуси жменькою горіхів або шматочком фрукта."
   },
   {
     "id": "break.long.quote.day.51",
@@ -621,7 +774,10 @@
     "ru": "Позволь спинке стула действительно подержать твою спину.",
     "fr": "Laisse le dossier de la chaise porter ton dos pour de vrai.",
     "vi": "Tựa hẳn lưng vào ghế đi, để ghế đỡ hộ sức nặng một lát.",
-    "th": "พิงหลังให้แนบพนักเก้าอี้ ปล่อยให้เก้าอี้ช่วยรับน้ำหนักบ้าง"
+    "th": "พิงหลังให้แนบพนักเก้าอี้ ปล่อยให้เก้าอี้ช่วยรับน้ำหนักบ้าง",
+    "de": "Lass die Rückenlehne für eine Minute wirklich dein Gewicht tragen.",
+    "ja": "背もたれにしっかり背中を預けて、椅子に重さを任せよう。",
+    "uk": "Дозволь спинці стільця справді потримати твою спину."
   },
   {
     "id": "break.long.quote.day.52",
@@ -633,7 +789,10 @@
     "ru": "Посмотри на что-нибудь, где нет ни единой буквы.",
     "fr": "Pose les yeux sur quelque chose sans le moindre mot écrit.",
     "vi": "Hãy nhìn vào một thứ chẳng có lấy một dòng chữ nào.",
-    "th": "ลองพักสายตาไว้กับอะไรก็ได้ที่ไม่มีตัวหนังสือเลย"
+    "th": "ลองพักสายตาไว้กับอะไรก็ได้ที่ไม่มีตัวหนังสือเลย",
+    "de": "Leg den Blick auf etwas, auf dem kein einziges Wort steht.",
+    "ja": "文字から目を離して、一文字も書かれていないものを眺めよう。",
+    "uk": "Спочинь поглядом на чомусь, де немає жодної літери."
   },
   {
     "id": "break.long.quote.day.53",
@@ -645,7 +804,10 @@
     "ru": "Ничего не производить пару минут — тоже часть нормальной работы.",
     "fr": "Ne rien produire pendant trois minutes fait partie du travail.",
     "vi": "Vài phút không tạo ra gì cả vốn dĩ cũng là việc chính đáng.",
-    "th": "สองสามนาทีที่ไม่ได้สร้างผลงานอะไร ก็เป็นส่วนหนึ่งของงานที่ดี"
+    "th": "สองสามนาทีที่ไม่ได้สร้างผลงานอะไร ก็เป็นส่วนหนึ่งของงานที่ดี",
+    "de": "Ein paar Minuten lang nichts produzieren gehört zu guter Arbeit dazu.",
+    "ja": "何も生み出さないこの数分間も、ちゃんとした仕事のうち。",
+    "uk": "Нічого не видавати кілька хвилин — теж частина доброї роботи."
   },
   {
     "id": "break.long.quote.night.0",
@@ -657,7 +819,10 @@
     "ru": "На сегодня уже сделано немало. Передохни немного.",
     "fr": "Tu as déjà bien avancé aujourd'hui. Souffle un peu.",
     "vi": "Hôm nay làm vậy là nhiều rồi, nghỉ một lát nhé.",
-    "th": "วันนี้ลุยมาเยอะพอแล้ว พักสักหน่อยเถอะ"
+    "th": "วันนี้ลุยมาเยอะพอแล้ว พักสักหน่อยเถอะ",
+    "de": "Du hast heute schon viel geschafft. Ruh dich kurz aus.",
+    "ja": "今日はもう十分よく働いたよ。少し一息つこう。",
+    "uk": "Ти сьогодні вже чимало встиг. Перепочинь трохи."
   },
   {
     "id": "break.long.quote.night.1",
@@ -669,7 +834,10 @@
     "ru": "Медленно потянись и сбрось напряжение длинного дня.",
     "fr": "Étire-toi doucement pour relâcher la tension de la journée.",
     "vi": "Vươn vai thật chậm, trút bớt nửa phần căng thẳng ban ngày.",
-    "th": "บิดขี้เกียจช้าๆ คลายความตึงเครียดของทั้งวันลงสักครึ่ง"
+    "th": "บิดขี้เกียจช้าๆ คลายความตึงเครียดของทั้งวันลงสักครึ่ง",
+    "de": "Streck dich langsam und streif die halbe Anspannung des Tages ab.",
+    "ja": "ゆっくり伸びをして、昼間のこわばりを半分おろそう。",
+    "uk": "Повільно потягнися й скинь половину денної напруги."
   },
   {
     "id": "break.long.quote.night.2",
@@ -681,7 +849,10 @@
     "ru": "Убавь яркость на пару делений — глазам пора в вечерний режим.",
     "fr": "Baisse la luminosité de deux crans, tes yeux passent en soirée.",
     "vi": "Giảm độ sáng màn hình hai nấc, mắt cũng sang ca tối rồi.",
-    "th": "ลดแสงจอลงสักสองขีด ให้ดวงตาได้เปลี่ยนเป็นกะค่ำบ้าง"
+    "th": "ลดแสงจอลงสักสองขีด ให้ดวงตาได้เปลี่ยนเป็นกะค่ำบ้าง",
+    "de": "Dreh die Helligkeit zwei Stufen tiefer – Feierabendlicht für die Augen.",
+    "ja": "画面の明るさを2段階下げよう。目にも夜シフトを。",
+    "uk": "Прикрути яскравість на дві поділки — очам теж час на вечірню зміну."
   },
   {
     "id": "break.long.quote.night.3",
@@ -693,7 +864,10 @@
     "ru": "Сделай глоток тёплой воды. Дела с экрана никуда не убегут.",
     "fr": "Bois une gorgée d'eau tiède. Rien ne va s'envoler.",
     "vi": "Uống ngụm nước ấm đi, việc trên màn hình không chạy mất đâu.",
-    "th": "จิบน้ำอุ่นสักนิด งานบนจอไม่หนีไปไหนหรอก"
+    "th": "จิบน้ำอุ่นสักนิด งานบนจอไม่หนีไปไหนหรอก",
+    "de": "Trink einen Schluck warmes Wasser. Auf dem Bildschirm läuft nichts davon.",
+    "ja": "温かいお水をひと口。画面の中の仕事は逃げないから。",
+    "uk": "Зроби ковток теплої води — справи на екрані нікуди не втечуть."
   },
   {
     "id": "break.long.quote.night.4",
@@ -705,7 +879,10 @@
     "ru": "Стемнело. Найди взглядом далёкий спокойный огонёк.",
     "fr": "Il fait nuit. Laisse tes yeux trouver une lumière au loin.",
     "vi": "Trời tối rồi, hãy để mắt tìm một ánh đèn phía xa.",
-    "th": "ฟ้ามืดแล้ว ลองพักสายตาไว้ที่ไฟสักดวงไกลๆ"
+    "th": "ฟ้ามืดแล้ว ลองพักสายตาไว้ที่ไฟสักดวงไกลๆ",
+    "de": "Draußen ist es dunkel. Lass den Blick an einem fernen Licht ausruhen.",
+    "ja": "外はもう暗いね。遠くの明かりをひとつ探して目を休めよう。",
+    "uk": "Надворі стемніло. Знайди поглядом далекий спокійний вогник."
   },
   {
     "id": "break.long.quote.night.5",
@@ -717,7 +894,10 @@
     "ru": "Вечерние дела идут ровнее, если сбавить полшага.",
     "fr": "Le soir, tout avance mieux un demi-ton plus lentement.",
     "vi": "Việc buổi tối cứ chậm lại nửa nhịp lại càng chắc.",
-    "th": "งานตอนค่ำ ช้าลงสักครึ่งจังหวะกลับนิ่งกว่าเดิม"
+    "th": "งานตอนค่ำ ช้าลงสักครึ่งจังหวะกลับนิ่งกว่าเดิม",
+    "de": "Abends gelingt alles besser, wenn man einen halben Takt ruhiger macht.",
+    "ja": "夜の作業は、半拍ゆっくりくらいがかえってうまくいく。",
+    "uk": "Вечірні справи йдуть рівніше, якщо стишити темп на пів кроку."
   },
   {
     "id": "break.long.quote.night.6",
@@ -729,7 +909,10 @@
     "ru": "Пройдись по комнате, пусть ужин спокойно уляжется.",
     "fr": "Fais quelques pas tranquilles, le temps que le dîner se pose.",
     "vi": "Đứng dậy đi vài bước cho bữa tối tiêu bớt nhé.",
-    "th": "ลุกเดินเบาๆ สักนิด ให้มื้อเย็นได้ย่อยสบายๆ"
+    "th": "ลุกเดินเบาๆ สักนิด ให้มื้อเย็นได้ย่อยสบายๆ",
+    "de": "Geh ein paar ruhige Schritte durchs Zimmer, damit das Abendessen sacken kann.",
+    "ja": "部屋をゆっくり数歩歩いて、夕ごはんを落ち着かせよう。",
+    "uk": "Пройдися кімнатою, нехай вечеря спокійно вляжеться."
   },
   {
     "id": "break.long.quote.night.7",
@@ -741,7 +924,10 @@
     "ru": "Завари тёплый травяной чай — поздний кофе берёт взаймы у завтра.",
     "fr": "Fais-toi une tisane chaude ; le café tardif emprunte à demain.",
     "vi": "Pha tách trà ấm thôi, cà phê giờ này là vay sức ngày mai đấy.",
-    "th": "ชงชาอุ่นๆ ดีกว่า กาแฟเวลานี้มีแต่ไปยืมแรงของวันพรุ่งนี้"
+    "th": "ชงชาอุ่นๆ ดีกว่า กาแฟเวลานี้มีแต่ไปยืมแรงของวันพรุ่งนี้",
+    "de": "Mach dir lieber einen warmen Tee – später Kaffee leiht nur Energie von morgen.",
+    "ja": "温かいお茶にしよう。この時間のコーヒーは明日の元気の前借りだから。",
+    "uk": "Завари теплий трав’яний чай — пізня кава лише позичає сили у завтра."
   },
   {
     "id": "break.long.quote.night.8",
@@ -753,7 +939,10 @@
     "ru": "Если оставшееся не горит, оставь его свежей утренней голове.",
     "fr": "Si la suite n'est pas urgente, garde-la pour l'esprit frais de demain.",
     "vi": "Việc còn lại nếu chưa gấp, cứ để dành cho đầu óc sáng mai.",
-    "th": "งานที่เหลือถ้าไม่ด่วน เก็บไว้ให้สมองปลอดโปร่งพรุ่งนี้เช้าเถอะ"
+    "th": "งานที่เหลือถ้าไม่ด่วน เก็บไว้ให้สมองปลอดโปร่งพรุ่งนี้เช้าเถอะ",
+    "de": "Was nicht mehr brennt, darf auf deinen wachen Kopf morgen früh warten.",
+    "ja": "急がない残り仕事なら、明日の朝のすっきりした頭に任せよう。",
+    "uk": "Якщо залишок не горить, залиш його свіжій ранковій голові."
   },
   {
     "id": "break.long.quote.night.9",
@@ -765,7 +954,10 @@
     "ru": "За окном стало тише — пусть и дыхание станет размереннее.",
     "fr": "La rue s'est calmée dehors ; ralentis le souffle avec elle.",
     "vi": "Đêm ngoài kia đã dịu xuống, nhịp thở cũng chậm theo nhé.",
-    "th": "ข้างนอกเงียบลงแล้ว ผ่อนจังหวะหายใจให้ช้าตามไปด้วยสิ"
+    "th": "ข้างนอกเงียบลงแล้ว ผ่อนจังหวะหายใจให้ช้าตามไปด้วยสิ",
+    "de": "Draußen ist es still geworden. Lass deinen Atem genauso ruhig werden.",
+    "ja": "外の夜が静かになってきたね。呼吸もそれに合わせてゆっくりに。",
+    "uk": "За вікном стихло — нехай і твоє дихання стане спокійнішим."
   },
   {
     "id": "break.long.quote.night.10",
@@ -777,7 +969,10 @@
     "ru": "Разомни мышцы сзади шеи — они держали длинный день.",
     "fr": "Masse doucement ta nuque, elle a porté toute la journée.",
     "vi": "Bóp nhẹ vùng gáy đang cứng lại sau cả ngày dài nhé.",
-    "th": "ลองนวดคลึงต้นคอด้านหลังที่ตึงมาทั้งวันดูหน่อย"
+    "th": "ลองนวดคลึงต้นคอด้านหลังที่ตึงมาทั้งวันดูหน่อย",
+    "de": "Streich sanft über den Nacken – er hat heute einen langen Tag getragen.",
+    "ja": "首の後ろの固くなったところを、やさしくほぐしてあげよう。",
+    "uk": "Розімни м’язи ззаду шиї — вони тримали довгий день."
   },
   {
     "id": "break.long.quote.night.11",
@@ -789,7 +984,10 @@
     "ru": "Включи рядом тёплую лампу, не сиди в темноте перед одним экраном.",
     "fr": "Allume une lampe douce pour que l'écran ne soit pas la seule lueur.",
     "vi": "Bật thêm ngọn đèn vàng dịu, đừng để mỗi màn hình sáng trong tối.",
-    "th": "เปิดโคมไฟแสงอุ่นๆ ไว้สักดวง อย่าปล่อยให้มีแค่แสงจอในห้องมืด"
+    "th": "เปิดโคมไฟแสงอุ่นๆ ไว้สักดวง อย่าปล่อยให้มีแค่แสงจอในห้องมืด",
+    "de": "Schalt eine warme Lampe im Zimmer ein, damit der Monitor nicht allein leuchtet.",
+    "ja": "手元に暖色の小さな灯りをつけて、画面だけの光にしないでおこう。",
+    "uk": "Увімкни поруч теплу лампу, щоб екран не світився сам у темряві."
   },
   {
     "id": "break.long.quote.night.12",
@@ -801,7 +999,10 @@
     "ru": "Мягко помассируй край глазницы по косточке, не давя на глаза.",
     "fr": "Masse doucement l'arcade autour des yeux, sans appuyer dessus.",
     "vi": "Day nhẹ quanh xương hốc mắt thôi, đừng ấn thẳng vào mắt.",
-    "th": "นวดเบาๆ ตามขอบกระดูกเบ้าตาก็พอ อย่ากดลงบนลูกตาโดยตรง"
+    "th": "นวดเบาๆ ตามขอบกระดูกเบ้าตาก็พอ อย่ากดลงบนลูกตาโดยตรง",
+    "de": "Streich leicht über den Knochenrand um die Augen – nie direkt aufs Auge drücken.",
+    "ja": "目の周りの骨をそっとなぞるだけにして、眼球は押さないでね。",
+    "uk": "Лагідно помасажуй кісточку довкола очей, не натискаючи на самі очі."
   },
   {
     "id": "break.long.quote.night.13",
@@ -813,7 +1014,10 @@
     "ru": "Не каждый непрочитанный значок обязан обнулиться сегодня вечером.",
     "fr": "Toutes les notifications n'ont pas besoin d'être lues ce soir.",
     "vi": "Không phải tin nhắn chưa đọc nào cũng cần dọn sạch tối nay.",
-    "th": "ไม่จำเป็นต้องเคลียร์ข้อความที่ยังไม่ได้อ่านให้หมดภายในคืนนี้หรอก"
+    "th": "ไม่จำเป็นต้องเคลียร์ข้อความที่ยังไม่ได้อ่านให้หมดภายในคืนนี้หรอก",
+    "de": "Nicht jeder rote Zähler muss heute Abend noch auf null stehen.",
+    "ja": "未読バッジを全部、今夜のうちにゼロにしなくてもいい。",
+    "uk": "Не кожен непрочитаний сповіщувач мусить обнулитися сьогодні ввечері."
   },
   {
     "id": "break.long.quote.night.14",
@@ -825,7 +1029,10 @@
     "ru": "Вечерний воздух куда приятнее синего экрана. Подыши у окна.",
     "fr": "L'air du soir fait plus de bien que la lumière bleue.",
     "vi": "Gió đêm dễ chịu hơn ánh sáng xanh nhiều, ra cửa sổ hít thở chút.",
-    "th": "ลมยามค่ำดีต่อใจกว่าแสงสีฟ้าเยอะ ไปรับลมริมหน้าต่างหน่อยไหม"
+    "th": "ลมยามค่ำดีต่อใจกว่าแสงสีฟ้าเยอะ ไปรับลมริมหน้าต่างหน่อยไหม",
+    "de": "Abendluft tut besser als Blaulicht. Öffne kurz das Fenster zum Durchatmen.",
+    "ja": "ブルーライトより夜風のほうが体にやさしい。窓辺でひと息つこう。",
+    "uk": "Вечірнє повітря лікує краще за синє світло. Подихай біля вікна."
   },
   {
     "id": "break.long.quote.night.15",
@@ -837,7 +1044,10 @@
     "ru": "Посмотри сквозь своё отражение в стекле в ночную глубину двора.",
     "fr": "Regarde au-delà de ton reflet sur la vitre, jusque dans la nuit.",
     "vi": "Nhìn xuyên qua bóng phản chiếu trên kính để thấy đêm bên ngoài.",
-    "th": "มองเลยเงาสะท้อนบนกระจกออกไปหาความมืดข้างนอกดูบ้าง"
+    "th": "มองเลยเงาสะท้อนบนกระจกออกไปหาความมืดข้างนอกดูบ้าง",
+    "de": "Schau durch dein Spiegelbild im Glas hindurch in die Nacht hinaus.",
+    "ja": "窓ガラスの映り込みの奥にある、外の夜へピントを合わせよう。",
+    "uk": "Подивись крізь своє відображення у склі в нічну глибину двору."
   },
   {
     "id": "break.long.quote.night.16",
@@ -849,7 +1059,10 @@
     "ru": "Отодвинь стул на полшага, вытяни ноги и покачай стопами.",
     "fr": "Recule un peu ta chaise, allonge les jambes et détends les chevilles.",
     "vi": "Đẩy ghế lùi nửa bước, duỗi thẳng hai chân rồi lắc nhẹ cổ chân.",
-    "th": "เลื่อนเก้าอี้ถอยหลังนิดหนึ่ง เหยียดขาตรงแล้วขยับข้อเท้าเบาๆ"
+    "th": "เลื่อนเก้าอี้ถอยหลังนิดหนึ่ง เหยียดขาตรงแล้วขยับข้อเท้าเบาๆ",
+    "de": "Schieb den Stuhl ein Stück zurück, streck die Beine aus und lockere die Knöchel.",
+    "ja": "椅子を半歩引いて、足を伸ばして足首をぶらぶらさせよう。",
+    "uk": "Відсунь стілець на пів кроку, витягни ноги й потруси стопами."
   },
   {
     "id": "break.long.quote.night.17",
@@ -861,7 +1074,10 @@
     "ru": "Даже половина списка за день — это честная сделанная работа.",
     "fr": "La moitié de la liste cochée, c'est déjà une vraie journée.",
     "vi": "Hôm nay xong được nửa danh sách cũng là nửa phần việc thật sự rồi.",
-    "th": "ต่อให้วันนี้ทำเสร็จไปแค่ครึ่งลิสต์ นั่นก็คือครึ่งหนึ่งจริงๆ แล้วนะ"
+    "th": "ต่อให้วันนี้ทำเสร็จไปแค่ครึ่งลิสต์ นั่นก็คือครึ่งหนึ่งจริงๆ แล้วนะ",
+    "de": "Auch die halbe Liste geschafft ist ein ehrliches Tagwerk.",
+    "ja": "今日のリストが半分でも片づいたなら、立派なひと仕事。",
+    "uk": "Навіть половина списку за сьогодні — це чесна зроблена робота."
   },
   {
     "id": "break.long.quote.night.18",
@@ -873,7 +1089,10 @@
     "ru": "Прикрой глаза на десять секунд без нажима — дай им увлажниться.",
     "fr": "Ferme les yeux sans serrer pendant dix secondes pour les réhydrater.",
     "vi": "Nhắm hờ mắt mười giây để mí mắt khô kịp ẩm trở lại.",
-    "th": "หลับตาเบาๆ สักสิบวินาที ให้ดวงตาที่แห้งได้ชุ่มชื้นขึ้น"
+    "th": "หลับตาเบาๆ สักสิบวินาที ให้ดวงตาที่แห้งได้ชุ่มชื้นขึ้น",
+    "de": "Halt die Augen zehn Sekunden sanft geschlossen, damit sie wieder feucht werden.",
+    "ja": "力を入れずに10秒だけ目を閉じて、乾いたまぶたを潤そう。",
+    "uk": "Прикрий очі на десять секунд без натиску — дай їм зволожитися."
   },
   {
     "id": "break.long.quote.night.19",
@@ -885,7 +1104,10 @@
     "ru": "Наклони голову ухом к плечу на пять секунд, потом к другому.",
     "fr": "Penche l'oreille vers l'épaule cinq secondes, puis change de côté.",
     "vi": "Nghiêng tai về phía vai giữ năm giây, rồi đổi sang bên kia.",
-    "th": "เอียงหูลงหาหัวไหล่ค้างไว้ข้างละห้าวินาที"
+    "th": "เอียงหูลงหาหัวไหล่ค้างไว้ข้างละห้าวินาที",
+    "de": "Neig ein Ohr fünf Sekunden Richtung Schulter, dann wechsle die Seite.",
+    "ja": "耳を肩に近づけるように首を傾けて、左右5秒ずつ。",
+    "uk": "Нахили голову вухом до плеча на п’ять секунд, потім до іншого."
   },
   {
     "id": "break.long.quote.night.20",
@@ -897,7 +1119,10 @@
     "ru": "Запиши одной строкой первый шаг на завтра, чтобы не держать в уме.",
     "fr": "Note en une ligne la première tâche de demain pour libérer ta tête.",
     "vi": "Ghi một dòng việc đầu tiên sáng mai cần làm để đầu óc được nghỉ.",
-    "th": "จดงานชิ้นแรกของพรุ่งนี้ไว้สักบรรทัด สมองจะได้วางลงเสียที"
+    "th": "จดงานชิ้นแรกของพรุ่งนี้ไว้สักบรรทัด สมองจะได้วางลงเสียที",
+    "de": "Schreib den ersten Schritt für morgen in eine Zeile – dann hat der Kopf frei.",
+    "ja": "明日の朝一番にやることを一行だけメモして、頭を退勤させよう。",
+    "uk": "Запиши одним рядком першу справу на завтра, щоб мозок міг піти з роботи."
   },
   {
     "id": "break.long.quote.night.21",
@@ -909,7 +1134,10 @@
     "ru": "Так и сидишь на месте после ужина? Встань пройтись минутку.",
     "fr": "Assis sans bouger depuis le dîner ? Lève-toi une minute.",
     "vi": "Ngồi suốt từ sau bữa tối đến giờ à? Đứng dậy đi lại chút đi.",
-    "th": "นั่งยาวตั้งแต่หลังมื้อเย็นเลยหรือเปล่า ลุกเดินสักนาทีนะ"
+    "th": "นั่งยาวตั้งแต่หลังมื้อเย็นเลยหรือเปล่า ลุกเดินสักนาทีนะ",
+    "de": "Seit dem Abendessen sitzen geblieben? Steh kurz auf und geh ein paar Schritte.",
+    "ja": "夕食のあとからずっと座りっぱなし？ 立って白湯でも飲もう。",
+    "uk": "Так і сидиш на місці після вечері? Устань пройдися хвилинку."
   },
   {
     "id": "break.long.quote.night.22",
@@ -921,7 +1149,10 @@
     "ru": "Взгляни на светящиеся окна напротив — у каждого свой тихий вечер.",
     "fr": "Regarde les fenêtres éclairées d'en face, chacun finit sa journée.",
     "vi": "Nhìn những ô cửa sáng đèn phía đối diện, ai cũng đang khép lại ngày.",
-    "th": "มองหน้าต่างที่เปิดไฟฝั่งตรงข้ามดูสิ ทุกคนต่างกำลังผ่านค่ำคืนของตัวเอง"
+    "th": "มองหน้าต่างที่เปิดไฟฝั่งตรงข้ามดูสิ ทุกคนต่างกำลังผ่านค่ำคืนของตัวเอง",
+    "de": "Schau zu den beleuchteten Fenstern gegenüber – überall klingt der Tag aus.",
+    "ja": "向かいの建物の明かりを眺めてみて。みんなそれぞれの夜を過ごしている。",
+    "uk": "Поглянь на освітлені вікна навпроти — у кожного свій тихий вечір."
   },
   {
     "id": "break.long.quote.night.23",
@@ -933,7 +1164,10 @@
     "ru": "Дай запястьям просто спокойно полежать на столе.",
     "fr": "Laisse tes poignets reposer à plat sur le bureau un moment.",
     "vi": "Đặt cổ tay nằm phẳng trên mặt bàn nghỉ một chút nhé.",
-    "th": "วางข้อมือราบลงบนโต๊ะพักสักครู่ อย่าเกร็งลอยไว้ตลอด"
+    "th": "วางข้อมือราบลงบนโต๊ะพักสักครู่ อย่าเกร็งลอยไว้ตลอด",
+    "de": "Leg die Handgelenke kurz schwer und flach auf den Tisch.",
+    "ja": "手首を浮かせてばかりいないで、机にぺたりと預けて休ませよう。",
+    "uk": "Дай зап’ястям просто спокійно й важко полежати на столі."
   },
   {
     "id": "break.long.quote.night.24",
@@ -945,7 +1179,10 @@
     "ru": "Вечер хорош, чтобы закругляться, а не затевать новую большую задачу.",
     "fr": "Le soir réussit mieux aux finitions qu'aux grands chantiers neufs.",
     "vi": "Buổi tối hợp để gói ghém việc cũ hơn là bày thêm việc lớn.",
-    "th": "เวลากลางคืนเหมาะกับการเก็บงานมากกว่าเริ่มโปรเจกต์ใหญ่อันใหม่นะ"
+    "th": "เวลากลางคืนเหมาะกับการเก็บงานมากกว่าเริ่มโปรเจกต์ใหญ่อันใหม่นะ",
+    "de": "Der Abend taugt zum Abrunden, weniger für ganz neue Großbaustellen.",
+    "ja": "夜は仕上げに向いていて、新しい大仕事を広げる時間じゃない。",
+    "uk": "Вечір пасує для завершення справ, а не для старту великого проєкту."
   },
   {
     "id": "break.long.quote.night.25",
@@ -957,7 +1194,10 @@
     "ru": "Расслабь лоб: от сурового взгляда экран быстрее работать не станет.",
     "fr": "Détends les sourcils, fixer l'écran sévèrement ne le rend pas plus rapide.",
     "vi": "Giãn chân mày ra nào, nhìn trừng trừng đâu làm máy chạy nhanh hơn.",
-    "th": "คลายคิ้วหน่อย จ้องจอเขม็งไม่ได้ช่วยให้เครื่องประมวลผลเร็วขึ้นนะ"
+    "th": "คลายคิ้วหน่อย จ้องจอเขม็งไม่ได้ช่วยให้เครื่องประมวลผลเร็วขึ้นนะ",
+    "de": "Entspann die Stirn – vom strengen Anstarren kompiliert kein Bildschirm schneller.",
+    "ja": "眉間の力を抜こう。画面をにらんでも処理は速くならないから。",
+    "uk": "Розслаб чоло: від суворого погляду екран швидше не запрацює."
   },
   {
     "id": "break.long.quote.night.26",
@@ -969,7 +1209,10 @@
     "ru": "Три спокойных вдоха животом — дай грудной клетке отдохнуть.",
     "fr": "Trois respirations lentes par le ventre, sans hausser les épaules.",
     "vi": "Ba hơi thở sâu xuống bụng, đừng chỉ thở gấp ở ngực.",
-    "th": "สูดหายใจลึกๆ ลงท้องสักสามครั้ง ให้หน้าอกได้พักบ้าง"
+    "th": "สูดหายใจลึกๆ ลงท้องสักสามครั้ง ให้หน้าอกได้พักบ้าง",
+    "de": "Drei ruhige Atemzüge tief in den Bauch, damit der Brustkorb Pause hat.",
+    "ja": "お腹まで届く深呼吸をゆっくり3回。胸ばかりで息をしないように。",
+    "uk": "Три спокійні вдихи животом — дай грудній клітці перепочити."
   },
   {
     "id": "break.long.quote.night.27",
@@ -981,7 +1224,10 @@
     "ru": "Умойся тёплой водой или протри очки — сразу станет свежее.",
     "fr": "Passe un peu d'eau tiède sur ton visage ou essuie tes lunettes.",
     "vi": "Rửa mặt nước ấm hoặc lau lại mắt kính, nhìn mọi thứ dịu hẳn.",
-    "th": "ไปล้างหน้าด้วยน้ำอุ่น หรือเช็ดเลนส์แว่นสักหน่อย โลกจะชัดขึ้นเยอะ"
+    "th": "ไปล้างหน้าด้วยน้ำอุ่น หรือเช็ดเลนส์แว่นสักหน่อย โลกจะชัดขึ้นเยอะ",
+    "de": "Wasch dir kurz warm das Gesicht oder putz die Brille – gleich wirkt alles klarer.",
+    "ja": "ぬるま湯で顔を洗うか、メガネをひと拭きすると視界がすっきりするよ。",
+    "uk": "Умийся теплою водою або протри окуляри — світ одразу стане чіткішим."
   },
   {
     "id": "break.long.quote.night.28",
@@ -993,7 +1239,10 @@
     "ru": "Приглуши свет и звук заранее — так ко сну будет плавный спуск.",
     "fr": "Adoucis la lumière et le son pour préparer doucement la nuit.",
     "vi": "Hạ dịu ánh đèn và âm lượng dần để lát nữa dễ vào giấc ngủ.",
-    "th": "หรี่ไฟและลดเสียงลงสักนิด ปูทางเบาๆ ก่อนเข้านอน"
+    "th": "หรี่ไฟและลดเสียงลงสักนิด ปูทางเบาๆ ก่อนเข้านอน",
+    "de": "Dimm Licht und Ton schon jetzt ein wenig, damit der Schlaf eine sanfte Landebahn hat.",
+    "ja": "今のうちに照明も音量も少し落として、眠りへの助走路をつくろう。",
+    "uk": "Приглуши світло й звук заздалегідь — так до сну буде плавна доріжка."
   },
   {
     "id": "break.long.quote.night.29",
@@ -1005,7 +1254,10 @@
     "ru": "Доделай мелочь и закругляйся — сегодня не нужен идеальный балл.",
     "fr": "Boucle un dernier détail et arrête-toi là, pas besoin de viser cent sur cent.",
     "vi": "Khép lại một đầu việc nhỏ nữa là vừa, tối nay đâu cần mười điểm.",
-    "th": "เก็บรายละเอียดเล็กๆ อีกนิดก็พอ คืนนี้ไม่ต้องเอาเต็มร้อยหรอก"
+    "th": "เก็บรายละเอียดเล็กๆ อีกนิดก็พอ คืนนี้ไม่ต้องเอาเต็มร้อยหรอก",
+    "de": "Mach noch eine Kleinigkeit rund und lass es gut sein – heute braucht es keine 100 Punkte.",
+    "ja": "小さな区切りをひとつつけたら終わりにしよう。今夜は満点じゃなくていい。",
+    "uk": "Доведи одну дрібницю й закругляйся — сьогодні не потрібен ідеальний бал."
   },
   {
     "id": "break.long.quote.midnight.0",
@@ -1017,7 +1269,10 @@
     "ru": "Уже поздно. Оставь завтрашние задачки выспавшейся голове.",
     "fr": "Il est tard. Laisse les nœuds de demain à un esprit reposé.",
     "vi": "Khuya rồi, chuyện khó cứ để dành cho cái đầu tỉnh táo sáng mai.",
-    "th": "ดึกมากแล้ว ปัญหาของพรุ่งนี้ฝากไว้ให้สมองที่อิ่มนอนดีกว่า"
+    "th": "ดึกมากแล้ว ปัญหาของพรุ่งนี้ฝากไว้ให้สมองที่อิ่มนอนดีกว่า",
+    "de": "Es ist spät. Lass die Knoten von morgen für einen ausgeschlafenen Kopf.",
+    "ja": "もう夜も更けたね。明日の難問は、よく眠った頭に任せよう。",
+    "uk": "Уже пізно. Залиш завтрашні вузлики виспаній голові."
   },
   {
     "id": "break.long.quote.midnight.1",
@@ -1029,7 +1284,10 @@
     "ru": "Сохрани проект, закрой крышку и ложись отдыхать.",
     "fr": "Enregistre ton travail, referme l'écran et va dormir.",
     "vi": "Bấm lưu lại, gập máy xuống rồi đi ngủ thôi.",
-    "th": "กดเซฟงาน พับจอลง แล้วไปนอนเถอะ"
+    "th": "กดเซฟงาน พับจอลง แล้วไปนอนเถอะ",
+    "de": "Speichern, Deckel zu und ab ins Bett.",
+    "ja": "保存を押して、画面を閉じて、もう寝よう。",
+    "uk": "Збережи зміни, закрий кришку й лягай спати."
   },
   {
     "id": "break.long.quote.midnight.2",
@@ -1041,7 +1299,10 @@
     "ru": "Ночные правки утром почти всегда переписываются — лучше лечь сейчас.",
     "fr": "Ce qu'on retouche après minuit finit souvent réécrit au matin.",
     "vi": "Bản sửa lúc nửa đêm sáng mai đọc lại thường vẫn phải sửa, ngủ trước đi.",
-    "th": "งานที่แก้ตอนตีหนึ่ง พรุ่งนี้เช้ามาดูก็มักต้องแก้ใหม่อยู่ดี นอนก่อนเถอะ"
+    "th": "งานที่แก้ตอนตีหนึ่ง พรุ่งนี้เช้ามาดูก็มักต้องแก้ใหม่อยู่ดี นอนก่อนเถอะ",
+    "de": "Was man nach Mitternacht umschreibt, schreibt man um neun meist nochmal. Schlaf lieber erst.",
+    "ja": "真夜中にひねり出した修正は、朝見るとたいてい直しになる。先に眠ろう。",
+    "uk": "Нічні правки вранці майже завжди переписуються — краще спершу поспати."
   },
   {
     "id": "break.long.quote.midnight.3",
@@ -1053,7 +1314,10 @@
     "ru": "Вокруг так тихо, что слышно кулер ноутбука. Глазам пора отдыхать.",
     "fr": "Tout est si calme qu'on entend le ventilateur. Laisse reposer tes yeux.",
     "vi": "Yên tĩnh đến mức nghe rõ tiếng quạt máy rồi, cho mắt nghỉ thôi.",
-    "th": "เงียบจนได้ยินเสียงพัดลมเครื่องแล้ว ให้ดวงตาได้พักเถอะนะ"
+    "th": "เงียบจนได้ยินเสียงพัดลมเครื่องแล้ว ให้ดวงตาได้พักเถอะนะ",
+    "de": "Es ist still genug, um den Lüfter zu hören. Zeit, die Augen auszuruhen.",
+    "ja": "ファンの音が聞こえるくらい静かだね。目も休ませてあげよう。",
+    "uk": "Навколо так тихо, що чути вентилятор ноутбука. Очам час відпочити."
   },
   {
     "id": "break.long.quote.midnight.4",
@@ -1065,7 +1329,10 @@
     "ru": "Если доделываешь последний штрих, убавь яркость экрана до минимума.",
     "fr": "Si tu boucles un dernier détail, baisse l'écran au minimum.",
     "vi": "Nếu còn cố nốt chút cuối, nhớ hạ độ sáng màn hình xuống thấp nhất nhé.",
-    "th": "ถ้ายังเก็บงานชิ้นสุดท้ายอยู่ ลดแสงจอลงให้ต่ำสุดก่อนนะ"
+    "th": "ถ้ายังเก็บงานชิ้นสุดท้ายอยู่ ลดแสงจอลงให้ต่ำสุดก่อนนะ",
+    "de": "Wenn du nur noch den letzten Punkt abschließt, dreh die Helligkeit ganz herunter.",
+    "ja": "最後の仕上げをしているなら、まず画面をいちばん暗くしておこう。",
+    "uk": "Якщо доробляєш останній штрих, скрути яскравість екрана до мінімуму."
   },
   {
     "id": "break.long.quote.midnight.5",
@@ -1077,7 +1344,10 @@
     "ru": "Погаси свет, ляг ровно и положи телефон экраном вниз.",
     "fr": "Éteins la lumière, allonge-toi et pose le téléphone face contre table.",
     "vi": "Tắt đèn, nằm thẳng lưng và úp mặt điện thoại xuống nhé.",
-    "th": "ปิดไฟ เอนตัวนอน แล้วคว่ำหน้าจอมือถือไว้"
+    "th": "ปิดไฟ เอนตัวนอน แล้วคว่ำหน้าจอมือถือไว้",
+    "de": "Licht aus, flach hinlegen und das Handy mit dem Display nach unten weglegen.",
+    "ja": "電気を消して、横になって、スマホは伏せて置こう。",
+    "uk": "Вимкни світло, ляж рівно й поклади телефон екраном донизу."
   },
   {
     "id": "break.long.quote.midnight.6",
@@ -1089,7 +1359,10 @@
     "ru": "За окном остались лишь редкие фонари. Пора и тебе в кровать.",
     "fr": "Il ne reste que quelques réverbères dehors. Va te coucher aussi.",
     "vi": "Ngoài kia chỉ còn lác đác vài ánh đèn đường, bạn cũng nghỉ thôi.",
-    "th": "ข้างนอกเหลือไฟส่องอยู่ไม่กี่ดวงแล้ว คุณเองก็ไปพักเถอะ"
+    "th": "ข้างนอกเหลือไฟส่องอยู่ไม่กี่ดวงแล้ว คุณเองก็ไปพักเถอะ",
+    "de": "Draußen brennen nur noch vereinzelte Laternen. Geh du auch schlafen.",
+    "ja": "外の灯りもまばらになってきたよ。そろそろ休もう。",
+    "uk": "За вікном лишилися поодинокі ліхтарі. Час і тобі в ліжко."
   },
   {
     "id": "break.long.quote.midnight.7",
@@ -1101,7 +1374,10 @@
     "ru": "В такой час подушка куда лучше любого монитора.",
     "fr": "À cette heure-ci, l'oreiller bat n'importe quel écran.",
     "vi": "Giờ này chiếc gối êm hơn màn hình gấp trăm lần.",
-    "th": "เวลานี้หมอนสบายกว่าจอคอมเป็นไหนๆ"
+    "th": "เวลานี้หมอนสบายกว่าจอคอมเป็นไหนๆ",
+    "de": "Um diese Uhrzeit schlägt ein Kopfkissen jeden Monitor um Längen.",
+    "ja": "この時間になると、どんなモニターより枕のほうがずっといい。",
+    "uk": "О цій порі подушка без шансів перемагає будь-який монітор."
   },
   {
     "id": "break.long.quote.midnight.8",
@@ -1113,7 +1389,10 @@
     "ru": "На сегодня всё. Спокойной ночи.",
     "fr": "C'est tout pour aujourd'hui. Bonne nuit.",
     "vi": "Hôm nay đến đây thôi. Chúc ngủ ngon.",
-    "th": "วันนี้พอแค่นี้ ราตรีสวัสดิ์"
+    "th": "วันนี้พอแค่นี้ ราตรีสวัสดิ์",
+    "de": "Für heute reicht es. Gute Nacht.",
+    "ja": "今日はここまで。おやすみなさい。",
+    "uk": "На сьогодні досить. На добраніч."
   },
   {
     "id": "break.long.quote.midnight.9",
@@ -1125,7 +1404,10 @@
     "ru": "Зевота — не лень, это организм мягко выключает рубильник.",
     "fr": "Ce bâillement n'est pas de la paresse, ton corps coupe le courant.",
     "vi": "Ngáp không phải lười đâu, cơ thể đang báo đến lúc ngắt cầu dao rồi.",
-    "th": "อาการหาวไม่ใช่ความขี้เกียจ แต่ร่างกายกำลังเตือนให้สับคัตเอาต์พักได้แล้ว"
+    "th": "อาการหาวไม่ใช่ความขี้เกียจ แต่ร่างกายกำลังเตือนให้สับคัตเอาต์พักได้แล้ว",
+    "de": "Gähnen ist keine Faulheit – dein Körper legt nur freundlich den Schalter um.",
+    "ja": "あくびは怠けじゃないよ。体がブレーカーを落とす合図。",
+    "uk": "Позіхання — не лінощі, це тіло м’яко вимикає рубильник."
   },
   {
     "id": "break.long.quote.midnight.10",
@@ -1137,7 +1419,10 @@
     "ru": "Если совсем нельзя лечь прямо сейчас, хотя бы встань выпить тёплой воды.",
     "fr": "Tu dois vraiment rester encore un peu ? Lève-toi boire un peu d'eau tiède.",
     "vi": "Nếu buộc phải thức thêm lát nữa, ít nhất hãy đứng dậy uống ngụm nước ấm.",
-    "th": "ถ้าจำเป็นต้องอยู่ต่ออีกนิด อย่างน้อยลุกไปจิบน้ำอุ่นสักอึกนะ"
+    "th": "ถ้าจำเป็นต้องอยู่ต่ออีกนิด อย่างน้อยลุกไปจิบน้ำอุ่นสักอึกนะ",
+    "de": "Musst du wirklich noch kurz durchhalten? Steh wenigstens auf und trink warmes Wasser.",
+    "ja": "どうしてももう少し起きているなら、せめて立って白湯をひと口。",
+    "uk": "Якщо справді треба ще трохи посидіти, бодай устань і випий теплої води."
   },
   {
     "id": "break.long.quote.midnight.11",
@@ -1149,7 +1434,10 @@
     "ru": "Перечитываешь одну строку второй раз подряд — верный знак идти спать.",
     "fr": "Relire deux fois la même ligne sans comprendre, c'est le signal du lit.",
     "vi": "Đọc đi đọc lại một dòng mà chữ không vào đầu là tín hiệu đi ngủ đấy.",
-    "th": "อ่านบรรทัดเดิมซ้ำสองรอบแล้วยังไม่เข้าหัว แปลว่าถึงเวลานอนจริงๆ แล้ว"
+    "th": "อ่านบรรทัดเดิมซ้ำสองรอบแล้วยังไม่เข้าหัว แปลว่าถึงเวลานอนจริงๆ แล้ว",
+    "de": "Dieselbe Zeile zweimal gelesen und nichts behalten? Klares Signal fürs Bett.",
+    "ja": "同じ行を2回読んでも頭に入らないなら、もう寝る合図。",
+    "uk": "Перечитуєш той самий рядок удруге без змісту — вірний знак іти спати."
   },
   {
     "id": "break.long.quote.midnight.12",
@@ -1161,7 +1449,10 @@
     "ru": "Выгрузи незавершённые мысли в заметку, не бери их с собой в постель.",
     "fr": "Pose tes idées en suspens dans une note plutôt que sur l'oreiller.",
     "vi": "Ghi tạm ý đang dở vào ghi chú, đừng mang theo lên giường.",
-    "th": "พักเรื่องที่ยังคิดค้างไว้ในโน้ตสั้นๆ ไม่ต้องหอบขึ้นเตียงไปด้วยนะ"
+    "th": "พักเรื่องที่ยังคิดค้างไว้ในโน้ตสั้นๆ ไม่ต้องหอบขึ้นเตียงไปด้วยนะ",
+    "de": "Park offene Gedanken kurz in einer Notiz, statt sie mit ins Bett zu nehmen.",
+    "ja": "途中の考えはメモに預けて、布団の中まで持ち込まないでおこう。",
+    "uk": "Вивантаж незавершені думки в нотатку, не бери їх із собою в ліжко."
   },
   {
     "id": "break.long.quote.midnight.13",
@@ -1173,7 +1464,10 @@
     "ru": "Ночные часы летят незаметно — не встречай рассвет за клавиатурой.",
     "fr": "Les heures après minuit filent vite ; ne laisse pas l'aube te surprendre ici.",
     "vi": "Giờ khuya trôi nhanh lắm, đừng để ngẩng lên đã thấy trời sáng.",
-    "th": "เวลาดึกๆ ผ่านไปไวมาก อย่าเผลอเงยหน้ามาอีกทีฟ้าสางล่ะ"
+    "th": "เวลาดึกๆ ผ่านไปไวมาก อย่าเผลอเงยหน้ามาอีกทีฟ้าสางล่ะ",
+    "de": "Die Stunden nach Mitternacht verfliegen schnell – lass dich nicht vom Morgenlicht erwischen.",
+    "ja": "深夜の時間はあっという間。気づいたら朝焼け、になる前に切り上げよう。",
+    "uk": "Нічні години минають миттєво — не зустрічай світанок за клавіатурою."
   },
   {
     "id": "break.long.quote.midnight.14",
@@ -1185,7 +1479,10 @@
     "ru": "Закрой глаза на двадцать тихих секунд, пусть уйдёт резь.",
     "fr": "Ferme les yeux vingt secondes au calme pour apaiser les picotements.",
     "vi": "Nhắm mắt nghỉ hai mươi giây yên tĩnh, khóe mắt cay sẽ dịu lại.",
-    "th": "หลับตานิ่งๆ สักยี่สิบวินาที ความแสบล้าที่หางตาจะทุเลาลง"
+    "th": "หลับตานิ่งๆ สักยี่สิบวินาที ความแสบล้าที่หางตาจะทุเลาลง",
+    "de": "Schließ zwanzig ruhige Sekunden die Augen, damit das Brennen nachlässt.",
+    "ja": "静かに20秒だけ目を閉じると、目尻のしょぼしょぼがだいぶ和らぐよ。",
+    "uk": "Заплющ очі на двадцять тихих секунд, нехай відпустить різь."
   },
   {
     "id": "break.long.quote.midnight.15",
@@ -1197,7 +1494,10 @@
     "ru": "Отпусти плечи и челюсть — не держи дневную броню посреди ночи.",
     "fr": "Relâche mâchoire et épaules, inutile de garder l'armure du jour.",
     "vi": "Thả lỏng cả vai lẫn hàm đi, khuya rồi đừng gồng như ban ngày nữa.",
-    "th": "คลายทั้งไหล่และกรามลงเถอะ ดึกป่านนี้ไม่ต้องเกร็งท่าทำงานเหมือนตอนกลางวันแล้ว"
+    "th": "คลายทั้งไหล่และกรามลงเถอะ ดึกป่านนี้ไม่ต้องเกร็งท่าทำงานเหมือนตอนกลางวันแล้ว",
+    "de": "Lass Kiefer und Schultern los – mitten in der Nacht brauchst du keine Tageshaltung.",
+    "ja": "肩もあごも力を抜いて。真夜中に昼間の構えはいらないから。",
+    "uk": "Відпусти плечі й щелепу — не тримай денну поставу посеред ночі."
   },
   {
     "id": "break.long.quote.midnight.16",
@@ -1209,7 +1509,10 @@
     "ru": "Замёрзли ноги? Надень тёплые носки, а ещё лучше — ныряй под одеяло.",
     "fr": "Les pieds froids ? Enfile des chaussettes ou glisse-toi sous la couette.",
     "vi": "Chân hơi lạnh rồi phải không? Mang tất ấm hoặc chui vào chăn sớm nhé.",
-    "th": "เท้าเริ่มเย็นหรือยัง สวมถุงเท้าอุ่นๆ หรือมุดเข้าผ้าห่มเลยดีกว่า"
+    "th": "เท้าเริ่มเย็นหรือยัง สวมถุงเท้าอุ่นๆ หรือมุดเข้าผ้าห่มเลยดีกว่า",
+    "de": "Kalte Füße? Zieh warme Socken an – oder schlüpf gleich unter die Decke.",
+    "ja": "足先が冷えていたら、靴下を履くか、いっそ布団に潜り込もう。",
+    "uk": "Змерзли ноги? Одягни теплі шкарпетки або вже пірнай під ковдру."
   },
   {
     "id": "break.long.quote.midnight.17",
@@ -1221,7 +1524,10 @@
     "ru": "Мало кто ещё не спит в этот час. Будь к себе помягче.",
     "fr": "Peu de gens veillent encore à cette heure. Sois doux avec toi-même.",
     "vi": "Giờ này chẳng còn mấy ai thức đâu, nhẹ nhàng với bản thân chút nhé.",
-    "th": "เวลานี้ไม่ค่อยมีใครตื่นอยู่แล้ว ใจดีกับตัวเองหน่อยนะ"
+    "th": "เวลานี้ไม่ค่อยมีใครตื่นอยู่แล้ว ใจดีกับตัวเองหน่อยนะ",
+    "de": "Um diese Zeit sind nur noch wenige wach. Sei nachsichtig mit dir.",
+    "ja": "この時間に起きている人はもう少ないよ。自分にやさしくね。",
+    "uk": "Мало хто ще не спить о цій порі. Будь до себе лагіднішим."
   },
   {
     "id": "break.long.quote.midnight.18",
@@ -1233,7 +1539,10 @@
     "ru": "Закрой вкладки: почти ничто, прочитанное заполночь, не так уж важно.",
     "fr": "Ferme le navigateur, rien de ce qu'on fait défiler si tard ne presse.",
     "vi": "Đóng trình duyệt thôi, hiếm thứ gì lướt lúc nửa đêm mà thực sự quan trọng.",
-    "th": "ปิดเบราว์เซอร์เถอะ เรื่องที่ไถเจอหลังเที่ยงคืนแทบไม่มีอะไรสำคัญจริงหรอก"
+    "th": "ปิดเบราว์เซอร์เถอะ เรื่องที่ไถเจอหลังเที่ยงคืนแทบไม่มีอะไรสำคัญจริงหรอก",
+    "de": "Mach den Browser zu – fast nichts, was man nach Mitternacht scrollt, ist wirklich wichtig.",
+    "ja": "ブラウザは閉じよう。深夜にスクロールして見つかる大事なことは滅多にないから。",
+    "uk": "Закрий браузер — майже ніщо, прогортане після півночі, не є справді важливим."
   },
   {
     "id": "break.long.quote.midnight.19",
@@ -1245,7 +1554,10 @@
     "ru": "Сходи умойся и почисти зубы — поставь аккуратную точку в этом дне.",
     "fr": "Va te brosser les dents pour mettre un point net à la journée.",
     "vi": "Đi đánh răng rửa mặt thôi, đặt một dấu chấm gọn gàng cho hôm nay.",
-    "th": "ไปแปรงฟันล้างหน้า แล้วปิดจบวันนี้แบบคลีนๆ กันดีกว่า"
+    "th": "ไปแปรงฟันล้างหน้า แล้วปิดจบวันนี้แบบคลีนๆ กันดีกว่า",
+    "de": "Zähne putzen, Gesicht waschen und einen sauberen Punkt hinter heute setzen.",
+    "ja": "歯を磨いて顔を洗って、今日にきれいな句点を打とう。",
+    "uk": "Піди вмийся й почисть зуби — постав охайну крапку в цьому дні."
   },
   {
     "id": "break.long.quote.midnight.20",
@@ -1257,7 +1569,10 @@
     "ru": "Даже лишние полчаса сна до рассвета заметно выручают утром.",
     "fr": "Même trente minutes de sommeil gagnées avant l'aube comptent vraiment.",
     "vi": "Ngủ sớm thêm được nửa tiếng trước lúc hửng sáng cũng quý lắm.",
-    "th": "ได้นอนเร็วขึ้นอีกแค่ครึ่งชั่วโมงก่อนฟ้าสางก็ช่วยได้เยอะแล้ว"
+    "th": "ได้นอนเร็วขึ้นอีกแค่ครึ่งชั่วโมงก่อนฟ้าสางก็ช่วยได้เยอะแล้ว",
+    "de": "Auch eine halbe Stunde mehr Schlaf vor dem Morgengrauen macht morgen viel aus.",
+    "ja": "夜明け前の眠りは浅くなりやすいから、30分早く寝るだけでも違うよ。",
+    "uk": "Навіть пів години додаткового сну до світанку відчутно виручать уранці."
   },
   {
     "id": "break.long.quote.midnight.21",
@@ -1269,7 +1584,10 @@
     "ru": "Не борись с сонливостью — послушаться её сейчас разумнее всего.",
     "fr": "Ne lutte pas contre le sommeil, l'écouter est la meilleure idée.",
     "vi": "Đừng vật nhau với cơn buồn ngủ nữa, buồn ngủ thì đi ngủ là lẽ thường.",
-    "th": "อย่าฝืนงัดข้อกับความง่วงเลย ง่วงแล้วไปนอนคือเรื่องธรรมดาที่สุด"
+    "th": "อย่าฝืนงัดข้อกับความง่วงเลย ง่วงแล้วไปนอนคือเรื่องธรรมดาที่สุด",
+    "de": "Kämpf nicht gegen die Müdigkeit an – ihr nachzugeben ist jetzt das Klügste.",
+    "ja": "眠気と腕相撲しなくていい。眠いときに寝るのがいちばん自然。",
+    "uk": "Не змагайся із сонливістю — послухатися її зараз найрозумніше."
   },
   {
     "id": "break.long.quote.midnight.22",
@@ -1281,7 +1599,10 @@
     "ru": "Сделай длинный выдох и иди опусти плечи на мягкий матрас.",
     "fr": "Expire longuement et va laisser tes épaules s'enfoncer dans le matelas.",
     "vi": "Thở ra một hơi thật dài rồi đi thả đôi vai xuống nệm êm nhé.",
-    "th": "ผ่อนลมหายใจยาวๆ แล้วไปทิ้งไหล่ลงบนที่นอนนุ่มๆ เถอะ"
+    "th": "ผ่อนลมหายใจยาวๆ แล้วไปทิ้งไหล่ลงบนที่นอนนุ่มๆ เถอะ",
+    "de": "Atme einmal lang aus und lass die Schultern in die Matratze sinken.",
+    "ja": "長くひと息吐いて、肩ごとマットレスに沈み込もう。",
+    "uk": "Зроби довгий видих і йди опусти плечі в м’який матрац."
   },
   {
     "id": "break.long.quote.midnight.23",
@@ -1293,7 +1614,10 @@
     "ru": "Ночь уже глубокая. Передай остальное завтрашнему дню и спи спокойно.",
     "fr": "La nuit est bien avancée. Confie le reste à demain et dors tranquille.",
     "vi": "Đêm đã sâu lắm rồi, phần còn lại giao cho ngày mai, ngủ ngon nhé.",
-    "th": "ดึกสงัดแล้ว ที่เหลือยกให้เป็นเรื่องของวันพรุ่งนี้ นอนหลับให้สบายนะ"
+    "th": "ดึกสงัดแล้ว ที่เหลือยกให้เป็นเรื่องของวันพรุ่งนี้ นอนหลับให้สบายนะ",
+    "de": "Die Nacht ist tief. Übergib den Rest an morgen und schlaf gut.",
+    "ja": "夜もすっかり深いね。残りは明日に預けて、ゆっくりおやすみ。",
+    "uk": "Ніч уже глибока. Передай решту завтрашньому дню й спи спокійно."
   },
   {
     "id": "break.short.quote.0",
@@ -1305,7 +1629,10 @@
     "ru": "Посмотри вдаль",
     "fr": "Regarde au loin",
     "vi": "Nhìn ra xa",
-    "th": "มองออกไปไกลๆ"
+    "th": "มองออกไปไกลๆ",
+    "de": "Schau in die Ferne",
+    "ja": "遠くを見よう",
+    "uk": "Глянь у далечінь"
   },
   {
     "id": "break.short.quote.1",
@@ -1317,7 +1644,10 @@
     "ru": "Моргни медленно",
     "fr": "Cligne doucement",
     "vi": "Chớp mắt chậm lại",
-    "th": "กะพริบตาช้าๆ"
+    "th": "กะพริบตาช้าๆ",
+    "de": "Langsam blinzeln",
+    "ja": "ゆっくりまばたき",
+    "uk": "Повільно кліпни"
   },
   {
     "id": "break.short.quote.2",
@@ -1329,7 +1659,10 @@
     "ru": "Опусти плечи",
     "fr": "Baisse les épaules",
     "vi": "Thả lỏng hai vai",
-    "th": "ปล่อยไหล่ลง"
+    "th": "ปล่อยไหล่ลง",
+    "de": "Schultern senken",
+    "ja": "肩の力を抜こう",
+    "uk": "Опусти плечі"
   },
   {
     "id": "break.short.quote.3",
@@ -1341,7 +1674,10 @@
     "ru": "Разомкни челюсти",
     "fr": "Desserre les dents",
     "vi": "Thả lỏng hàm",
-    "th": "คลายกรามเบาๆ"
+    "th": "คลายกรามเบาๆ",
+    "de": "Kiefer lockern",
+    "ja": "奥歯をゆるめて",
+    "uk": "Розслаб щелепу"
   },
   {
     "id": "break.short.quote.4",
@@ -1353,7 +1689,10 @@
     "ru": "Взгляни в окно",
     "fr": "Regarde dehors",
     "vi": "Nhìn ra cửa sổ",
-    "th": "มองออกไปนอกหน้าต่าง"
+    "th": "มองออกไปนอกหน้าต่าง",
+    "de": "Schau zum Fenster",
+    "ja": "窓の外を見よう",
+    "uk": "Поглянь у вікно"
   },
   {
     "id": "break.short.quote.5",
@@ -1365,7 +1704,10 @@
     "ru": "Вдохни глубоко",
     "fr": "Respire lentement",
     "vi": "Hít một hơi sâu",
-    "th": "สูดหายใจลึกๆ"
+    "th": "สูดหายใจลึกๆ",
+    "de": "Tief einatmen",
+    "ja": "ひとつ深呼吸",
+    "uk": "Глибокий вдих"
   },
   {
     "id": "break.short.quote.6",
@@ -1377,7 +1719,10 @@
     "ru": "Расслабь взгляд",
     "fr": "Relâche le regard",
     "vi": "Thả lỏng ánh nhìn",
-    "th": "พักสายตาเบาๆ"
+    "th": "พักสายตาเบาๆ",
+    "de": "Blick entspannen",
+    "ja": "視線をほどこう",
+    "uk": "Пом’якш погляд"
   },
   {
     "id": "break.short.quote.7",
@@ -1389,7 +1734,10 @@
     "ru": "Разомни запястья",
     "fr": "Tourne les poignets",
     "vi": "Xoay nhẹ cổ tay",
-    "th": "หมุนข้อมือเบาๆ"
+    "th": "หมุนข้อมือเบาๆ",
+    "de": "Handgelenke kreisen",
+    "ja": "手首を回そう",
+    "uk": "Розімни зап’ястя"
   },
   {
     "id": "break.short.quote.8",
@@ -1401,7 +1749,10 @@
     "ru": "Откинься на спинку",
     "fr": "Adosse-toi un peu",
     "vi": "Tựa lưng vào ghế",
-    "th": "พิงพนักเก้าอี้"
+    "th": "พิงพนักเก้าอี้",
+    "de": "Kurz zurücklehnen",
+    "ja": "背もたれに預けて",
+    "uk": "Відкинься на спинку"
   },
   {
     "id": "break.short.quote.9",
@@ -1413,7 +1764,10 @@
     "ru": "Разгладь лоб",
     "fr": "Détends le front",
     "vi": "Giãn nhẹ chân mày",
-    "th": "คลายหัวคิ้ว"
+    "th": "คลายหัวคิ้ว",
+    "de": "Stirn entspannen",
+    "ja": "眉間をゆるめて",
+    "uk": "Розгладь чоло"
   },
   {
     "id": "break.short.quote.10",
@@ -1425,7 +1779,10 @@
     "ru": "Отведи глаза",
     "fr": "Quitte l'écran",
     "vi": "Rời mắt khỏi màn",
-    "th": "ละสายตาจากจอ"
+    "th": "ละสายตาจากจอ",
+    "de": "Weg vom Bildschirm",
+    "ja": "画面から目を離す",
+    "uk": "Відведи погляд"
   },
   {
     "id": "break.short.quote.11",
@@ -1437,7 +1794,10 @@
     "ru": "Разомни шею",
     "fr": "Détends la nuque",
     "vi": "Nghiêng nhẹ cổ",
-    "th": "ขยับคอช้าๆ"
+    "th": "ขยับคอช้าๆ",
+    "de": "Nacken lockern",
+    "ja": "首をゆっくり動かす",
+    "uk": "Розімни шию"
   },
   {
     "id": "break.short.quote.12",
@@ -1449,7 +1809,10 @@
     "ru": "Медленно выдохни",
     "fr": "Expire doucement",
     "vi": "Thở ra thật chậm",
-    "th": "ผ่อนลมหายใจยาวๆ"
+    "th": "ผ่อนลมหายใจยาวๆ",
+    "de": "Langsam ausatmen",
+    "ja": "ゆっくり息を吐く",
+    "uk": "Повільний видих"
   },
   {
     "id": "break.short.quote.13",
@@ -1461,7 +1824,10 @@
     "ru": "Раскрой ладони",
     "fr": "Ouvre les mains",
     "vi": "Mở rộng bàn tay",
-    "th": "คลายฝ่ามือออก"
+    "th": "คลายฝ่ามือออก",
+    "de": "Hände öffnen",
+    "ja": "手のひらを開く",
+    "uk": "Розкрий долоні"
   },
   {
     "id": "break.short.quote.14",
@@ -1473,7 +1839,10 @@
     "ru": "Посмотри на свет",
     "fr": "Lève les yeux",
     "vi": "Ngước nhìn ánh sáng",
-    "th": "เงยหน้ามองแสง"
+    "th": "เงยหน้ามองแสง",
+    "de": "Zum Licht schauen",
+    "ja": "光の方を見よう",
+    "uk": "Поглянь на світло"
   },
   {
     "id": "break.short.quote.15",
@@ -1485,6 +1854,9 @@
     "ru": "Замри на миг",
     "fr": "Pause un instant",
     "vi": "Lặng lại đôi chút",
-    "th": "หยุดนิ่งสักครู่"
+    "th": "หยุดนิ่งสักครู่",
+    "de": "Kurz innehalten",
+    "ja": "ひと息つこう",
+    "uk": "Завмри на мить"
   }
 ]

@@ -312,6 +312,7 @@ struct LongBreakView: View {
     /// Rest quote under the countdown (RestQuotes), at most 3 lines.
     var quote: String? = nil
     /// Round 3 §7: 15 is hidden when the long-break allowance is under 15 min, dimmed when what's left is.
+    var can5 = true
     var show15 = true
     var can15 = true
     /// Round 7b: past the hard line. No skip hint and no postpone buttons, just the reason.
@@ -392,7 +393,7 @@ struct LongBreakView: View {
                                 if let onUrgent { Button(L("break.urgentPause"), action: onUrgent) }
                             }
                         } else {
-                            if !skipOnly { Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) } }
+                            if !skipOnly { Button(BreakOverlayController.Copy.snooze(5)) { onSnooze(5) }.disabled(!can5) }
                             if show15, !skipOnly {
                                 Button(BreakOverlayController.Copy.snooze(15)) { onSnooze(15) }.disabled(!can15)
                             }

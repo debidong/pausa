@@ -155,8 +155,10 @@ final class MenuBarAndControllerExtendedTests: XCTestCase {
         XCTAssertFalse(autoPaused.manualPaused)
         app.simulateReasons([])
 
-        // 4. Advance past 90-minute hard line (skipping breaks along the way) -> hardLine == true, can5 == false.
-        for _ in 0..<5_405 {
+        // 4. Advance to 82m05s (4,925s; each due break waits 30s of typing grace since inputIdle == 1s,
+        // so long breaks fire & get skipped at 20m30s, 41m00s, 61m30s, and 82m00s): horizon clamping locks
+        // the upcoming long break onto the 90-minute hard line (`atHardLine == true`, `can5 == false`).
+        for _ in 0..<4_925 {
             clock.advance(1)
             app.tick()
             if app.isOnBreak {
@@ -165,14 +167,18 @@ final class MenuBarAndControllerExtendedTests: XCTestCase {
                 app.resume()
             }
         }
-        // Exhaust remaining postpone budget so `can5` is false at the hard line.
-        while app.scheduler.canPostpone(by: AppController.postponeShort) {
-            app.postpone(by: AppController.postponeShort)
-        }
         let hard = MenuBarController.state(of: app)
         XCTAssertTrue(app.scheduler.atHardLine)
         XCTAssertFalse(hard.can5)
         XCTAssertTrue(hard.hardLine)
+
+        // Crossing 90m (480s later -> 5,405s) starts the non-deferrable long break right on the hard line.
+        for _ in 0..<480 {
+            clock.advance(1)
+            app.tick()
+        }
+        XCTAssertTrue(app.isOnBreak)
+        XCTAssertTrue(app.scheduler.longMustNotDefer)
     }
 
     // MARK: - AppController Snooze, Schedule Window, AutoPauseStatus & ClearStats

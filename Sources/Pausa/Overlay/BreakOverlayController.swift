@@ -29,10 +29,12 @@ public final class BreakOverlayController {
     }
 
     public struct LongOptions: Equatable, Sendable {
+        public var can5: Bool
         public var show15: Bool
         public var can15: Bool
         public var mustNotDefer: Bool
-        public init(show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false) {
+        public init(can5: Bool = true, show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false) {
+            self.can5 = can5
             self.show15 = show15
             self.can15 = can15
             self.mustNotDefer = mustNotDefer
@@ -139,8 +141,12 @@ public final class BreakOverlayController {
     // MARK: Short break
 
     /// Capsule near the cursor + slight dim. `onFinish` fires when time is up.
-    public func showShort(duration: TimeInterval, onSkip: (() -> Void)? = nil, onFinish: (() -> Void)? = nil) {
+    public func showShort(duration: TimeInterval,
+                          holdDuration: TimeInterval = 2.0,
+                          onSkip: (() -> Void)? = nil,
+                          onFinish: (() -> Void)? = nil) {
         tearDownActiveOverlay(animated: false)
+        holdToSkip.holdDuration = max(0.1, holdDuration)
         session = .short(onSkip: onSkip, onFinish: onFinish)
         guard rendersWindows else { return }
 
@@ -176,13 +182,15 @@ public final class BreakOverlayController {
     /// Full-screen break on every display. The user leaves via the postpone buttons, holding
     /// Space, or the countdown. `show15` / `can15`: round 3 §7.
     public func showLong(duration: TimeInterval,
+                         holdDuration: TimeInterval = 2.0,
                          onSnooze: @escaping (Int) -> Void,
                          onSkip: @escaping () -> Void,
                          onFinish: (() -> Void)? = nil,
-                         show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false,
+                         can5: Bool = true, show15: Bool = true, can15: Bool = true, mustNotDefer: Bool = false,
                          onUrgent: (() -> Void)? = nil) {
         tearDownActiveOverlay(animated: false)
-        let options = LongOptions(show15: show15, can15: can15, mustNotDefer: mustNotDefer)
+        holdToSkip.holdDuration = max(0.1, holdDuration)
+        let options = LongOptions(can5: can5, show15: show15, can15: can15, mustNotDefer: mustNotDefer)
         session = .long(options: options,
                         onSnooze: onSnooze,
                         onSkip: onSkip,
@@ -195,7 +203,8 @@ public final class BreakOverlayController {
     /// relaunches and suppresses pre-break panels without mutating `Scheduler`.
     public func showPreview(duration: TimeInterval = 5, onFinish: (() -> Void)? = nil) {
         tearDownActiveOverlay(animated: false)
-        let options = LongOptions(show15: true, can15: true, mustNotDefer: false)
+        holdToSkip.holdDuration = HoldToSkip.duration
+        let options = LongOptions(can5: true, show15: true, can15: true, mustNotDefer: false)
         session = .preview(onFinish: onFinish)
         presentLongScene(duration: duration, options: options, hasUrgent: false)
     }
@@ -368,7 +377,7 @@ public final class BreakOverlayController {
             let view = LongBreakView(countdown: cd, showControls: screen == primary,
                                      onSnooze: { [weak self] in self?.snooze($0) },
                                      seed: sceneSeed, daypart: daypart, hold: Self.holdFor(mustNotDefer: options.mustNotDefer, holdToSkip), quote: longQuote,
-                                     show15: options.show15, can15: options.can15, locked: options.mustNotDefer,
+                                     can5: options.can5, show15: options.show15, can15: options.can15, locked: options.mustNotDefer,
                                      onUrgent: hasUrgent ? { [weak self] in self?.urgent() } : nil,
                                      screenID: sid)
             // Same frosted layer underneath the scenery (shows through wherever the art is transparent).
@@ -604,6 +613,7 @@ final class ShortBreakPanel: NSPanel {
 /// Progress of a held Space, 0…1. Reaching 1 calls `onComplete` once.
 final class HoldToSkip: ObservableObject {
     static let duration: TimeInterval = 2.0
+    var holdDuration: TimeInterval = HoldToSkip.duration
     @Published private(set) var progress: Double = 0
     var onComplete: (() -> Void)?
     private let clock: PausaClock
@@ -622,7 +632,7 @@ final class HoldToSkip: ObservableObject {
 
     private func tick() {
         guard let s = startedAt else { return }
-        let p = min(1, (clock.uptimeNow() - s) / Self.duration)
+        let p = min(1, (clock.uptimeNow() - s) / max(0.1, holdDuration))
         progress = p
         if p >= 1 { stop(); onComplete?() }
     }

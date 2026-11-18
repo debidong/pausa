@@ -12,15 +12,44 @@ public struct BreakRecord: Codable, Equatable {
   /// Optional frontmost app active when this break was skipped (for skip attribution).
   public var appBundleID: String?
   public var appName: String?
+  /// True when a skipped break was redeemed within 5 minutes by taking a break or locking the screen.
+  public var redeemed: Bool
 
   public init(start: Date, kind: BreakKind, planned: Double, result: BreakResult,
-              appBundleID: String? = nil, appName: String? = nil) {
+              appBundleID: String? = nil, appName: String? = nil, redeemed: Bool = false) {
     self.start = start
     self.kind = kind
     self.planned = planned
     self.result = result
     self.appBundleID = appBundleID
     self.appName = appName
+    self.redeemed = redeemed
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case start, kind, planned, result, appBundleID, appName, redeemed
+  }
+
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    start = try c.decode(Date.self, forKey: .start)
+    kind = try c.decode(BreakKind.self, forKey: .kind)
+    planned = try c.decode(Double.self, forKey: .planned)
+    result = try c.decode(BreakResult.self, forKey: .result)
+    appBundleID = try c.decodeIfPresent(String.self, forKey: .appBundleID)
+    appName = try c.decodeIfPresent(String.self, forKey: .appName)
+    redeemed = try c.decodeIfPresent(Bool.self, forKey: .redeemed) ?? false
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var c = encoder.container(keyedBy: CodingKeys.self)
+    try c.encode(start, forKey: .start)
+    try c.encode(kind, forKey: .kind)
+    try c.encode(planned, forKey: .planned)
+    try c.encode(result, forKey: .result)
+    try c.encodeIfPresent(appBundleID, forKey: .appBundleID)
+    try c.encodeIfPresent(appName, forKey: .appName)
+    if redeemed { try c.encode(true, forKey: .redeemed) }
   }
 }
 
@@ -63,7 +92,7 @@ public struct DayStats: Equatable {
   /// Continuous unbroken work stretches (seconds) in chronological order, cut by completed breaks or away/idle gaps.
   public var stretches: [Double] = []
   public var longestStretch: Double = 0
-  /// Eye-care rhythm score in 0...100 (100 = ideal cadence; reduced by skipped breaks and >25m / >40m unbroken runs).
+  /// Eye-care rhythm score in 0...100 (100 = ideal cadence; smoothed prior, 3:1 long/short weights, preset-scaled stretches).
   public var rhythmScore: Int = 100
   /// Top active frontmost apps on this day, with skip counts attributed per app.
   public var apps: [AppUsageSummary] = []
@@ -76,23 +105,31 @@ public enum Stats {
   /// A break belongs to the day it started; days without breaks are zero rows.
   /// Work spans are cut at each midnight, so a span over 00:00 adds to both days.
   public static func days(_ records: [BreakRecord], work: [WorkSpan] = [], appUsage: [AppUsageRecord] = [],
-                          endingAt now: Date, count n: Int, calendar: Calendar) -> [DayStats] {
+                          endingAt now: Date, count n: Int, calendar: Calendar,
+                          intervalMinutes: Double = 20, hardLineMinutes: Double = 90) -> [DayStats] {
     let today = calendar.startOfDay(for: now)
     let days = (0..<max(0, n)).reversed().compactMap { calendar.date(byAdding: .day, value: -$0, to: today) }
     var out = days.map(DayStats.init(day:))
     let index = Dictionary(uniqueKeysWithValues: days.enumerated().map { ($1, $0) })
     var completedTimes = Array(repeating: [Date](), count: out.count)
+    var weightedTaken = Array(repeating: 0.0, count: out.count)
+    var weightedSkipped = Array(repeating: 0.0, count: out.count)
     var skipsByApp = Array(repeating: [String: (name: String, count: Int)](), count: out.count)
 
     for r in records {
       guard let i = index[calendar.startOfDay(for: r.start)] else { continue }
+      let weight = r.kind == .long ? 3.0 : 1.0
       switch r.result {
       case .completed:
         out[i].taken += 1; out[i].seconds += r.planned
+        weightedTaken[i] += weight
         out[i].gaps.append(worked(work, from: days[i], to: r.start))
         completedTimes[i].append(r.start)
+      case .skipped where r.redeemed:
+        break
       case .skipped:
         out[i].skipped += 1
+        weightedSkipped[i] += weight
         if let bid = r.appBundleID, !bid.isEmpty {
           let prev = skipsByApp[i][bid]
           let resolvedName = (r.appName?.isEmpty == false ? r.appName! : prev?.name) ?? bid
@@ -109,13 +146,25 @@ public enum Stats {
       usageByDay[i][u.bundleID] = (name, (prev?.seconds ?? 0) + u.seconds)
     }
 
+    let nonHoldWork = work.filter { !$0.isHold }
     for (i, day) in days.enumerated() {
       guard let next = calendar.date(byAdding: .day, value: 1, to: day) else { continue }
       out[i].work = worked(work, from: day, to: next)
       out[i].gaps.sort()
       out[i].stretches = computeStretches(work: work, completed: completedTimes[i], from: day, to: next, totalWork: out[i].work)
       out[i].longestStretch = out[i].stretches.max() ?? 0
-      out[i].rhythmScore = computeRhythmScore(work: out[i].work, taken: out[i].taken, skipped: out[i].skipped, stretches: out[i].stretches)
+      let nonHoldTotal = worked(nonHoldWork, from: day, to: next)
+      let scoreStretches = computeStretches(work: nonHoldWork, completed: completedTimes[i], from: day, to: next, totalWork: nonHoldTotal)
+      out[i].rhythmScore = computeRhythmScore(
+        work: out[i].work,
+        taken: out[i].taken,
+        skipped: out[i].skipped,
+        stretches: scoreStretches,
+        weightedTaken: weightedTaken[i],
+        weightedSkipped: weightedSkipped[i],
+        intervalMinutes: intervalMinutes,
+        hardLineMinutes: hardLineMinutes
+      )
       out[i].apps = mergeAppSummaries(usage: usageByDay[i], skips: skipsByApp[i], dayWork: out[i].work)
     }
     return out
@@ -168,21 +217,38 @@ public enum Stats {
     return meaningful.isEmpty ? [totalWork] : meaningful
   }
 
-  /// Objective 0–100 eye-care cadence score starting at 100, penalizing skipped breaks and >25m / >40m unbroken runs.
-  public static func computeRhythmScore(work: Double, taken: Int, skipped: Int, stretches: [Double]) -> Int {
+  /// Objective 0–100 eye-care cadence score starting at 100, with Bayesian prior smoothing (+4),
+  /// 3:1 long-vs-short skip weight, and interval-scaled stretch thresholds (`1.25×` and `2.0×`).
+  public static func computeRhythmScore(
+    work: Double,
+    taken: Int,
+    skipped: Int,
+    stretches: [Double],
+    weightedTaken: Double? = nil,
+    weightedSkipped: Double? = nil,
+    intervalMinutes: Double = 20,
+    hardLineMinutes: Double = 90
+  ) -> Int {
     if work <= 0 && taken == 0 && skipped == 0 { return 100 }
-    let prompts = taken + skipped
-    let skipRatioPenalty = prompts > 0 ? 24.0 * (Double(skipped) / Double(prompts)) : 0
-    let skipCountPenalty = Double(min(skipped, 8)) * 2.5
+    let wTaken = weightedTaken ?? Double(taken)
+    let wSkipped = weightedSkipped ?? Double(skipped)
+    let totalWeighted = wTaken + wSkipped
+    let skipRatioPenalty = totalWeighted > 0 ? 28.0 * (wSkipped / (totalWeighted + 4.0)) : 0
+    let skipCountPenalty = min(wSkipped, 12.0) * 1.5
+
+    let baseInterval = max(10.0, intervalMinutes)
+    let tau1 = 1.25 * baseInterval
+    let tau2 = max(tau1 + 5.0, min(max(baseInterval, hardLineMinutes), 2.0 * baseInterval))
+    let tier1Span = max(1.0, tau2 - tau1)
 
     var stretchPenalty = 0.0
     for sec in stretches {
       let mins = sec / 60.0
-      if mins > 25 {
-        stretchPenalty += min(mins - 25, 15) * 0.25
+      if mins > tau1 {
+        stretchPenalty += min(mins - tau1, tier1Span) * 0.25
       }
-      if mins > 40 {
-        stretchPenalty += (mins - 40) * 0.70
+      if mins > tau2 {
+        stretchPenalty += (mins - tau2) * 0.70
       }
     }
 
@@ -221,16 +287,42 @@ public enum Stats {
 public struct WorkSpan: Codable, Equatable {
   public var start: Date
   public var end: Date
-  public init(start: Date, end: Date) { self.start = start; self.end = end }
+  /// True when auto-paused for a meeting or screen share (counted in screen time, exempt from focus-stretch penalty).
+  public var isHold: Bool
+
+  public init(start: Date, end: Date, isHold: Bool = false) {
+    self.start = start
+    self.end = end
+    self.isHold = isHold
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case start, end, isHold
+  }
+
+  public init(from decoder: Decoder) throws {
+    let c = try decoder.container(keyedBy: CodingKeys.self)
+    start = try c.decode(Date.self, forKey: .start)
+    end = try c.decode(Date.self, forKey: .end)
+    isHold = try c.decodeIfPresent(Bool.self, forKey: .isHold) ?? false
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var c = encoder.container(keyedBy: CodingKeys.self)
+    try c.encode(start, forKey: .start)
+    try c.encode(end, forKey: .end)
+    if isHold { try c.encode(true, forKey: .isHold) }
+  }
 }
 
 /// Opens and closes work spans from what the app already knows each tick. Monotonic seconds in,
 /// closed spans out; the caller turns them into dates.
 ///
-/// Idle uses the scheduler's own line (`Config.longLength`, the same stretch that offsets the
-/// long break): past it, the whole stretch since the last input is not work, so the span ends
-/// when input stopped, not when the line was crossed.
+/// Idle uses the decoupled 5-minute threshold (`Config.idleFreezeThreshold`, independent of `longLength`):
+/// past it, the whole stretch since the last input is not work, so the span ends when input stopped,
+/// not when the line was crossed.
 public struct WorkClock: Equatable {
+  public static let defaultIdleLimit: Double = 5 * 60
   public private(set) var openedAt: Double?
   public init() {}
 
@@ -238,7 +330,7 @@ public struct WorkClock: Equatable {
   /// 暂停提醒 still counts. `holding`: a meeting, screen share, video or full screen, where the
   /// scheduler already treats the person as at the screen; idle does not end the span then.
   public mutating func update(now: Double, counting: Bool, holding: Bool = false, inputIdle: Double,
-                              idleLimit: Double) -> (start: Double, end: Double)? {
+                              idleLimit: Double = WorkClock.defaultIdleLimit) -> (start: Double, end: Double)? {
     let idle = !holding && inputIdle >= idleLimit
     if counting && !idle {
       if openedAt == nil { openedAt = now }

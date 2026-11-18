@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """App/strings.json vs the code. Usage: scripts/check-strings.py  (exit 1 on any error)
 
-- every key has all 8 languages; a plural group ("key.one/.few/.many/.other") needs .other in
-  all 8, and a category only in languages whose CLDR rules have it (missing ones fall back to .other)
+- every key has all 11 languages; a plural group ("key.one/.few/.many/.other") needs .other in
+  all 11, and a category only in languages whose CLDR rules have it (missing ones fall back to .other)
 - format specifiers (%d %@ %lld %.1f …) and {1} slots match zh-Hans in every language and variant
 - every L("…") / Plural.pick("…") literal names a key; every key is used somewhere in Sources/
 """
 import json, os, re, sys
 
-LANGS = ["zh-Hans", "zh-Hant", "en", "es", "ru", "fr", "vi", "th"]
-CATS = {"one": {"en", "es", "fr", "ru"}, "few": {"ru"}, "many": {"ru"}, "other": set(LANGS)}
+LANGS = ["zh-Hans", "zh-Hant", "en", "es", "ru", "fr", "vi", "th", "de", "ja", "uk"]
+CATS = {"one": {"en", "es", "fr", "ru", "de", "uk"}, "few": {"ru", "uk"}, "many": {"ru", "uk"}, "other": set(LANGS)}
 SPEC = re.compile(r"%(?:\d+\$)?[-+ #0]*\d*(?:\.\d+)?(?:lld|ld|lu|d|i|u|f|@|s)|\{\d+\}")
 LIT = re.compile(r'"((?:[^"\\\n]|\\.)*)"')
 

@@ -42,7 +42,10 @@ public struct Deferral: Hashable, Sendable {
   }
 }
 
-public enum AwayKind: Sendable { case locked }   // lid-close, sleep, screen lock. Input idle is not away (Steve, 2026-10-20)
+public enum AwayKind: String, Codable, Equatable, Sendable {
+  case locked   // lid-close, sleep, screen lock
+  case idle     // sustained zero input without screen engagement
+}
 
 public enum BreakOutcome: Sendable { case completed, skipped, snoozed }
 
@@ -57,6 +60,12 @@ public struct Config: Equatable, Sendable {
   public var typingIdle: Double = 2         // input gap that counts as "stopped"
   public var snoozeLength: Double = 5 * 60
   public var maxSnoozes = 2
+  // Idle & natural break thresholds (decoupled from longLength).
+  public var idleFreezeThreshold: Double = 5 * 60      // 5 min unengaged idle freezes & rolls back
+  public var idleNaturalLongReset: Double = 10 * 60    // 10 min unengaged idle resets full cycle
+  public var idleHardLineReset: Double = 15 * 60       // 15 min unengaged idle required past hard line
+  public var returnCushion: Double = 90                // minimum breathing room on sub-reset return
+  public var urgentPauseDuration: Double = 30 * 60     // auto-recovery ceiling for urgent pause
   // After a meeting (see Scheduler.meetingEnded).
   public var meetingLongMin: Double = 30 * 60   // a meeting this long earns a long break
   public var meetingNearLong: Double = 5 * 60   // or the long break was this close (or overdue)
@@ -129,16 +138,17 @@ public enum Command: Equatable {
 }
 
 public struct Scheduler {
-  /// Physical session presence: locking the screen or sleeping freezes work accumulation.
+  /// Physical session presence: locking, sleeping, or sustained idle freezes work accumulation.
   public enum Presence: Equatable, Sendable {
     case active
-    case away(since: Double)
+    case away(kind: AwayKind, since: Double)
+    case awaitingReturn(breakKind: BreakKind, breakStartedAt: Double, breakEndedAt: Double)
   }
 
-  /// Permanent user-initiated reminder pause ("暂停提醒"), storing wall-clock start seconds.
-  public enum ManualPauseState: Equatable, Codable, Sendable {
+  /// User-initiated reminder pause ("暂停提醒" / "紧急暂停提醒"), with optional auto-expiry wall clock.
+  public enum ManualPauseState: Equatable, Sendable {
     case none
-    case paused(sinceWall: Double)
+    case paused(sinceWall: Double, untilWall: Double? = nil)
   }
 
   /// Single derived top-level operating mode with priority defined in one place.
@@ -160,6 +170,13 @@ public struct Scheduler {
   // Active work time since the last break (any kind), and breaks since the last long one.
   private(set) var sinceBreak: Double = 0
   private(set) var breaksSinceLong = 0
+  public private(set) var consecutiveSkips = 0
+  private var consecutiveShortSkips = 0
+  private var lastShortSkipped = false
+  private var breakStartedAt: Double?
+  private var countedIdleBreak: Double = 0
+  private var countedIdleLong: Double = 0
+  private var unengagedIdle: Double = 0
   private var lastTick: Double?
   private var snoozes = 0
   private var holdStartedAt: Double?             // any hold (meeting / screen share / video) started
@@ -171,8 +188,23 @@ public struct Scheduler {
 
   public init(config: Config = Config()) { self.config = config }
 
+  /// Progressive Space / pointer hold-to-skip duration: 2.0s → 3.5s → 5.0s → 6.5s → 8.0s max.
+  public static func holdDuration(forConsecutiveSkips k: Int) -> Double {
+    min(8.0, 2.0 + 1.5 * Double(max(0, k)))
+  }
+
+  public var skipHoldDuration: Double { Self.holdDuration(forConsecutiveSkips: consecutiveSkips) }
+
   public var isAway: Bool {
-    if case .away = presence { return true }
+    switch presence {
+    case .away, .awaitingReturn: return true
+    case .active: return false
+    }
+  }
+
+  /// True only during explicit OS lock / display sleep / system sleep (where detector suspends polling).
+  public var isLockedAway: Bool {
+    if case .away(kind: .locked, _) = presence { return true }
     return false
   }
 
@@ -189,11 +221,16 @@ public struct Scheduler {
 
   /// Authoritative top-level mode combining `manualPause`, `presence`, and `phase`.
   public var effectiveMode: EffectiveMode {
-    if case .paused(let sinceWall) = manualPause {
+    if case .paused(let sinceWall, _) = manualPause {
       return .manualPaused(sinceWall: sinceWall, isAway: isAway)
     }
-    if case .away(let since) = presence {
+    switch presence {
+    case .away(_, let since):
       return .away(since: since)
+    case .awaitingReturn(_, _, let endedAt):
+      return .away(since: endedAt)
+    case .active:
+      break
     }
     switch phase {
     case .onBreak(let k, let endsAt, let planned): return .onBreak(k, endsAt: endsAt, planned: planned)
@@ -253,25 +290,110 @@ public struct Scheduler {
     kind == .long && sinceLongDone >= config.hardLine
   }
 
+  /// Whether the 5-minute snooze button on a running break is allowed right now.
+  public var canSnoozeOnBreak: Bool {
+    guard snoozes < config.maxSnoozes else { return false }
+    if case .onBreak(.long, _, _) = phase {
+      if mustNotDefer(.long) { return false }
+      if sinceLongDone > 0 && sinceLongDone + config.snoozeLength > config.hardLine { return false }
+    }
+    return true
+  }
+
   /// Call about once a second.
   public mutating func tick(now: Double, reasons: Set<PauseReason>, inputIdle: Double) -> [Command] {
-    tick(now: now, reasons: reasons, deferrals: [], inputIdle: inputIdle)
+    tick(now: now, reasons: reasons, deferrals: [], inputIdle: inputIdle, screenEngaged: false, wallNow: nil)
   }
 
   public mutating func tick(now: Double, reasons inReasons: Set<PauseReason>, deferrals: [Deferral],
-                            inputIdle: Double) -> [Command] {
-    if case .away = presence { return [] }
+                            inputIdle: Double, screenEngaged: Bool = false, wallNow: Double? = nil) -> [Command] {
+    if case .away(kind: .locked, _) = presence { return [] }
+
+    // Auto-expire bounded manual/urgent pauses once their wall-clock deadline passes.
+    if case .paused(_, let untilWall?) = manualPause, let wallNow, wallNow >= untilWall {
+      let resumeCmds = resumeManually(now: now)
+      if !resumeCmds.isEmpty { return resumeCmds }
+    }
+
+    let engaged = screenEngaged || !inReasons.isDisjoint(with: Self.holds)
+
+    switch presence {
+    case .away(kind: .locked, _):
+      return []
+    case .away(kind: .idle, _):
+      guard inputIdle < config.typingIdle || engaged else { return [] }
+      _ = exitAway(.idle, now: now)
+    case .awaitingReturn(let bKind, let bStartedAt, _):
+      guard inputIdle < config.typingIdle || engaged else {
+        lastTick = now
+        return []
+      }
+      if bKind == .short, now - bStartedAt >= config.longLength {
+        breaksSinceLong = 0
+        sinceLongDone = 0
+        countedIdleLong = 0
+        clearDeferral()
+        consecutiveSkips = 0
+        consecutiveShortSkips = 0
+        lastShortSkipped = false
+      }
+      unengagedIdle = 0
+      countedIdleBreak = 0
+      countedIdleLong = 0
+      presence = .active
+      lastTick = now
+    case .active:
+      break
+    }
+
     if case .paused = manualPause {
-      manualPauseTick(now: now)
+      let hadPrevTick = lastTick != nil
+      let dt = lastTick.map { max(0, now - $0) } ?? 0
+      let idleNow = max(0, inputIdle)
+      if engaged || inReasons.contains(.outsideHours) {
+        unengagedIdle = 0
+        countedIdleBreak = 0
+        countedIdleLong = 0
+      } else {
+        let nextUnengaged = hadPrevTick ? min(unengagedIdle + dt, idleNow) : idleNow
+        if nextUnengaged >= config.idleFreezeThreshold {
+          sinceLongDone = max(0, sinceLongDone - countedIdleLong)
+          unengagedIdle = 0
+          countedIdleBreak = 0
+          countedIdleLong = 0
+          presence = .away(kind: .idle, since: now - nextUnengaged)
+          lastTick = now
+          return []
+        }
+        unengagedIdle = nextUnengaged
+      }
+      lastTick = now
+      if case .onBreak = phase { return [] }
+      if !inReasons.contains(.outsideHours) {
+        sinceLongDone += dt
+        if engaged {
+          countedIdleLong = 0
+        } else {
+          countedIdleLong = min(countedIdleLong + dt, idleNow)
+        }
+      }
       return []
     }
 
+    let hadPrevTick = lastTick != nil
     let dt = lastTick.map { max(0, now - $0) } ?? 0
     lastTick = now
     var reasons = inReasons
 
-    if case .onBreak(_, let endsAt, _) = phase {
-      if now >= endsAt { return finish(.completed, now: now) }
+    if case .onBreak(let bKind, let endsAt, let planned) = phase {
+      if now >= endsAt {
+        let bStart = breakStartedAt ?? (endsAt - planned)
+        let cmds = finish(.completed, now: now)
+        if !engaged && inputIdle >= max(planned, 60) {
+          presence = .awaitingReturn(breakKind: bKind, breakStartedAt: bStart, breakEndedAt: now)
+        }
+        return cmds
+      }
       return []
     }
 
@@ -280,6 +402,9 @@ public struct Scheduler {
     // can't happen mid-call anyway).
     let due = next.remaining <= 0
     if !reasons.isDisjoint(with: Self.holds) {
+      unengagedIdle = 0
+      countedIdleBreak = 0
+      countedIdleLong = 0
       if next.kind == .long { sinceBreak += dt }   // sitting counts toward "get up", not toward eyes
       sinceLongDone += dt
       // A break held by a hold eats the shared budget (wall clock, once, however many sources).
@@ -301,13 +426,42 @@ public struct Scheduler {
     }
 
     if let top = reasons.min() {
+      unengagedIdle = 0
+      countedIdleBreak = 0
+      countedIdleLong = 0
       phase = .paused(top)
       return []
     }
     if case .paused = phase { phase = .working }
 
+    // Unengaged zero-input at >= idleFreezeThreshold (5 min): roll back the unconfirmed tail and freeze.
+    let idleNow = max(0, inputIdle)
+    if engaged {
+      unengagedIdle = 0
+    } else {
+      let nextUnengaged = hadPrevTick ? min(unengagedIdle + dt, idleNow) : idleNow
+      if nextUnengaged >= config.idleFreezeThreshold {
+        sinceBreak = max(0, sinceBreak - countedIdleBreak)
+        sinceLongDone = max(0, sinceLongDone - countedIdleLong)
+        unengagedIdle = 0
+        countedIdleBreak = 0
+        countedIdleLong = 0
+        clearTransientPhase()
+        presence = .away(kind: .idle, since: now - nextUnengaged)
+        return []
+      }
+      unengagedIdle = nextUnengaged
+    }
+
     sinceBreak += dt
     sinceLongDone += dt
+    if engaged {
+      countedIdleBreak = 0
+      countedIdleLong = 0
+    } else {
+      countedIdleBreak = min(countedIdleBreak + dt, idleNow)
+      countedIdleLong = min(countedIdleLong + dt, idleNow)
+    }
 
     let (kind, remaining, _) = next
     if remaining > config.warnLead { phase = .working; return [] }
@@ -356,6 +510,10 @@ public struct Scheduler {
 
   private mutating func startBreak(_ kind: BreakKind, now: Double) -> [Command] {
     let length = config.length(kind)
+    breakStartedAt = now
+    unengagedIdle = 0
+    countedIdleBreak = 0
+    countedIdleLong = 0
     phase = .onBreak(kind, endsAt: now + length, planned: length)
     return [.startBreak(kind, length: length)]
   }
@@ -364,77 +522,157 @@ public struct Scheduler {
 
   /// User skipped, snoozed, or the overlay finished.
   public mutating func finish(_ outcome: BreakOutcome, now: Double) -> [Command] {
-    guard case .onBreak(let kind, _, let planned) = phase else { return [] }
+    guard case .onBreak(let kind, let endsAt, let planned) = phase else { return [] }
     // Past the hard line the long break can't be skipped or snoozed, whatever the UI shows.
     if kind == .long && outcome != .completed && mustNotDefer(.long) { return [] }
+    // A 5-minute snooze on a long break may never cross the hard line (blocks 88m -> 93m bypass).
+    if outcome == .snoozed && kind == .long && snoozes < config.maxSnoozes
+        && sinceLongDone > 0 && sinceLongDone + config.snoozeLength > config.hardLine {
+      return []
+    }
+
+    let started = breakStartedAt ?? (endsAt - planned)
+    let actual = max(0, min(planned, now - started))
+    let rho = planned > 0 ? actual / planned : 0
+    breakStartedAt = nil
     phase = .working
-    clearDeferral()
+
+    // Resting >= 80% of the break settles as completed rather than a full-penalty skip.
+    let effectiveOutcome: BreakOutcome = (outcome == .skipped && rho >= 0.80) ? .completed : outcome
+
     // A snooze inside the limit is not a result yet: the same break comes back and ends once.
     // Past the limit it is reset like a skip, so it counts as one.
     var result: BreakResult?
-    switch outcome {
+    switch effectiveOutcome {
     case .completed:
       result = .completed
-      if kind == .long { sinceLongDone = 0 }
+      clearDeferral()
+      if kind == .long { sinceLongDone = 0; countedIdleLong = 0 }
+      consecutiveSkips = 0
+      consecutiveShortSkips = 0
+      lastShortSkipped = false
       reset(kind, done: true)
     case .skipped:
       result = .skipped
+      if kind == .short {
+        clearDeferral()
+      } else if rho >= 0.25 {
+        // Partial rest credit (25%..<80% of a long break): proportionally roll back sitting time.
+        sinceLongDone = max(0, sinceLongDone * (1.0 - 0.8 * rho))
+      }
+      consecutiveSkips += 1
       reset(kind, done: false)   // a skipped long break is still owed: it comes back next
+      if kind == .short {
+        consecutiveShortSkips += 1
+        lastShortSkipped = true
+        if consecutiveShortSkips >= 2 {
+          breaksSinceLong += 1
+        }
+      } else if sinceLongDone > 0 {
+        // Horizon clamping: a skipped long break comes back no later than the hard line.
+        let rNext = min(config.breakEvery, max(0, config.hardLine - sinceLongDone))
+        sinceBreak = config.breakEvery - rNext
+      }
     case .snoozed where snoozes < config.maxSnoozes:
       snoozes += 1
       let back = config.snoozeLength
-      sinceBreak = config.breakEvery - back   // same break comes back; the cycle count is unchanged
+      sinceBreak = config.breakEvery - back   // same break comes back; deferUsed & cycle count preserved
+      countedIdleBreak = 0
     case .snoozed:
       result = .skipped
+      if kind == .short { clearDeferral() }
+      consecutiveSkips += 1
       reset(kind, done: false)
+      if kind == .long && sinceLongDone > 0 {
+        let rNext = min(config.breakEvery, max(0, config.hardLine - sinceLongDone))
+        sinceBreak = config.breakEvery - rNext
+      }
     }
     return (result.map { [.recorded(kind, planned: planned, $0)] } ?? []) + [.endBreak]
   }
 
   /// Screen locked or Mac going to sleep: freeze all work/hard-line accumulation until `exitAway`.
   public mutating func enterAway(now: Double) {
-    if case .away = presence { return }
-    presence = .away(since: now)
-    lastTick = now
+    switch presence {
+    case .away(kind: .locked, _):
+      return
+    case .away(kind: .idle, let since):
+      // Preserve the earlier start of idle absence when display sleep / screen lock follows.
+      presence = .away(kind: .locked, since: since)
+      lastTick = now
+    case .awaitingReturn(_, let bStart, _):
+      presence = .away(kind: .locked, since: bStart)
+      lastTick = now
+    case .active:
+      presence = .away(kind: .locked, since: now)
+      lastTick = now
+    }
   }
 
-  /// Screen unlocked or Mac woke up: settle break/reset credit for the away span without clearing `manualPause`.
+  /// Screen unlocked, Mac woke up, or input resumed after idle: settle break/reset credit for the away span.
   @discardableResult
   public mutating func exitAway(_ kind: AwayKind, now: Double) -> [Command] {
     let secs: Double
-    if case .away(let since) = presence {
+    switch presence {
+    case .away(_, let since):
       secs = max(0, now - since)
-    } else {
+    case .awaitingReturn(_, let bStart, _):
+      secs = max(0, now - bStart)
+    case .active:
       secs = 0
     }
     presence = .active
     return away(kind, seconds: secs, now: now)
   }
 
-  /// The machine was away (locked or lid closed) for `seconds`.
+  /// The machine or user was away (`locked` or unengaged `idle`) for `seconds`.
   /// Call on return; time spent away is never counted as work.
-  /// Locked during a break: the locked time counts toward that break (endsAt is on the same
-  /// clock, which includes sleep). Back before it ends: the break resumes with what is left.
-  /// Back after: the break is completed, exactly as if the overlay had run out.
   @discardableResult
   public mutating func away(_ kind: AwayKind, seconds: Double, now: Double) -> [Command] {
-    switch kind {
+    lastTick = now
+    unengagedIdle = 0
+    countedIdleBreak = 0
+    countedIdleLong = 0
+    if case .onBreak(let k, let endsAt, _) = phase {
+      if now >= endsAt { return finish(.completed, now: now) }
+      return [.resumeBreak(k, remaining: endsAt - now)]
+    }
+    let longThreshold: Double = switch kind {
     case .locked:
-      // Screen off: none of this time is work, and it rests the eyes.
-      lastTick = now
-      if case .onBreak(let k, let endsAt, _) = phase {
-        if now >= endsAt { return finish(.completed, now: now) }
-        return [.resumeBreak(k, remaining: endsAt - now)]
-      }
-      if seconds >= config.longLength {
-        reset(.long, done: true); sinceLongDone = 0; clearDeferral()
+      config.longLength
+    case .idle:
+      mustNotDefer(.long) ? max(config.idleHardLineReset, config.longLength * 2)
+                          : max(config.idleNaturalLongReset, config.longLength * 2)
+    }
+    if seconds >= longThreshold {
+      reset(.long, done: true)
+      sinceLongDone = 0
+      clearDeferral()
+      consecutiveSkips = 0
+      consecutiveShortSkips = 0
+      lastShortSkipped = false
+      clearTransientPhase()
+    } else if kind == .locked && seconds >= config.shortLength {
+      if next.kind == .short {
+        snoozes = 0
+        sinceBreak = 0   // eyes rested for a short break; never resets an upcoming long break
+        lastShortSkipped = false
         clearTransientPhase()
-      } else if seconds >= config.shortLength {
-        snoozes = 0; sinceBreak = 0   // eyes rested, cycle unchanged
-        clearTransientPhase()
+      } else if !mustNotDefer(.long) {
+        applyReturnCushion()
       }
+    } else if kind == .idle && seconds >= config.idleFreezeThreshold && !mustNotDefer(.long) {
+      applyReturnCushion()
     }
     return []
+  }
+
+  private mutating func applyReturnCushion() {
+    let cushion = min(config.returnCushion, config.breakEvery)
+    if config.breakEvery - sinceBreak < cushion {
+      sinceBreak = config.breakEvery - cushion
+    }
+    clearTransientPhase()
   }
 
   private mutating func clearTransientPhase() {
@@ -447,7 +685,8 @@ public struct Scheduler {
   /// 「紧急暂停提醒」 (spec-hardline §5.2): the one way out of a long break past the hard line,
   /// where `finish` refuses skip and snooze. Ends the long break on screen, or the one the pre-break
   /// panel announces at the line, as skipped: one stats row, the long break stays owed and nothing
-  /// is reset that a skip keeps (sinceLongDone runs on). When `wallNow` is supplied, enters `manualPause`.
+  /// is reset that a skip keeps (sinceLongDone runs on). When `wallNow` is supplied, enters a bounded
+  /// 30-minute `manualPause` so reminders auto-recover.
   public mutating func urgentPause(now: Double, wallNow: Double? = nil) -> [Command] {
     let cmds: [Command]
     switch phase {
@@ -457,24 +696,25 @@ public struct Scheduler {
       cmds = [.recorded(.long, planned: config.longLength, .skipped)]
     default:
       if let wallNow {
-        manualPause = .paused(sinceWall: wallNow)
+        manualPause = .paused(sinceWall: wallNow, untilWall: wallNow + config.urgentPauseDuration)
         lastTick = now
       }
       return []
     }
+    breakStartedAt = nil
     phase = .working
-    clearDeferral()
+    consecutiveSkips += 1
     reset(.long, done: false)
     if let wallNow {
-      manualPause = .paused(sinceWall: wallNow)
+      manualPause = .paused(sinceWall: wallNow, untilWall: wallNow + config.urgentPauseDuration)
       lastTick = now
     }
     return cmds
   }
 
   /// Menu 「暂停提醒」: settles any break on screen (normal skip, or urgent skip at the hard line)
-  /// and transitions into `manualPause`.
-  public mutating func pauseManually(wallNow: Double, now: Double) -> [Command] {
+  /// and transitions into `manualPause` (auto-expiring at `untilWall`, e.g. end of day).
+  public mutating func pauseManually(wallNow: Double, untilWall: Double? = nil, now: Double) -> [Command] {
     var cmds: [Command] = []
     if case .onBreak = phase {
       cmds = finish(.skipped, now: now)
@@ -482,7 +722,7 @@ public struct Scheduler {
     } else {
       clearTransientPhase()
     }
-    manualPause = .paused(sinceWall: wallNow)
+    manualPause = .paused(sinceWall: wallNow, untilWall: untilWall)
     lastTick = now
     return cmds
   }
@@ -493,11 +733,14 @@ public struct Scheduler {
     return manualPauseEnded(now: now)
   }
 
-  /// 暂停提醒 (Steve, round 7b; permanent since spec-hardline): no reminders at all, but the time since the last long break
-  /// keeps counting while present. Only a locked screen counts as a long break taken (away), not input idle
-  /// (Steve, 2026-10-20). The short clock and the postpone budget (deferUsed) are untouched.
-  public mutating func manualPauseTick(now: Double) {
-    if case .away = presence { return }
+  /// 暂停提醒: no reminders while active, but sitting time since the last long break keeps counting.
+  public mutating func manualPauseTick(now: Double, wallNow: Double? = nil) {
+    if let wallNow, case .paused(_, let untilWall?) = manualPause, wallNow >= untilWall {
+      manualPause = .none
+      _ = manualPauseEnded(now: now)
+      return
+    }
+    if isAway { return }
     let dt = lastTick.map { max(0, now - $0) } ?? 0
     lastTick = now
     if case .onBreak = phase { return }
@@ -508,6 +751,9 @@ public struct Scheduler {
   /// and can't be deferred (mustNotDefer); otherwise counting simply resumes.
   public mutating func manualPauseEnded(now: Double) -> [Command] {
     lastTick = now
+    unengagedIdle = 0
+    countedIdleBreak = 0
+    countedIdleLong = 0
     if case .onBreak = phase { return [] }
     guard sinceLongDone >= config.hardLine else { return [] }
     return startBreak(.long, now: now)
@@ -522,24 +768,46 @@ public struct Scheduler {
     public var breaksSinceLong: Int
     public var savedAt: Double              // wall clock, seconds since 1970
     public var manualPausedSince: Double?   // wall clock when manually paused, nil otherwise
+    public var manualPauseUntil: Double?    // optional wall-clock auto-expiry
+    public var consecutiveSkips: Int?
+    public var consecutiveShortSkips: Int?
+    public var lastShortSkipped: Bool?
 
     public init(sinceLongDone: Double, deferUsed: Double, sinceBreak: Double,
-                breaksSinceLong: Int, savedAt: Double, manualPausedSince: Double? = nil) {
+                breaksSinceLong: Int, savedAt: Double, manualPausedSince: Double? = nil,
+                manualPauseUntil: Double? = nil, consecutiveSkips: Int? = nil,
+                consecutiveShortSkips: Int? = nil, lastShortSkipped: Bool? = nil) {
       self.sinceLongDone = sinceLongDone
       self.deferUsed = deferUsed
       self.sinceBreak = sinceBreak
       self.breaksSinceLong = breaksSinceLong
       self.savedAt = savedAt
       self.manualPausedSince = manualPausedSince
+      self.manualPauseUntil = manualPauseUntil
+      self.consecutiveSkips = consecutiveSkips
+      self.consecutiveShortSkips = consecutiveShortSkips
+      self.lastShortSkipped = lastShortSkipped
     }
   }
 
   /// Snapshot for UserDefaults. A running break is saved as not taken (it never completed).
   public func saved(wallClock: Double) -> Saved {
-    let mp: Double? = if case .paused(let sinceWall) = manualPause { sinceWall } else { nil }
+    let mpSince: Double?
+    let mpUntil: Double?
+    if case .paused(let sinceWall, let untilWall) = manualPause {
+      mpSince = sinceWall
+      mpUntil = untilWall
+    } else {
+      mpSince = nil
+      mpUntil = nil
+    }
     return Saved(sinceLongDone: sinceLongDone, deferUsed: deferUsed,
                  sinceBreak: sinceBreak, breaksSinceLong: breaksSinceLong,
-                 savedAt: wallClock, manualPausedSince: mp)
+                 savedAt: wallClock, manualPausedSince: mpSince,
+                 manualPauseUntil: mpUntil,
+                 consecutiveSkips: consecutiveSkips > 0 ? consecutiveSkips : nil,
+                 consecutiveShortSkips: consecutiveShortSkips > 0 ? consecutiveShortSkips : nil,
+                 lastShortSkipped: lastShortSkipped ? true : nil)
   }
 
   /// At launch: pick up where the last run stopped. The time the app was not running is treated
@@ -553,9 +821,24 @@ public struct Scheduler {
     deferBySource = [:]
     sinceBreak = s.sinceBreak
     breaksSinceLong = max(0, s.breaksSinceLong)
+    consecutiveSkips = max(0, s.consecutiveSkips ?? 0)
+    consecutiveShortSkips = max(0, s.consecutiveShortSkips ?? 0)
+    lastShortSkipped = s.lastShortSkipped ?? false
+    breakStartedAt = nil
+    unengagedIdle = 0
+    countedIdleBreak = 0
+    countedIdleLong = 0
     snoozes = 0
     presence = .active
-    manualPause = s.manualPausedSince.map { .paused(sinceWall: $0) } ?? .none
+    if let since = s.manualPausedSince {
+      if let until = s.manualPauseUntil, wallClock >= until {
+        manualPause = .none
+      } else {
+        manualPause = .paused(sinceWall: since, untilWall: s.manualPauseUntil)
+      }
+    } else {
+      manualPause = .none
+    }
     phase = .working
     away(.locked, seconds: max(0, wallClock - s.savedAt), now: now)
   }
@@ -567,6 +850,8 @@ public struct Scheduler {
   public mutating func startFresh(now: Double) {
     if case .onBreak = phase { return }
     sinceBreak = 0; breaksSinceLong = 0; snoozes = 0
+    consecutiveSkips = 0; consecutiveShortSkips = 0; lastShortSkipped = false
+    unengagedIdle = 0; countedIdleBreak = 0; countedIdleLong = 0
     sinceLongDone = 0; clearDeferral()
     lastTick = now
     phase = .working
@@ -620,12 +905,18 @@ public struct Scheduler {
 
   /// The pre-break panel's 「跳过休息」: skip the short break that is only announced, not yet on
   /// screen. `finish` needs a running break, so the announcement phase has its own entry point.
-  /// Only a short break in the warning phase; anything else does nothing. Counts as a skip.
+  /// Only a short break in the warning phase (and never two consecutive short skips); counts as a skip.
   public mutating func skipUpcoming(now: Double) -> [Command] {
-    guard case .warning(.short, _) = phase else { return [] }
+    guard case .warning(.short, _) = phase, !lastShortSkipped else { return [] }
     phase = .working
     clearDeferral()
+    consecutiveSkips += 1
+    consecutiveShortSkips += 1
+    lastShortSkipped = true
     reset(.short, done: false)
+    if consecutiveShortSkips >= 2 {
+      breaksSinceLong += 1
+    }
     return [.recorded(.short, planned: config.shortLength, .skipped)]
   }
 
@@ -634,7 +925,7 @@ public struct Scheduler {
   /// `skipUpcoming` or a pause. Paused, away, on a break, or more than `warnLead` away: nil.
   public var preBreak: PreBreakState? {
     if case .paused = manualPause { return nil }
-    if case .away = presence { return nil }
+    if isAway { return nil }
     switch phase {
     case .working, .paused, .onBreak:
       return nil
@@ -663,7 +954,8 @@ public struct Scheduler {
     else if canPostpone(by: config.snoozeLength) { snooze = .available(minutes: Int(config.snoozeLength / 60)) }
     else { snooze = .usedUp }
     return PreBreakState(
-      kind: kind, secondsLeft: secondsLeft, snooze: snooze, canSkip: kind == .short, atHardLine: hard,
+      kind: kind, secondsLeft: secondsLeft, snooze: snooze,
+      canSkip: kind == .short && !lastShortSkipped, atHardLine: hard,
       typingWait: typingWait, showCard: showCard, showPill: showPill)
   }
 
@@ -690,6 +982,7 @@ public struct Scheduler {
   private mutating func reset(_ kind: BreakKind, done: Bool) {
     snoozes = 0
     sinceBreak = 0
+    countedIdleBreak = 0
     if kind == .long { if done { breaksSinceLong = 0 } } else { breaksSinceLong += 1 }
   }
 }

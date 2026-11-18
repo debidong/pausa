@@ -3,7 +3,7 @@ import Foundation
 /// App language. `.system` follows macOS preferred languages.
 /// Strings are looked up by semantic key (`L("menu.quit")`); the text itself is in App/strings.json.
 enum AppLanguage: String, CaseIterable, Identifiable {
-    case system, zhHans = "zh-Hans", zhHant = "zh-Hant", en, es, ru, fr, vi, th
+    case system, zhHans = "zh-Hans", zhHant = "zh-Hant", en, es, ru, fr, vi, th, de, ja, uk
     var id: String { rawValue }
 
     /// Shown in the picker in its own language (system row is translated).
@@ -18,6 +18,9 @@ enum AppLanguage: String, CaseIterable, Identifiable {
         case .fr: return "Français"
         case .vi: return "Tiếng Việt"
         case .th: return "ภาษาไทย"
+        case .de: return "Deutsch"
+        case .ja: return "日本語"
+        case .uk: return "Українська"
         }
     }
 
@@ -37,7 +40,10 @@ enum AppLanguage: String, CaseIterable, Identifiable {
                 let trad = ["zh-hant", "zh-tw", "zh-hk", "zh-mo"].contains { p.hasPrefix($0) }
                 return trad ? .zhHant : .zhHans
             }
-            for l in [AppLanguage.en, .es, .ru, .fr, .vi, .th] where p.hasPrefix(l.rawValue) { return l }
+            let primary = p.split(whereSeparator: { $0 == "-" || $0 == "_" }).first.map(String.init) ?? p
+            if let match = AppLanguage.allCases.first(where: { $0 != .system && $0.rawValue.lowercased() == primary }) {
+                return match
+            }
         }
         return .en
     }
@@ -66,19 +72,19 @@ func L(_ key: String, _ args: CVarArg...) -> String {
     return args.isEmpty ? fmt : String(format: fmt, locale: lang.locale, arguments: args)
 }
 
-/// CLDR cardinal plural categories for the 8 app languages (what a stringsdict would pick).
+/// CLDR cardinal plural categories for the 11 app languages (what a stringsdict would pick).
 /// Keys: "key.one" / ".few" / ".many" / ".other"; missing categories fall back to ".other".
 enum Plural {
     static func category(_ n: Int, _ lang: AppLanguage) -> String {
         switch lang {
-        case .en, .es: return n == 1 ? "one" : "other"
+        case .en, .es, .de: return n == 1 ? "one" : "other"
         case .fr: return n == 0 || n == 1 ? "one" : "other"
-        case .ru:
+        case .ru, .uk:
             let m10 = n % 10, m100 = n % 100
             if m10 == 1 && m100 != 11 { return "one" }
             if (2...4).contains(m10) && !(12...14).contains(m100) { return "few" }
             return "many"
-        default: return "other"   // zh-Hans, zh-Hant, vi, th: no plural forms
+        default: return "other"   // zh-Hans, zh-Hant, ja, vi, th: no plural forms
         }
     }
     static func pick(_ key: String, _ n: Int) -> String {
@@ -93,7 +99,7 @@ enum Plural {
 /// `{ "<page>.<name>": { "zh-Hans": "...", "zh-Hant": "...", "en": "...", ... } }`, keys sorted, so a
 /// page's strings sit together. Code calls L("<key>"); edit the copy in the JSON, not here.
 /// Plurals: "<key>.one" / ".few" / ".many" / ".other" (see `Plural`). scripts/check-strings.py checks
-/// that every key has all 8 languages, format specifiers match, and no key is unused or missing.
+/// that every key has all 11 languages, format specifiers match, and no key is unused or missing.
 enum L10nTables {
     static let all: [AppLanguage: [String: String]] = {
         let urls = [Bundle.main.url(forResource: "strings", withExtension: "json"),
