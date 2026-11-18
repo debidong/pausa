@@ -246,7 +246,7 @@ final class CoreSchedulerTests: XCTestCase {
 
         // 1. Morning cold-start: 20m work + 1 skipped short break scores ~93 (no longer collapses to 74).
         let morningScore = Stats.computeRhythmScore(
-            work: 20 * 60, taken: 0, skipped: 1, stretches: [20 * 60],
+            work: 20 * 60, taken: 0, skipped: 1, stretches: [20.0 * 60],
             weightedTaken: 0, weightedSkipped: 1, intervalMinutes: 20, hardLineMinutes: 90
         )
         XCTAssertEqual(morningScore, 93)
@@ -254,7 +254,7 @@ final class CoreSchedulerTests: XCTestCase {
         // 2. Preset.gentle (40m interval) with 8 × 40m stretches and 0 skips scores 100!
         let gentleScore = Stats.computeRhythmScore(
             work: 8 * 40 * 60, taken: 8, skipped: 0,
-            stretches: Array(repeating: 40 * 60, count: 8),
+            stretches: Array(repeating: 40.0 * 60, count: 8),
             weightedTaken: 12, weightedSkipped: 0, intervalMinutes: 40, hardLineMinutes: 90
         )
         XCTAssertEqual(gentleScore, 100)
