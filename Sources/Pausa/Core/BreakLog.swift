@@ -268,9 +268,9 @@ final class BreakLog {
         appDirty = true
     }
 
-    func subtractAppUsage(bundleID: String, seconds: Double, on day: Date) {
+    func subtractAppUsage(bundleID: String, seconds: Double, at date: Date) {
         guard seconds > 0, !bundleID.isEmpty else { return }
-        let key = DayAppKey(day: calendar.startOfDay(for: day), bundleID: bundleID)
+        let key = DayAppKey(day: calendar.startOfDay(for: date), bundleID: bundleID)
         guard let prev = appBuffer[key] else { return }
         let left = prev.seconds - seconds
         if left <= 0.001 {

@@ -142,7 +142,7 @@ public final class BreakOverlayController {
 
     /// Capsule near the cursor + slight dim. `onFinish` fires when time is up.
     public func showShort(duration: TimeInterval,
-                          holdDuration: TimeInterval = HoldToSkip.duration,
+                          holdDuration: TimeInterval = 2.0,
                           onSkip: (() -> Void)? = nil,
                           onFinish: (() -> Void)? = nil) {
         tearDownActiveOverlay(animated: false)
@@ -182,7 +182,7 @@ public final class BreakOverlayController {
     /// Full-screen break on every display. The user leaves via the postpone buttons, holding
     /// Space, or the countdown. `show15` / `can15`: round 3 §7.
     public func showLong(duration: TimeInterval,
-                         holdDuration: TimeInterval = HoldToSkip.duration,
+                         holdDuration: TimeInterval = 2.0,
                          onSnooze: @escaping (Int) -> Void,
                          onSkip: @escaping () -> Void,
                          onFinish: (() -> Void)? = nil,

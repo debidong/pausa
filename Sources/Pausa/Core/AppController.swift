@@ -285,6 +285,8 @@ final class AppController {
 
     private var work = WorkClock()
     private var openSpanIsHold = false
+    private var lastWorkTickAt: Double?
+    private var unengagedWorkIdle: Double = 0
     /// The stats page refreshes at once when a break ends or data is cleared.
     var onStatsChanged: (() -> Void)?
     private var lastWorkCheckpoint: Double = 0
@@ -294,7 +296,7 @@ final class AppController {
     private var lastAppSampleAt: Double?
     private var lastActiveApp: (bundleID: String, name: String)?
     private var breakTriggerApp: (bundleID: String, name: String)?
-    private var recentAppSlices: [(at: Double, day: Date, bundleID: String, seconds: Double)] = []
+    private var recentAppSlices: [(at: Double, wall: Date, bundleID: String, seconds: Double)] = []
 
     nonisolated static func systemFrontmostApp() -> (bundleID: String, name: String)? {
         guard let app = NSWorkspace.shared.frontmostApplication,
@@ -312,20 +314,32 @@ final class AppController {
     private func trackWork(now: Double, idle: Double, inHours: Bool,
                            pauseHolding: Bool, presenceHolding: Bool, unboundedHold: Bool) {
         let idleLimit = scheduler.config.idleFreezeThreshold
+        let rawIdle = max(0, idle)
+        let workDt = lastWorkTickAt.map { max(0, now - $0) } ?? 0
+        let effectiveIdle: Double
+        if presenceHolding || !inHours {
+            effectiveIdle = 0
+            unengagedWorkIdle = 0
+        } else {
+            effectiveIdle = lastWorkTickAt != nil ? min(unengagedWorkIdle + workDt, rawIdle) : rawIdle
+            unengagedWorkIdle = effectiveIdle >= idleLimit ? 0 : effectiveIdle
+        }
+        lastWorkTickAt = now
+
         var counting = inHours && !scheduler.isAway
         if case .onBreak = scheduler.phase { counting = false }
 
-        if !presenceHolding && idle >= idleLimit && !recentAppSlices.isEmpty {
-            let idleStart = now - idle
+        if !presenceHolding && effectiveIdle >= idleLimit && !recentAppSlices.isEmpty {
+            let idleStart = now - effectiveIdle
             for slice in recentAppSlices where slice.at >= idleStart {
-                log.subtractAppUsage(bundleID: slice.bundleID, seconds: slice.seconds, on: slice.day)
+                log.subtractAppUsage(bundleID: slice.bundleID, seconds: slice.seconds, at: slice.wall)
             }
             recentAppSlices.removeAll(keepingCapacity: true)
-        } else if idle < scheduler.config.typingIdle || presenceHolding {
+        } else if effectiveIdle <= 0 || presenceHolding {
             recentAppSlices.removeAll(keepingCapacity: true)
         }
 
-        let activeWorking = counting && !pauseHolding && (presenceHolding || idle < idleLimit)
+        let activeWorking = counting && !pauseHolding && (presenceHolding || effectiveIdle < idleLimit)
         if activeWorking {
             if let prev = lastAppSampleAt {
                 let dt = min(max(0, now - prev), 5.0)
@@ -333,8 +347,12 @@ final class AppController {
                     lastActiveApp = app
                     let wall = clock.wallNow()
                     log.recordAppUsage(bundleID: app.bundleID, appName: app.name, seconds: dt, at: wall)
-                    if !presenceHolding && idle >= scheduler.config.typingIdle {
-                        recentAppSlices.append((at: now, day: cal.startOfDay(for: wall), bundleID: app.bundleID, seconds: dt))
+                    if !presenceHolding && effectiveIdle > 0 {
+                        recentAppSlices.append((at: now, wall: wall, bundleID: app.bundleID, seconds: dt))
+                        if let first = recentAppSlices.first, first.at < now - idleLimit - 10 {
+                            let keepFrom = now - effectiveIdle
+                            recentAppSlices.removeAll { $0.at < keepFrom }
+                        }
                     }
                 }
             } else if let app = frontmostAppProvider() {
@@ -345,7 +363,7 @@ final class AppController {
             lastAppSampleAt = nil
         }
 
-        let willKeepOpen = counting && (presenceHolding || idle < idleLimit)
+        let willKeepOpen = counting && (presenceHolding || effectiveIdle < idleLimit)
         if work.openedAt != nil, willKeepOpen, openSpanIsHold != unboundedHold {
             if let closed = work.close(at: now) {
                 log.append(span(closed, isHold: openSpanIsHold))
@@ -353,7 +371,7 @@ final class AppController {
         }
 
         let wasOpen = work.openedAt != nil
-        if let s = work.update(now: now, counting: counting, holding: presenceHolding, inputIdle: idle, idleLimit: idleLimit) {
+        if let s = work.update(now: now, counting: counting, holding: presenceHolding, inputIdle: effectiveIdle, idleLimit: idleLimit) {
             log.append(span(s, isHold: openSpanIsHold))
             openSpanIsHold = false
             log.flushAppUsage(now: clock.wallNow())
@@ -374,6 +392,8 @@ final class AppController {
         log.clear()
         if work.openedAt != nil { _ = work.close(at: clock.continuousNow()) }
         openSpanIsHold = false
+        lastWorkTickAt = nil
+        unengagedWorkIdle = 0
         lastWorkCheckpoint = 0
         lastAppSampleAt = nil
         lastActiveApp = nil
@@ -389,6 +409,8 @@ final class AppController {
     func endWork() { endWork(at: clock.continuousNow()) }
 
     private func endWork(at now: Double) {
+        lastWorkTickAt = nil
+        unengagedWorkIdle = 0
         lastAppSampleAt = nil
         recentAppSlices.removeAll()
         if let s = work.close(at: now) { log.append(span(s, isHold: openSpanIsHold)) }

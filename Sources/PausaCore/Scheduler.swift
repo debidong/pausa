@@ -176,6 +176,7 @@ public struct Scheduler {
   private var breakStartedAt: Double?
   private var countedIdleBreak: Double = 0
   private var countedIdleLong: Double = 0
+  private var unengagedIdle: Double = 0
   private var lastTick: Double?
   private var snoozes = 0
   private var holdStartedAt: Double?             // any hold (meeting / screen share / video) started
@@ -336,6 +337,9 @@ public struct Scheduler {
         consecutiveShortSkips = 0
         lastShortSkipped = false
       }
+      unengagedIdle = 0
+      countedIdleBreak = 0
+      countedIdleLong = 0
       presence = .active
       lastTick = now
     case .active:
@@ -343,28 +347,40 @@ public struct Scheduler {
     }
 
     if case .paused = manualPause {
-      if !engaged && !inReasons.contains(.outsideHours) && inputIdle >= config.idleFreezeThreshold {
-        sinceLongDone = max(0, sinceLongDone - countedIdleLong)
+      let hadPrevTick = lastTick != nil
+      let dt = lastTick.map { max(0, now - $0) } ?? 0
+      let idleNow = max(0, inputIdle)
+      if engaged || inReasons.contains(.outsideHours) {
+        unengagedIdle = 0
         countedIdleBreak = 0
         countedIdleLong = 0
-        presence = .away(kind: .idle, since: now - inputIdle)
-        lastTick = now
-        return []
+      } else {
+        let nextUnengaged = hadPrevTick ? min(unengagedIdle + dt, idleNow) : idleNow
+        if nextUnengaged >= config.idleFreezeThreshold {
+          sinceLongDone = max(0, sinceLongDone - countedIdleLong)
+          unengagedIdle = 0
+          countedIdleBreak = 0
+          countedIdleLong = 0
+          presence = .away(kind: .idle, since: now - nextUnengaged)
+          lastTick = now
+          return []
+        }
+        unengagedIdle = nextUnengaged
       }
-      let dt = lastTick.map { max(0, now - $0) } ?? 0
       lastTick = now
       if case .onBreak = phase { return [] }
       if !inReasons.contains(.outsideHours) {
         sinceLongDone += dt
-        if inputIdle < config.typingIdle || engaged {
+        if engaged {
           countedIdleLong = 0
         } else {
-          countedIdleLong += dt
+          countedIdleLong = min(countedIdleLong + dt, idleNow)
         }
       }
       return []
     }
 
+    let hadPrevTick = lastTick != nil
     let dt = lastTick.map { max(0, now - $0) } ?? 0
     lastTick = now
     var reasons = inReasons
@@ -386,6 +402,7 @@ public struct Scheduler {
     // can't happen mid-call anyway).
     let due = next.remaining <= 0
     if !reasons.isDisjoint(with: Self.holds) {
+      unengagedIdle = 0
       countedIdleBreak = 0
       countedIdleLong = 0
       if next.kind == .long { sinceBreak += dt }   // sitting counts toward "get up", not toward eyes
@@ -409,6 +426,7 @@ public struct Scheduler {
     }
 
     if let top = reasons.min() {
+      unengagedIdle = 0
       countedIdleBreak = 0
       countedIdleLong = 0
       phase = .paused(top)
@@ -417,24 +435,32 @@ public struct Scheduler {
     if case .paused = phase { phase = .working }
 
     // Unengaged zero-input at >= idleFreezeThreshold (5 min): roll back the unconfirmed tail and freeze.
-    if !engaged && inputIdle >= config.idleFreezeThreshold {
-      sinceBreak -= countedIdleBreak
-      sinceLongDone = max(0, sinceLongDone - countedIdleLong)
-      countedIdleBreak = 0
-      countedIdleLong = 0
-      clearTransientPhase()
-      presence = .away(kind: .idle, since: now - inputIdle)
-      return []
+    let idleNow = max(0, inputIdle)
+    if engaged {
+      unengagedIdle = 0
+    } else {
+      let nextUnengaged = hadPrevTick ? min(unengagedIdle + dt, idleNow) : idleNow
+      if nextUnengaged >= config.idleFreezeThreshold {
+        sinceBreak = max(0, sinceBreak - countedIdleBreak)
+        sinceLongDone = max(0, sinceLongDone - countedIdleLong)
+        unengagedIdle = 0
+        countedIdleBreak = 0
+        countedIdleLong = 0
+        clearTransientPhase()
+        presence = .away(kind: .idle, since: now - nextUnengaged)
+        return []
+      }
+      unengagedIdle = nextUnengaged
     }
 
     sinceBreak += dt
     sinceLongDone += dt
-    if inputIdle < config.typingIdle || engaged {
+    if engaged {
       countedIdleBreak = 0
       countedIdleLong = 0
     } else {
-      countedIdleBreak += dt
-      countedIdleLong += dt
+      countedIdleBreak = min(countedIdleBreak + dt, idleNow)
+      countedIdleLong = min(countedIdleLong + dt, idleNow)
     }
 
     let (kind, remaining, _) = next
@@ -485,6 +511,7 @@ public struct Scheduler {
   private mutating func startBreak(_ kind: BreakKind, now: Double) -> [Command] {
     let length = config.length(kind)
     breakStartedAt = now
+    unengagedIdle = 0
     countedIdleBreak = 0
     countedIdleLong = 0
     phase = .onBreak(kind, endsAt: now + length, planned: length)
@@ -603,6 +630,7 @@ public struct Scheduler {
   @discardableResult
   public mutating func away(_ kind: AwayKind, seconds: Double, now: Double) -> [Command] {
     lastTick = now
+    unengagedIdle = 0
     countedIdleBreak = 0
     countedIdleLong = 0
     if case .onBreak(let k, let endsAt, _) = phase {
@@ -723,6 +751,7 @@ public struct Scheduler {
   /// and can't be deferred (mustNotDefer); otherwise counting simply resumes.
   public mutating func manualPauseEnded(now: Double) -> [Command] {
     lastTick = now
+    unengagedIdle = 0
     countedIdleBreak = 0
     countedIdleLong = 0
     if case .onBreak = phase { return [] }
@@ -796,6 +825,7 @@ public struct Scheduler {
     consecutiveShortSkips = max(0, s.consecutiveShortSkips ?? 0)
     lastShortSkipped = s.lastShortSkipped ?? false
     breakStartedAt = nil
+    unengagedIdle = 0
     countedIdleBreak = 0
     countedIdleLong = 0
     snoozes = 0
@@ -821,7 +851,7 @@ public struct Scheduler {
     if case .onBreak = phase { return }
     sinceBreak = 0; breaksSinceLong = 0; snoozes = 0
     consecutiveSkips = 0; consecutiveShortSkips = 0; lastShortSkipped = false
-    countedIdleBreak = 0; countedIdleLong = 0
+    unengagedIdle = 0; countedIdleBreak = 0; countedIdleLong = 0
     sinceLongDone = 0; clearDeferral()
     lastTick = now
     phase = .working

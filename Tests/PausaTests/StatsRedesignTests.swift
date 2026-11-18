@@ -296,11 +296,12 @@ final class StatsRedesignTests: XCTestCase {
         app.finish(.completed)
 
         // Manual pause outside active hours clears automatically when the morning window opens.
+        let sysCal = Calendar.autoupdatingCurrent
         settings.schedule = PausaSchedule(
             enabled: true,
             rules: [PausaWindow(start: ClockTime(9, 0), end: ClockTime(18, 0), weekdays: Set(1...7))]
         )
-        clock.wall = cal.date(from: DateComponents(year: 2026, month: 11, day: 17, hour: 8, minute: 50))!
+        clock.wall = sysCal.date(from: DateComponents(year: 2026, month: 11, day: 17, hour: 8, minute: 50))!
         app.tick()
         app.pause()
         XCTAssertTrue(app.manualPaused)
