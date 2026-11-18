@@ -22,6 +22,9 @@
 		<string>fr</string>
 		<string>vi</string>
 		<string>th</string>
+		<string>de</string>
+		<string>ja</string>
+		<string>uk</string>
 	</array>
 	<key>CFBundleName</key>
 	<string>Pausa</string>

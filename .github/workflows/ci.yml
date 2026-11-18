@@ -32,7 +32,7 @@ jobs:
           import json, plistlib, sys
           with open("App/Info.plist", "rb") as fh:
               plist = plistlib.load(fh)
-          want = {"zh-Hans", "zh-Hant", "en", "es", "ru", "fr", "vi", "th"}
+          want = {"zh-Hans", "zh-Hant", "en", "es", "ru", "fr", "vi", "th", "de", "ja", "uk"}
           got = set(plist.get("CFBundleLocalizations", []))
           if got != want:
               sys.exit(f"CFBundleLocalizations mismatch: got={sorted(got)}, want={sorted(want)}")

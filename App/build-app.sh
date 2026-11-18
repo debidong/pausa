@@ -92,6 +92,9 @@ iconutil -c icns "$SET" -o "$RES/AppIcon.icns"
 if [ "${UPDATE_REPO_ICON:-}" = 1 ]; then
   cp "$RES/AppIcon.icns" App/AppIcon.icns   # refresh tracked icon only on explicit request
 fi
+# Focus filter text shown by System Settings (system language; English is the key, see FocusFilter.swift).
+# Copied before appintentsmetadataprocessor so Metadata.appintents can discover all .lproj tables.
+for d in App/*.lproj; do mkdir -p "$RES/$(basename "$d")" && cp "$d"/Localizable.strings "$RES/$(basename "$d")/"; done
 # Extract AppIntents metadata so macOS System Settings › Focus › Add Filter discovers PausaFocusFilter.
 FIRST_ARCH=$(echo "$ARCHS" | awk '{print $1}')
 CONST_LIST="$ICONTMP/swiftconstvalues.filelist"
@@ -149,8 +152,6 @@ cp App/about/about-pond-light.jpg App/about/about-pond-dark.jpg \
    App/about/InstrumentSerif-Regular.ttf App/about/Archivo-Light.ttf "$RES/"
 # Break quotes (App/rest-quotes.json -> Resources/rest-quotes.json).
 cp App/strings.json "$RES/strings.json"   # every UI string, all languages (see L10n.swift)
-# Focus filter text shown by System Settings (system language; English is the key, see FocusFilter.swift).
-for d in App/*.lproj; do mkdir -p "$RES/$(basename "$d")" && cp "$d"/Localizable.strings "$RES/$(basename "$d")/"; done
 cp App/rest-quotes.json "$RES/rest-quotes.json" && echo "quotes: $(grep -c '"id"' App/rest-quotes.json)"
 # Break chimes (提示音, Core/BreakChime.swift; scripts/make-chimes.swift): start and end, CAF LEI16 48 kHz stereo.
 mkdir -p "$RES/sounds" && cp App/sounds/break-long-start.caf App/sounds/break-long-end.caf \

@@ -108,14 +108,26 @@ final class SchedulerTests {
     XCTAssertEqual(s.next.remaining, 1190, accuracy: 2)
   }
 
-  /// No input for 10 minutes without a lock is not getting up: neither clock moves (Steve, 2026-10-20).
+  /// Sub-5-minute passive reading advances clocks without resetting long break; >=5 min unengaged idle
+  /// rolls back the unconfirmed tail and freezes without Ghost Breaks, crediting natural rest at >=10 min.
   func testIdleIsNotALongBreak() {
     var s = Scheduler()
-    _ = run(&s, from: 0, to: 1000, idle: 600)
+    _ = run(&s, from: 0, to: 1000, idle: 240)   // < 5 min passive reading: counts as active work
     XCTAssertEqual(s.next.kind, .short)
     XCTAssertEqual(s.next.remaining, 200, accuracy: 2)
     XCTAssertEqual(s.sinceLastLongBreak, 1000, accuracy: 2)
     XCTAssertEqual(s.remaining.long, 200 + 2 * 1200, accuracy: 3)
+
+    // Unengaged idle reaching 5 min rolls back the 5-min tail and freezes in .away(kind: .idle).
+    var s2 = Scheduler()
+    for t in 0...600 { _ = s2.tick(now: Double(t), reasons: [], inputIdle: 1) }
+    for t in 601...901 { _ = s2.tick(now: Double(t), reasons: [], inputIdle: Double(t - 601)) }
+    XCTAssertTrue(s2.isAway)
+    XCTAssertEqual(s2.sinceLastLongBreak, 601, accuracy: 2)
+    // Returning at 8 min (< 10 min) keeps long-break clock intact (not a long break!).
+    _ = s2.tick(now: 1081, reasons: [], inputIdle: 0)
+    XCTAssertTrue(!s2.isAway)
+    XCTAssertEqual(s2.sinceLastLongBreak, 601, accuracy: 2)
   }
 
   /// Ticks until the next break starts; returns its kind and start time.
@@ -155,9 +167,9 @@ final class SchedulerTests {
       if s.finish(.skipped, now: t).isEmpty { break }   // refused
       skipped += 1
     }
-    XCTAssertEqual(skipped, 2)                       // min 60 and 80; the one at min 100 can't be skipped
+    XCTAssertEqual(skipped, 2)                       // min 60 and 80; clamped to exact min 90 where skip is refused
     XCTAssertTrue(s.longMustNotDefer)
-    XCTAssertTrue(t < 105 * 60)
+    XCTAssertEqual(t, 90 * 60, accuracy: 5)
   }
 
   /// Snoozing past the limit counts as a skip: the long break is still owed.
@@ -176,7 +188,8 @@ final class SchedulerTests {
     var started: [BreakKind] = []
     var t = 0.0
     while t <= 1300 {
-      for c in s.tick(now: t, reasons: [], inputIdle: max(0, t - 100)) {
+      // Passive reading with occasional scroll/page turn under the 5-minute idle threshold still gets short breaks.
+      for c in s.tick(now: t, reasons: [], inputIdle: Double(Int(t) % 240)) {
         if case .startBreak(let k, _) = c { started.append(k) }
       }
       t += 1

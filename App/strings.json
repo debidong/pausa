@@ -7,7 +7,10 @@
     "ru": "Если дискомфорт в глазах не проходит, своевременно обратитесь к врачу. Pausa не заменяет профессиональное лечение.",
     "fr": "Si la gêne oculaire persiste, consultez rapidement un médecin. Pausa ne remplace pas un traitement professionnel.",
     "vi": "Nếu mắt vẫn tiếp tục khó chịu, hãy đi khám bác sĩ kịp thời. Pausa không thể thay thế việc điều trị chuyên môn.",
-    "th": "หากดวงตายังรู้สึกไม่สบายอย่างต่อเนื่อง โปรดไปพบแพทย์โดยเร็ว Pausa ไม่สามารถใช้แทนการรักษาจากผู้เชี่ยวชาญได้"
+    "th": "หากดวงตายังรู้สึกไม่สบายอย่างต่อเนื่อง โปรดไปพบแพทย์โดยเร็ว Pausa ไม่สามารถใช้แทนการรักษาจากผู้เชี่ยวชาญได้",
+    "de": "Bei anhaltenden Augenbeschwerden lass das bitte ärztlich abklären. Pausa ersetzt keine medizinische Behandlung.",
+    "ja": "目の不調が続く場合は、早めに眼科を受診してください。Pausa は医療行為や治療に代わるものではありません。",
+    "uk": "Якщо дискомфорт в очах не минає, вчасно зверніться до лікаря. Pausa не замінює фахового лікування."
   },
   "about.version": {
     "zh-Hans": "版本 %@",
@@ -17,7 +20,10 @@
     "ru": "Версия %@",
     "fr": "Version %@",
     "vi": "Phiên bản %@",
-    "th": "เวอร์ชัน %@"
+    "th": "เวอร์ชัน %@",
+    "de": "Version %@",
+    "ja": "バージョン %@",
+    "uk": "Версія %@"
   },
   "appearance.dark": {
     "zh-Hans": "深色",
@@ -27,7 +33,10 @@
     "ru": "Тёмная",
     "fr": "Sombre",
     "vi": "Tối",
-    "th": "มืด"
+    "th": "มืด",
+    "de": "Dunkel",
+    "ja": "ダーク",
+    "uk": "Темний"
   },
   "appearance.icon": {
     "zh-Hans": "图标",
@@ -37,7 +46,10 @@
     "ru": "Значок",
     "fr": "Icône",
     "vi": "Biểu tượng",
-    "th": "ไอคอน"
+    "th": "ไอคอน",
+    "de": "Symbol",
+    "ja": "アイコン",
+    "uk": "Іконка"
   },
   "appearance.light": {
     "zh-Hans": "浅色",
@@ -47,7 +59,10 @@
     "ru": "Светлая",
     "fr": "Clair",
     "vi": "Sáng",
-    "th": "สว่าง"
+    "th": "สว่าง",
+    "de": "Hell",
+    "ja": "ライト",
+    "uk": "Світлий"
   },
   "appearance.mode": {
     "zh-Hans": "配色模式",
@@ -57,7 +72,10 @@
     "ru": "Цветовой режим",
     "fr": "Mode de couleur",
     "vi": "Chế độ màu",
-    "th": "โหมดสี"
+    "th": "โหมดสี",
+    "de": "Farbmodus",
+    "ja": "外観モード",
+    "uk": "Кольоровий режим"
   },
   "appearance.previewBreak": {
     "zh-Hans": "休息界面",
@@ -67,7 +85,10 @@
     "ru": "Экран перерыва",
     "fr": "Écran de pause",
     "vi": "Màn hình nghỉ",
-    "th": "หน้าจอพัก"
+    "th": "หน้าจอพัก",
+    "de": "Pausenbildschirm",
+    "ja": "休憩画面",
+    "uk": "Екран перерви"
   },
   "appearance.system": {
     "zh-Hans": "跟随系统",
@@ -77,7 +98,10 @@
     "ru": "Авто",
     "fr": "Auto",
     "vi": "Tự động",
-    "th": "อัตโนมัติ"
+    "th": "อัตโนมัติ",
+    "de": "Automatisch",
+    "ja": "自動",
+    "uk": "Автоматично"
   },
   "appearance.theme": {
     "zh-Hans": "主题",
@@ -87,7 +111,10 @@
     "ru": "Тема",
     "fr": "Thème",
     "vi": "Chủ đề",
-    "th": "ธีม"
+    "th": "ธีม",
+    "de": "Thema",
+    "ja": "テーマ",
+    "uk": "Тема"
   },
   "appearance.title": {
     "zh-Hans": "外观",
@@ -97,7 +124,10 @@
     "ru": "Оформление",
     "fr": "Apparence",
     "vi": "Giao diện",
-    "th": "ลักษณะที่ปรากฏ"
+    "th": "ลักษณะที่ปรากฏ",
+    "de": "Erscheinungsbild",
+    "ja": "外観",
+    "uk": "Вигляд"
   },
   "autoPause.apps": {
     "zh-Hans": "使用指定应用时",
@@ -107,7 +137,10 @@
     "ru": "При работе в выбранных приложениях",
     "fr": "Avec certaines apps",
     "vi": "Khi dùng ứng dụng được chọn",
-    "th": "ขณะใช้แอปที่เลือก"
+    "th": "ขณะใช้แอปที่เลือก",
+    "de": "Bei bestimmten Apps",
+    "ja": "特定のアプリを使用中",
+    "uk": "Під час роботи у вибраних програмах"
   },
   "autoPause.apps.add": {
     "zh-Hans": "添加应用…",
@@ -117,7 +150,10 @@
     "ru": "Добавить приложение…",
     "fr": "Ajouter une app…",
     "vi": "Thêm ứng dụng…",
-    "th": "เพิ่มแอป…"
+    "th": "เพิ่มแอป…",
+    "de": "App hinzufügen…",
+    "ja": "アプリを追加…",
+    "uk": "Додати програму…"
   },
   "autoPause.condition": {
     "zh-Hans": "生效条件",
@@ -127,7 +163,10 @@
     "ru": "Когда приостанавливать",
     "fr": "Suspendre quand",
     "vi": "Tạm dừng khi",
-    "th": "หยุดเมื่อ"
+    "th": "หยุดเมื่อ",
+    "de": "Pausieren, wenn",
+    "ja": "一時停止する条件",
+    "uk": "Коли призупиняти"
   },
   "autoPause.condition.front": {
     "zh-Hans": "位于前台",
@@ -137,7 +176,10 @@
     "ru": "На переднем плане",
     "fr": "Au premier plan",
     "vi": "Ở phía trước",
-    "th": "อยู่ด้านหน้า"
+    "th": "อยู่ด้านหน้า",
+    "de": "Im Vordergrund",
+    "ja": "最前面にあるとき",
+    "uk": "На передньому плані"
   },
   "autoPause.condition.frontFullscreen": {
     "zh-Hans": "位于前台且全屏",
@@ -147,7 +189,10 @@
     "ru": "На переднем плане и во весь экран",
     "fr": "Au premier plan et en plein écran",
     "vi": "Ở phía trước và toàn màn hình",
-    "th": "อยู่ด้านหน้าและเต็มหน้าจอ"
+    "th": "อยู่ด้านหน้าและเต็มหน้าจอ",
+    "de": "Im Vordergrund und Vollbild",
+    "ja": "最前面かつフルスクリーン",
+    "uk": "На передньому плані й на весь екран"
   },
   "autoPause.condition.running": {
     "zh-Hans": "运行时",
@@ -157,7 +202,10 @@
     "ru": "Запущено",
     "fr": "Ouverte",
     "vi": "Đang chạy",
-    "th": "กำลังเปิดอยู่"
+    "th": "กำลังเปิดอยู่",
+    "de": "Geöffnet",
+    "ja": "起動中",
+    "uk": "Запущено"
   },
   "autoPause.focus": {
     "zh-Hans": "专注模式开启时",
@@ -167,7 +215,10 @@
     "ru": "Когда включён фокус",
     "fr": "Quand une concentration est active",
     "vi": "Khi bật Tập trung",
-    "th": "ขณะเปิดโฟกัส"
+    "th": "ขณะเปิดโฟกัส",
+    "de": "Wenn ein Fokus aktiv ist",
+    "ja": "集中モードがオンのとき",
+    "uk": "Коли увімкнено зосередження"
   },
   "autoPause.focus.setup": {
     "zh-Hans": "设置专注模式…",
@@ -177,7 +228,10 @@
     "ru": "Настроить фокусирование…",
     "fr": "Configurer la concentration…",
     "vi": "Thiết lập Tập trung…",
-    "th": "ตั้งค่าโฟกัส…"
+    "th": "ตั้งค่าโฟกัส…",
+    "de": "Fokus einrichten…",
+    "ja": "集中モードを設定…",
+    "uk": "Налаштувати зосередження…"
   },
   "autoPause.meetings": {
     "zh-Hans": "会议进行时",
@@ -187,7 +241,10 @@
     "ru": "Во время встреч",
     "fr": "Pendant les réunions",
     "vi": "Khi đang họp",
-    "th": "ระหว่างประชุม"
+    "th": "ระหว่างประชุม",
+    "de": "Während Meetings",
+    "ja": "通話・会議中",
+    "uk": "Під час зустрічей"
   },
   "autoPause.scope": {
     "zh-Hans": "暂停范围",
@@ -197,7 +254,10 @@
     "ru": "Какие перерывы приостанавливать",
     "fr": "Pauses à suspendre",
     "vi": "Lần nghỉ được tạm dừng",
-    "th": "การพักที่หยุดชั่วคราว"
+    "th": "การพักที่หยุดชั่วคราว",
+    "de": "Pausen pausieren",
+    "ja": "一時停止する休憩",
+    "uk": "Які перерви призупиняти"
   },
   "autoPause.scope.all": {
     "zh-Hans": "所有休息",
@@ -207,7 +267,10 @@
     "ru": "Все перерывы",
     "fr": "Toutes les pauses",
     "vi": "Tất cả lần nghỉ",
-    "th": "การพักทั้งหมด"
+    "th": "การพักทั้งหมด",
+    "de": "Alle Pausen",
+    "ja": "すべての休憩",
+    "uk": "Усі перерви"
   },
   "autoPause.scope.short": {
     "zh-Hans": "仅短休息",
@@ -217,7 +280,10 @@
     "ru": "Только короткие перерывы",
     "fr": "Pauses courtes uniquement",
     "vi": "Chỉ nghỉ ngắn",
-    "th": "เฉพาะพักสั้น"
+    "th": "เฉพาะพักสั้น",
+    "de": "Nur kurze Pausen",
+    "ja": "小休止のみ",
+    "uk": "Лише короткі перерви"
   },
   "autoPause.sharing": {
     "zh-Hans": "共享或录制屏幕时",
@@ -227,7 +293,10 @@
     "ru": "При демонстрации или записи экрана",
     "fr": "Pendant le partage ou l’enregistrement de l’écran",
     "vi": "Khi chia sẻ hoặc ghi màn hình",
-    "th": "ขณะแชร์หรือบันทึกหน้าจอ"
+    "th": "ขณะแชร์หรือบันทึกหน้าจอ",
+    "de": "Bei Bildschirmfreigabe oder -aufnahme",
+    "ja": "画面共有または画面収録中",
+    "uk": "Під час поширення або запису екрана"
   },
   "autoPause.title": {
     "zh-Hans": "暂停提醒",
@@ -237,7 +306,10 @@
     "ru": "Приостановка напоминаний",
     "fr": "Suspendre les rappels",
     "vi": "Tạm dừng nhắc nhở",
-    "th": "หยุดการแจ้งเตือนชั่วคราว"
+    "th": "หยุดการแจ้งเตือนชั่วคราว",
+    "de": "Erinnerungen pausieren",
+    "ja": "リマインダーの一時停止",
+    "uk": "Призупинення нагадувань"
   },
   "autoPause.typing": {
     "zh-Hans": "输入或拖移时延迟",
@@ -247,7 +319,10 @@
     "ru": "Ждать, пока вы печатаете или перетаскиваете",
     "fr": "Attendre pendant la saisie ou le glisser",
     "vi": "Chờ khi đang gõ hoặc kéo",
-    "th": "รอขณะพิมพ์หรือลาก"
+    "th": "รอขณะพิมพ์หรือลาก",
+    "de": "Beim Tippen oder Ziehen warten",
+    "ja": "入力やドラッグ中は待つ",
+    "uk": "Чекати під час набору або перетягування"
   },
   "autoPause.typing.detail": {
     "zh-Hans": "最长 2 分钟",
@@ -257,7 +332,10 @@
     "ru": "До 2 минут",
     "fr": "Jusqu’à 2 minutes",
     "vi": "Tối đa 2 phút",
-    "th": "ไม่เกิน 2 นาที"
+    "th": "ไม่เกิน 2 นาที",
+    "de": "Bis zu 2 Minuten",
+    "ja": "最大2分",
+    "uk": "До 2 хвилин"
   },
   "autoPause.video": {
     "zh-Hans": "播放视频时",
@@ -267,7 +345,10 @@
     "ru": "При воспроизведении видео",
     "fr": "Pendant la lecture vidéo",
     "vi": "Khi phát video",
-    "th": "ขณะเล่นวิดีโอ"
+    "th": "ขณะเล่นวิดีโอ",
+    "de": "Bei Videowiedergabe",
+    "ja": "動画の再生中",
+    "uk": "Під час відтворення відео"
   },
   "break.hardLine": {
     "zh-Hans": "已连续使用 %d 分钟，长休息不能再延后。",
@@ -277,7 +358,10 @@
     "ru": "Вы работаете уже %d минут. Длинный перерыв больше нельзя отложить.",
     "fr": "Vous travaillez depuis %d minutes. La pause longue ne peut plus être reportée.",
     "vi": "Bạn đã làm việc %d phút. Không thể hoãn lần nghỉ dài nữa.",
-    "th": "คุณใช้งานต่อเนื่องมา %d นาทีแล้ว เลื่อนพักยาวออกไปอีกไม่ได้"
+    "th": "คุณใช้งานต่อเนื่องมา %d นาทีแล้ว เลื่อนพักยาวออกไปอีกไม่ได้",
+    "de": "Nach %d Minuten am Stück lässt sich diese lange Pause nicht weiter aufschieben.",
+    "ja": "連続 %d 分に達したため、この長めの休憩はこれ以上延期できません。",
+    "uk": "Ви працюєте вже %d хвилин поспіль. Довгу перерву більше не можна відкласти."
   },
   "break.urgentPause": {
     "zh-Hans": "紧急暂停提醒",
@@ -287,7 +371,10 @@
     "ru": "Срочно: приостановить напоминания",
     "fr": "Urgence : suspendre les rappels",
     "vi": "Khẩn cấp: tạm dừng nhắc",
-    "th": "ด่วน: หยุดการแจ้งเตือนชั่วคราว"
+    "th": "ด่วน: หยุดการแจ้งเตือนชั่วคราว",
+    "de": "Dringend: Erinnerungen pausieren",
+    "ja": "緊急：リマインダーを一時停止",
+    "uk": "Терміново: призупинити нагадування"
   },
   "break.holdToSkip": {
     "zh-Hans": "长按 %@ 跳过",
@@ -297,7 +384,10 @@
     "ru": "Удерживайте %@, чтобы пропустить",
     "fr": "Maintenez %@ pour passer",
     "vi": "Nhấn giữ %@ để bỏ qua",
-    "th": "กด %@ ค้างเพื่อข้าม"
+    "th": "กด %@ ค้างเพื่อข้าม",
+    "de": "Zum Überspringen %@ halten",
+    "ja": "%@ を長押ししてスキップ",
+    "uk": "Утримуйте %@, щоб пропустити"
   },
   "break.short.ending": {
     "zh-Hans": "即将结束",
@@ -307,7 +397,10 @@
     "ru": "Почти всё",
     "fr": "Presque fini",
     "vi": "Sắp kết thúc",
-    "th": "ใกล้เสร็จแล้ว"
+    "th": "ใกล้เสร็จแล้ว",
+    "de": "Gleich geschafft",
+    "ja": "まもなく終了",
+    "uk": "Майже все"
   },
   "break.short.hint": {
     "zh-Hans": "看看远处",
@@ -317,7 +410,10 @@
     "ru": "Посмотрите вдаль",
     "fr": "Regardez au loin",
     "vi": "Nhìn ra xa",
-    "th": "มองไปไกลๆ"
+    "th": "มองไปไกลๆ",
+    "de": "Schau in die Ferne",
+    "ja": "遠くを見よう",
+    "uk": "Поглянь у далечінь"
   },
   "breaks.longLength": {
     "zh-Hans": "长休息时长",
@@ -327,7 +423,10 @@
     "ru": "Длительность длинного перерыва",
     "fr": "Durée de la pause longue",
     "vi": "Thời lượng nghỉ dài",
-    "th": "ระยะเวลาพักยาว"
+    "th": "ระยะเวลาพักยาว",
+    "de": "Dauer langer Pausen",
+    "ja": "長めの休憩の長さ",
+    "uk": "Тривалість довгої перерви"
   },
   "breaks.hardLine": {
     "zh-Hans": "长休息最晚间隔",
@@ -337,7 +436,10 @@
     "ru": "Максимум между длинными перерывами",
     "fr": "Délai maximal entre pauses longues",
     "vi": "Thời gian tối đa giữa hai lần nghỉ dài",
-    "th": "ระยะห่างสูงสุดระหว่างพักยาว"
+    "th": "ระยะห่างสูงสุดระหว่างพักยาว",
+    "de": "Maximaler Abstand langer Pausen",
+    "ja": "長めの休憩の最大間隔",
+    "uk": "Максимум між довгими перервами"
   },
   "breaks.hardLineOption": {
     "zh-Hans": "%d 分钟",
@@ -347,7 +449,10 @@
     "ru": "%d минут",
     "fr": "%d minutes",
     "vi": "%d phút",
-    "th": "%d นาที"
+    "th": "%d นาที",
+    "de": "%d Minuten",
+    "ja": "%d分",
+    "uk": "%d хвилин"
   },
   "breaks.preset": {
     "zh-Hans": "预设",
@@ -357,7 +462,10 @@
     "ru": "Набор",
     "fr": "Préréglage",
     "vi": "Cài sẵn",
-    "th": "ค่าที่ตั้งไว้"
+    "th": "ค่าที่ตั้งไว้",
+    "de": "Voreinstellung",
+    "ja": "プリセット",
+    "uk": "Шаблон"
   },
   "breaks.rhythm": {
     "zh-Hans": "休息节奏",
@@ -367,7 +475,10 @@
     "ru": "Ритм перерывов",
     "fr": "Rythme des pauses",
     "vi": "Lịch nghỉ",
-    "th": "จังหวะการพัก"
+    "th": "จังหวะการพัก",
+    "de": "Pausenrhythmus",
+    "ja": "休憩のリズム",
+    "uk": "Ритм перерв"
   },
   "breaks.shortLength": {
     "zh-Hans": "短休息时长",
@@ -377,7 +488,10 @@
     "ru": "Длительность короткого перерыва",
     "fr": "Durée de la pause courte",
     "vi": "Thời lượng nghỉ ngắn",
-    "th": "ระยะเวลาพักสั้น"
+    "th": "ระยะเวลาพักสั้น",
+    "de": "Dauer kurzer Pausen",
+    "ja": "小休止の長さ",
+    "uk": "Тривалість короткої перерви"
   },
   "breaks.sound": {
     "zh-Hans": "提示音",
@@ -387,7 +501,10 @@
     "ru": "Звук перерыва",
     "fr": "Son de la pause",
     "vi": "Âm báo nghỉ",
-    "th": "เสียงแจ้งเตือนการพัก"
+    "th": "เสียงแจ้งเตือนการพัก",
+    "de": "Hinweis-Ton",
+    "ja": "通知音",
+    "uk": "Звук перерви"
   },
   "breaks.sound.all": {
     "zh-Hans": "所有休息",
@@ -397,7 +514,10 @@
     "ru": "Все перерывы",
     "fr": "Toutes les pauses",
     "vi": "Mọi lần nghỉ",
-    "th": "การพักทุกครั้ง"
+    "th": "การพักทุกครั้ง",
+    "de": "Alle Pausen",
+    "ja": "すべての休憩",
+    "uk": "Усі перерви"
   },
   "breaks.sound.longOnly": {
     "zh-Hans": "仅长休息",
@@ -407,7 +527,10 @@
     "ru": "Только длинные перерывы",
     "fr": "Pauses longues uniquement",
     "vi": "Chỉ nghỉ dài",
-    "th": "เฉพาะพักยาว"
+    "th": "เฉพาะพักยาว",
+    "de": "Nur lange Pausen",
+    "ja": "長めの休憩のみ",
+    "uk": "Лише довгі перерви"
   },
   "breaks.sound.off": {
     "zh-Hans": "关闭",
@@ -417,7 +540,10 @@
     "ru": "Выключено",
     "fr": "Désactivé",
     "vi": "Tắt",
-    "th": "ปิด"
+    "th": "ปิด",
+    "de": "Aus",
+    "ja": "オフ",
+    "uk": "Вимкнено"
   },
   "common.cancel": {
     "zh-Hans": "取消",
@@ -427,7 +553,10 @@
     "ru": "Отменить",
     "fr": "Annuler",
     "vi": "Hủy",
-    "th": "ยกเลิก"
+    "th": "ยกเลิก",
+    "de": "Abbrechen",
+    "ja": "キャンセル",
+    "uk": "Скасувати"
   },
   "common.delete": {
     "zh-Hans": "删除",
@@ -437,7 +566,10 @@
     "ru": "Удалить",
     "fr": "Supprimer",
     "vi": "Xóa",
-    "th": "ลบ"
+    "th": "ลบ",
+    "de": "Löschen",
+    "ja": "削除",
+    "uk": "Видалити"
   },
   "common.done": {
     "zh-Hans": "完成",
@@ -447,7 +579,10 @@
     "ru": "Готово",
     "fr": "OK",
     "vi": "Xong",
-    "th": "เสร็จสิ้น"
+    "th": "เสร็จสิ้น",
+    "de": "Fertig",
+    "ja": "完了",
+    "uk": "Готово"
   },
   "common.edit": {
     "zh-Hans": "编辑",
@@ -457,7 +592,10 @@
     "ru": "Изменить",
     "fr": "Modifier",
     "vi": "Sửa",
-    "th": "แก้ไข"
+    "th": "แก้ไข",
+    "de": "Bearbeiten",
+    "ja": "編集",
+    "uk": "Змінити"
   },
   "common.ok": {
     "zh-Hans": "好",
@@ -467,7 +605,10 @@
     "ru": "ОК",
     "fr": "OK",
     "vi": "OK",
-    "th": "ตกลง"
+    "th": "ตกลง",
+    "de": "OK",
+    "ja": "OK",
+    "uk": "ОК"
   },
   "common.preview": {
     "zh-Hans": "预览",
@@ -477,7 +618,10 @@
     "ru": "Просмотр",
     "fr": "Aperçu",
     "vi": "Xem trước",
-    "th": "แสดงตัวอย่าง"
+    "th": "แสดงตัวอย่าง",
+    "de": "Vorschau",
+    "ja": "プレビュー",
+    "uk": "Перегляд"
   },
   "common.remove": {
     "zh-Hans": "移除",
@@ -487,7 +631,10 @@
     "ru": "Удалить",
     "fr": "Retirer",
     "vi": "Xóa",
-    "th": "เอาออก"
+    "th": "เอาออก",
+    "de": "Entfernen",
+    "ja": "削除",
+    "uk": "Вилучити"
   },
   "general.language": {
     "zh-Hans": "语言",
@@ -497,7 +644,10 @@
     "ru": "Язык",
     "fr": "Langue",
     "vi": "Ngôn ngữ",
-    "th": "ภาษา"
+    "th": "ภาษา",
+    "de": "Sprache",
+    "ja": "言語",
+    "uk": "Мова"
   },
   "general.menuBarShows": {
     "zh-Hans": "菜单栏显示",
@@ -507,7 +657,10 @@
     "ru": "В строке меню",
     "fr": "La barre des menus affiche",
     "vi": "Thanh menu hiển thị",
-    "th": "แถบเมนูแสดง"
+    "th": "แถบเมนูแสดง",
+    "de": "Menüleiste zeigt",
+    "ja": "メニューバーの表示",
+    "uk": "У смузі меню"
   },
   "general.openAtLogin": {
     "zh-Hans": "登录时打开",
@@ -517,7 +670,10 @@
     "ru": "Открывать при входе",
     "fr": "Ouvrir à la connexion",
     "vi": "Mở khi đăng nhập",
-    "th": "เปิดเมื่อเข้าสู่ระบบ"
+    "th": "เปิดเมื่อเข้าสู่ระบบ",
+    "de": "Bei der Anmeldung öffnen",
+    "ja": "ログイン時に開く",
+    "uk": "Відкривати під час входу"
   },
   "general.showInDock": {
     "zh-Hans": "在程序坞显示",
@@ -527,7 +683,10 @@
     "ru": "Показывать в Dock",
     "fr": "Afficher dans le Dock",
     "vi": "Hiển thị trong Dock",
-    "th": "แสดงใน Dock"
+    "th": "แสดงใน Dock",
+    "de": "Im Dock anzeigen",
+    "ja": "Dockに表示",
+    "uk": "Показувати в Dock"
   },
   "icon.glass": {
     "zh-Hans": "玻璃",
@@ -537,7 +696,10 @@
     "ru": "Стекло",
     "fr": "Verre",
     "vi": "Kính",
-    "th": "กระจก"
+    "th": "กระจก",
+    "de": "Glas",
+    "ja": "ガラス",
+    "uk": "Скло"
   },
   "icon.ink": {
     "zh-Hans": "水墨",
@@ -547,7 +709,10 @@
     "ru": "Тушь",
     "fr": "Encre",
     "vi": "Mực",
-    "th": "หมึก"
+    "th": "หมึก",
+    "de": "Tusche",
+    "ja": "水墨",
+    "uk": "Туш"
   },
   "key.space": {
     "zh-Hans": "空格",
@@ -557,7 +722,10 @@
     "ru": "Пробел",
     "fr": "Espace",
     "vi": "Phím cách",
-    "th": "Space"
+    "th": "Space",
+    "de": "Leertaste",
+    "ja": "スペース",
+    "uk": "Пробіл"
   },
   "language.system": {
     "zh-Hans": "跟随系统",
@@ -567,7 +735,10 @@
     "ru": "Как в системе",
     "fr": "Selon le système",
     "vi": "Theo hệ thống",
-    "th": "ตามระบบ"
+    "th": "ตามระบบ",
+    "de": "Systemstandard",
+    "ja": "システム設定に合わせる",
+    "uk": "Як у системі"
   },
   "menu.breakNow": {
     "zh-Hans": "现在休息",
@@ -577,7 +748,10 @@
     "ru": "Отдохнуть сейчас",
     "fr": "Pause maintenant",
     "vi": "Nghỉ ngay",
-    "th": "พักเดี๋ยวนี้"
+    "th": "พักเดี๋ยวนี้",
+    "de": "Jetzt pausieren",
+    "ja": "今すぐ休憩",
+    "uk": "Відпочити зараз"
   },
   "menu.iconHidden": {
     "zh-Hans": "菜单栏空间不足，Pausa 的图标被挡住了。您可以退出一些菜单栏应用。",
@@ -587,7 +761,10 @@
     "ru": "Строка меню заполнена, поэтому значок Pausa скрыт. Закройте несколько приложений в строке меню.",
     "fr": "La barre des menus est pleine, l’icône de Pausa est donc masquée. Quittez quelques apps de la barre des menus.",
     "vi": "Thanh menu đã đầy nên biểu tượng Pausa bị ẩn. Hãy thoát bớt vài ứng dụng trên thanh menu.",
-    "th": "แถบเมนูเต็ม ไอคอน Pausa จึงถูกซ่อน ลองปิดแอปบนแถบเมนูบางตัว"
+    "th": "แถบเมนูเต็ม ไอคอน Pausa จึงถูกซ่อน ลองปิดแอปบนแถบเมนูบางตัว",
+    "de": "Deine Menüleiste ist voll, sodass das Pausa-Symbol verdeckt wird. Beende ein paar Menüleisten-Apps.",
+    "ja": "メニューバーがいっぱいのため、Pausa のアイコンが隠れています。メニューバー常駐アプリをいくつか終了してみてください。",
+    "uk": "Смуга меню заповнена, тому іконку Pausa приховано. Закрийте кілька програм у смузі меню."
   },
   "menu.kind.long": {
     "zh-Hans": "长休息",
@@ -597,7 +774,10 @@
     "ru": "Длинный перерыв",
     "fr": "Pause longue",
     "vi": "Nghỉ dài",
-    "th": "พักยาว"
+    "th": "พักยาว",
+    "de": "Lange Pause",
+    "ja": "長めの休憩",
+    "uk": "Довга перерва"
   },
   "menu.kind.short": {
     "zh-Hans": "短休息",
@@ -607,7 +787,10 @@
     "ru": "Короткий перерыв",
     "fr": "Pause courte",
     "vi": "Nghỉ ngắn",
-    "th": "พักสั้น"
+    "th": "พักสั้น",
+    "de": "Kurze Pause",
+    "ja": "小休止",
+    "uk": "Коротка перерва"
   },
   "menu.next.long": {
     "zh-Hans": "%@ 后开始长休息，%@",
@@ -617,7 +800,10 @@
     "ru": "Длинный перерыв через %@, %@",
     "fr": "Pause longue dans %@, de %@",
     "vi": "%@ nữa nghỉ dài, %@",
-    "th": "พักยาวในอีก %@ นาน %@"
+    "th": "พักยาวในอีก %@ นาน %@",
+    "de": "Lange Pause in %@, für %@",
+    "ja": "あと %@ で長めの休憩（%@）",
+    "uk": "Довга перерва через %@, %@"
   },
   "menu.next.short": {
     "zh-Hans": "%@ 后开始短休息，%@",
@@ -627,7 +813,10 @@
     "ru": "Короткий перерыв через %@, %@",
     "fr": "Pause courte dans %@, de %@",
     "vi": "%@ nữa nghỉ ngắn, %@",
-    "th": "พักสั้นในอีก %@ นาน %@"
+    "th": "พักสั้นในอีก %@ นาน %@",
+    "de": "Kurze Pause in %@, für %@",
+    "ja": "あと %@ で小休止（%@）",
+    "uk": "Коротка перерва через %@, %@"
   },
   "menu.pause": {
     "zh-Hans": "暂停提醒",
@@ -637,7 +826,10 @@
     "ru": "Приостановить напоминания",
     "fr": "Suspendre les rappels",
     "vi": "Tạm dừng nhắc",
-    "th": "หยุดการแจ้งเตือนชั่วคราว"
+    "th": "หยุดการแจ้งเตือนชั่วคราว",
+    "de": "Erinnerungen pausieren",
+    "ja": "リマインダーを一時停止",
+    "uk": "Призупинити нагадування"
   },
   "menu.postpone": {
     "zh-Hans": "稍后 %d 分钟",
@@ -647,7 +839,10 @@
     "ru": "Отложить перерыв на %d мин",
     "fr": "Reporter la pause de %d min",
     "vi": "Hoãn nghỉ %d phút",
-    "th": "เลื่อนพัก %d นาที"
+    "th": "เลื่อนพัก %d นาที",
+    "de": "%d Min. später",
+    "ja": "%d分後に延期",
+    "uk": "Відкласти на %d хв"
   },
   "menu.quit": {
     "zh-Hans": "退出 Pausa",
@@ -657,7 +852,10 @@
     "ru": "Завершить Pausa",
     "fr": "Quitter Pausa",
     "vi": "Thoát Pausa",
-    "th": "ออกจาก Pausa"
+    "th": "ออกจาก Pausa",
+    "de": "Pausa beenden",
+    "ja": "Pausa を終了",
+    "uk": "Завершити Pausa"
   },
   "menu.resume": {
     "zh-Hans": "恢复提醒",
@@ -667,7 +865,10 @@
     "ru": "Возобновить напоминания",
     "fr": "Reprendre les rappels",
     "vi": "Tiếp tục nhắc",
-    "th": "เปิดการแจ้งเตือนอีกครั้ง"
+    "th": "เปิดการแจ้งเตือนอีกครั้ง",
+    "de": "Erinnerungen fortsetzen",
+    "ja": "リマインダーを再開",
+    "uk": "Відновити нагадування"
   },
   "menu.settings": {
     "zh-Hans": "设置",
@@ -677,7 +878,10 @@
     "ru": "Настройки",
     "fr": "Réglages",
     "vi": "Cài đặt",
-    "th": "การตั้งค่า"
+    "th": "การตั้งค่า",
+    "de": "Einstellungen",
+    "ja": "設定",
+    "uk": "Параметри"
   },
   "menu.welcome": {
     "zh-Hans": "Pausa 已在运行，下次休息在 %@ 后。",
@@ -687,7 +891,10 @@
     "ru": "Pausa работает. Следующий перерыв через %@.",
     "fr": "Pausa est lancé. Prochaine pause dans %@.",
     "vi": "Pausa đang chạy. Lần nghỉ tiếp theo sau %@.",
-    "th": "Pausa กำลังทำงาน พักครั้งถัดไปในอีก %@"
+    "th": "Pausa กำลังทำงาน พักครั้งถัดไปในอีก %@",
+    "de": "Pausa läuft. Nächste Pause in %@.",
+    "ja": "Pausa は動作中です。次の休憩は %@ 後です。",
+    "uk": "Pausa працює. Наступна перерва через %@."
   },
   "menuBarStyle.ring": {
     "zh-Hans": "进度圆环",
@@ -697,7 +904,10 @@
     "ru": "Кольцо прогресса",
     "fr": "Anneau de progression",
     "vi": "Vòng tiến độ",
-    "th": "วงแหวนความคืบหน้า"
+    "th": "วงแหวนความคืบหน้า",
+    "de": "Fortschrittsring",
+    "ja": "進捗リング",
+    "uk": "Кільце прогресу"
   },
   "menuBarStyle.timeLeft": {
     "zh-Hans": "剩余时间",
@@ -707,7 +917,10 @@
     "ru": "Оставшееся время",
     "fr": "Temps restant",
     "vi": "Thời gian còn lại",
-    "th": "เวลาที่เหลือ"
+    "th": "เวลาที่เหลือ",
+    "de": "Restzeit",
+    "ja": "残り時間",
+    "uk": "Залишок часу"
   },
   "pause.canPostpone": {
     "zh-Hans": "还可延后 %lld 分钟",
@@ -717,7 +930,10 @@
     "ru": "Можно отложить ещё на %lld мин",
     "fr": "Encore %lld min de report possible",
     "vi": "Còn có thể hoãn %lld phút",
-    "th": "เลื่อนได้อีก %lld นาที"
+    "th": "เลื่อนได้อีก %lld นาที",
+    "de": "Noch %lld Min. aufschiebbar",
+    "ja": "あと %lld 分延期できます",
+    "uk": "Можна відкласти ще на %lld хв"
   },
   "pause.focus": {
     "zh-Hans": "专注模式：%@",
@@ -727,7 +943,10 @@
     "ru": "Фокусирование: %@",
     "fr": "Concentration : %@",
     "vi": "Tập trung: %@",
-    "th": "โฟกัส: %@"
+    "th": "โฟกัส: %@",
+    "de": "Fokus: %@",
+    "ja": "集中モード：%@",
+    "uk": "Зосередження: %@"
   },
   "pause.focusNamed": {
     "zh-Hans": "专注模式「%@」：%@",
@@ -737,7 +956,10 @@
     "ru": "Фокусирование «%@»: %@",
     "fr": "Concentration « %@ » : %@",
     "vi": "Tập trung “%@”: %@",
-    "th": "โฟกัส “%@”: %@"
+    "th": "โฟกัส “%@”: %@",
+    "de": "Fokus „%@“: %@",
+    "ja": "集中モード「%@」：%@",
+    "uk": "Зосередження «%@»: %@"
   },
   "pause.frontmostApp": {
     "zh-Hans": "使用 %@ 期间，休息已延后",
@@ -747,7 +969,10 @@
     "ru": "Перерыв отложен, пока вы используете %@",
     "fr": "Pause reportée pendant que vous utilisez %@",
     "vi": "Đã hoãn nghỉ trong lúc bạn dùng %@",
-    "th": "เลื่อนการพักออกไประหว่างที่คุณใช้ %@"
+    "th": "เลื่อนการพักออกไประหว่างที่คุณใช้ %@",
+    "de": "Pause verschoben, solange du %@ nutzt",
+    "ja": "%@ の使用中は休憩を延期しています",
+    "uk": "Перерву відкладено, поки ви користуєтеся %@"
   },
   "pause.fullscreenApp": {
     "zh-Hans": "暂停中：%@ 全屏中",
@@ -757,7 +982,10 @@
     "ru": "Пауза: %@ в полноэкранном режиме",
     "fr": "En pause : %@ en plein écran",
     "vi": "Đã tạm dừng: %@ đang toàn màn hình",
-    "th": "หยุดชั่วคราว: %@ เต็มหน้าจออยู่"
+    "th": "หยุดชั่วคราว: %@ เต็มหน้าจออยู่",
+    "de": "Pausiert: %@ im Vollbild",
+    "ja": "一時停止中：%@ がフルスクリーン表示中",
+    "uk": "Пауза: %@ у повноекранному режимі"
   },
   "pause.longAfter": {
     "zh-Hans": "结束后补一次长休息",
@@ -767,7 +995,10 @@
     "ru": "После окончания — длинный перерыв",
     "fr": "Une longue pause suivra",
     "vi": "Sẽ nghỉ dài khi kết thúc",
-    "th": "จะมีพักยาวหนึ่งครั้งหลังจบ"
+    "th": "จะมีพักยาวหนึ่งครั้งหลังจบ",
+    "de": "Danach folgt eine lange Pause",
+    "ja": "終了後に長めの休憩が入ります",
+    "uk": "Після завершення — довга перерва"
   },
   "pause.meeting": {
     "zh-Hans": "暂停中：正在使用麦克风",
@@ -777,7 +1008,10 @@
     "ru": "Пауза: используется микрофон",
     "fr": "En pause : microphone utilisé",
     "vi": "Đã tạm dừng: đang dùng micrô",
-    "th": "หยุดชั่วคราว: กำลังใช้ไมโครโฟน"
+    "th": "หยุดชั่วคราว: กำลังใช้ไมโครโฟน",
+    "de": "Pausiert: Mikrofon aktiv",
+    "ja": "一時停止中：マイクを使用中",
+    "uk": "Пауза: використовується мікрофон"
   },
   "pause.recording": {
     "zh-Hans": "暂停中：正在录屏",
@@ -787,7 +1021,10 @@
     "ru": "Пауза: запись экрана",
     "fr": "En pause : enregistrement d’écran",
     "vi": "Đã tạm dừng: đang quay màn hình",
-    "th": "หยุดชั่วคราว: กำลังบันทึกหน้าจอ"
+    "th": "หยุดชั่วคราว: กำลังบันทึกหน้าจอ",
+    "de": "Pausiert: Bildschirmaufnahme",
+    "ja": "一時停止中：画面を収録中",
+    "uk": "Пауза: запис екрана"
   },
   "pause.recordingApp": {
     "zh-Hans": "暂停中：正在录屏（%@）",
@@ -797,7 +1034,10 @@
     "ru": "Пауза: запись экрана (%@)",
     "fr": "En pause : enregistrement d’écran (%@)",
     "vi": "Đã tạm dừng: đang quay màn hình (%@)",
-    "th": "หยุดชั่วคราว: กำลังบันทึกหน้าจอ (%@)"
+    "th": "หยุดชั่วคราว: กำลังบันทึกหน้าจอ (%@)",
+    "de": "Pausiert: Bildschirmaufnahme (%@)",
+    "ja": "一時停止中：画面を収録中（%@）",
+    "uk": "Пауза: запис екрана (%@)"
   },
   "pause.scope.postponed": {
     "zh-Hans": "休息已延后",
@@ -807,7 +1047,10 @@
     "ru": "перерывы отложены",
     "fr": "pauses reportées",
     "vi": "nghỉ đã được hoãn",
-    "th": "เลื่อนการพักออกไป"
+    "th": "เลื่อนการพักออกไป",
+    "de": "Pausen verschoben",
+    "ja": "休憩を延期中",
+    "uk": "перерви відкладено"
   },
   "pause.scope.shortPaused": {
     "zh-Hans": "短休息已暂停",
@@ -817,7 +1060,10 @@
     "ru": "короткие перерывы на паузе",
     "fr": "pauses courtes suspendues",
     "vi": "nghỉ ngắn đã tạm dừng",
-    "th": "หยุดพักสั้นชั่วคราว"
+    "th": "หยุดพักสั้นชั่วคราว",
+    "de": "kurze Pausen pausiert",
+    "ja": "小休止を一時停止中",
+    "uk": "короткі перерви на паузі"
   },
   "pause.sharing": {
     "zh-Hans": "暂停中：正在共享屏幕",
@@ -827,7 +1073,10 @@
     "ru": "Пауза: демонстрация экрана",
     "fr": "En pause : partage d’écran",
     "vi": "Đã tạm dừng: đang chia sẻ màn hình",
-    "th": "หยุดชั่วคราว: กำลังแชร์หน้าจอ"
+    "th": "หยุดชั่วคราว: กำลังแชร์หน้าจอ",
+    "de": "Pausiert: Bildschirmfreigabe",
+    "ja": "一時停止中：画面を共有中",
+    "uk": "Пауза: поширення екрана"
   },
   "pause.sharingApp": {
     "zh-Hans": "暂停中：正在共享屏幕（%@）",
@@ -837,7 +1086,10 @@
     "ru": "Пауза: демонстрация экрана (%@)",
     "fr": "En pause : partage d’écran (%@)",
     "vi": "Đã tạm dừng: đang chia sẻ màn hình (%@)",
-    "th": "หยุดชั่วคราว: กำลังแชร์หน้าจอ (%@)"
+    "th": "หยุดชั่วคราว: กำลังแชร์หน้าจอ (%@)",
+    "de": "Pausiert: Bildschirmfreigabe (%@)",
+    "ja": "一時停止中：画面を共有中（%@）",
+    "uk": "Пауза: поширення екрана (%@)"
   },
   "pause.source.fullscreen": {
     "zh-Hans": "暂停中：全屏中",
@@ -847,7 +1099,10 @@
     "ru": "Пауза: полноэкранный режим",
     "fr": "En pause : plein écran",
     "vi": "Đã tạm dừng: đang toàn màn hình",
-    "th": "หยุดชั่วคราว: เต็มหน้าจอ"
+    "th": "หยุดชั่วคราว: เต็มหน้าจอ",
+    "de": "Pausiert: Vollbild",
+    "ja": "一時停止中：フルスクリーン",
+    "uk": "Пауза: повноекранний режим"
   },
   "pause.source.meeting": {
     "zh-Hans": "暂停中：正在使用麦克风",
@@ -857,7 +1112,10 @@
     "ru": "Пауза: используется микрофон",
     "fr": "En pause : microphone utilisé",
     "vi": "Đã tạm dừng: đang dùng micrô",
-    "th": "หยุดชั่วคราว: กำลังใช้ไมโครโฟน"
+    "th": "หยุดชั่วคราว: กำลังใช้ไมโครโฟน",
+    "de": "Pausiert: Mikrofon aktiv",
+    "ja": "一時停止中：マイクを使用中",
+    "uk": "Пауза: використовується мікрофон"
   },
   "pause.source.sharing": {
     "zh-Hans": "暂停中：正在共享屏幕",
@@ -867,7 +1125,10 @@
     "ru": "Пауза: идёт демонстрация экрана",
     "fr": "En pause : partage d’écran en cours",
     "vi": "Đã tạm dừng: đang chia sẻ màn hình",
-    "th": "หยุดชั่วคราว: กำลังแชร์หน้าจอ"
+    "th": "หยุดชั่วคราว: กำลังแชร์หน้าจอ",
+    "de": "Pausiert: Bildschirm wird geteilt",
+    "ja": "一時停止中：画面を共有中",
+    "uk": "Пауза: триває поширення екрана"
   },
   "pause.source.video": {
     "zh-Hans": "暂停中：正在看视频",
@@ -877,7 +1138,10 @@
     "ru": "Пауза: вы смотрите видео",
     "fr": "En pause : vidéo en cours",
     "vi": "Đã tạm dừng: đang xem video",
-    "th": "หยุดชั่วคราว: กำลังดูวิดีโอ"
+    "th": "หยุดชั่วคราว: กำลังดูวิดีโอ",
+    "de": "Pausiert: Video läuft",
+    "ja": "一時停止中：動画を視聴中",
+    "uk": "Пауза: відтворюється відео"
   },
   "pause.typing": {
     "zh-Hans": "输入结束后休息",
@@ -887,7 +1151,10 @@
     "ru": "Перерыв после ввода",
     "fr": "Pause après la saisie",
     "vi": "Nghỉ sau khi gõ xong",
-    "th": "พักเมื่อพิมพ์เสร็จ"
+    "th": "พักเมื่อพิมพ์เสร็จ",
+    "de": "Pause nach dem Tippen",
+    "ja": "入力が終わったら休憩",
+    "uk": "Перерва після набору"
   },
   "pause.videoApp": {
     "zh-Hans": "暂停中：%@ 正在播放视频",
@@ -897,7 +1164,10 @@
     "ru": "Пауза: %@ воспроизводит видео",
     "fr": "En pause : %@ lit une vidéo",
     "vi": "Đã tạm dừng: %@ đang phát video",
-    "th": "หยุดชั่วคราว: %@ กำลังเล่นวิดีโอ"
+    "th": "หยุดชั่วคราว: %@ กำลังเล่นวิดีโอ",
+    "de": "Pausiert: %@ spielt ein Video ab",
+    "ja": "一時停止中：%@ で動画を再生中",
+    "uk": "Пауза: %@ відтворює відео"
   },
   "pause.videoResume": {
     "zh-Hans": "视频结束 2 分钟后继续",
@@ -907,7 +1177,10 @@
     "ru": "Продолжится через 2 мин после видео",
     "fr": "Reprend 2 minutes après la vidéo",
     "vi": "Tiếp tục 2 phút sau khi video kết thúc",
-    "th": "เริ่มต่อ 2 นาทีหลังวิดีโอจบ"
+    "th": "เริ่มต่อ 2 นาทีหลังวิดีโอจบ",
+    "de": "Geht 2 Min. nach Videoende weiter",
+    "ja": "動画終了の2分後に再開します",
+    "uk": "Продовжиться за 2 хв після відео"
   },
   "pause.waitUpTo": {
     "zh-Hans": "最多再等 %@",
@@ -917,7 +1190,10 @@
     "ru": "Ждём до %@",
     "fr": "Attente jusqu’à %@",
     "vi": "Chờ tối đa %@",
-    "th": "รอได้อีกไม่เกิน %@"
+    "th": "รอได้อีกไม่เกิน %@",
+    "de": "Wartet höchstens %@",
+    "ja": "最大 %@ 待機",
+    "uk": "Чекаємо до %@"
   },
   "photo.importFailed": {
     "zh-Hans": "无法使用这张图片",
@@ -927,7 +1203,10 @@
     "ru": "Не удаётся использовать это изображение",
     "fr": "Impossible d'utiliser cette image",
     "vi": "Không thể dùng ảnh này",
-    "th": "ใช้รูปภาพนี้ไม่ได้"
+    "th": "ใช้รูปภาพนี้ไม่ได้",
+    "de": "Dieses Bild kann nicht verwendet werden",
+    "ja": "この画像は使用できません",
+    "uk": "Не вдається використати це зображення"
   },
   "pill.countdown.short": {
     "zh-Hans": "短休息 · %d 秒后",
@@ -937,7 +1216,10 @@
     "ru": "Короткий перерыв через %d с",
     "fr": "Pause courte dans %d s",
     "vi": "Nghỉ ngắn sau %d giây",
-    "th": "พักสั้นใน %d วินาที"
+    "th": "พักสั้นใน %d วินาที",
+    "de": "Kurze Pause in %d s",
+    "ja": "小休止 · %d秒後",
+    "uk": "Коротка перерва через %d с"
   },
   "pill.countdown.long": {
     "zh-Hans": "长休息 · %d 秒后",
@@ -947,7 +1229,10 @@
     "ru": "Длинный перерыв через %d с",
     "fr": "Pause longue dans %d s",
     "vi": "Nghỉ dài sau %d giây",
-    "th": "พักยาวใน %d วินาที"
+    "th": "พักยาวใน %d วินาที",
+    "de": "Lange Pause in %d s",
+    "ja": "長めの休憩 · %d秒後",
+    "uk": "Довга перерва через %d с"
   },
   "pill.typing.short": {
     "zh-Hans": "短休息 · 输入结束后",
@@ -957,7 +1242,10 @@
     "ru": "Короткий перерыв после ввода",
     "fr": "Pause courte après la saisie",
     "vi": "Nghỉ ngắn sau khi gõ xong",
-    "th": "พักสั้นเมื่อพิมพ์เสร็จ"
+    "th": "พักสั้นเมื่อพิมพ์เสร็จ",
+    "de": "Kurze Pause nach dem Tippen",
+    "ja": "小休止 · 入力後に開始",
+    "uk": "Коротка перерва після набору"
   },
   "pill.typing.long": {
     "zh-Hans": "长休息 · 输入结束后",
@@ -967,7 +1255,10 @@
     "ru": "Длинный перерыв после ввода",
     "fr": "Pause longue après la saisie",
     "vi": "Nghỉ dài sau khi gõ xong",
-    "th": "พักยาวเมื่อพิมพ์เสร็จ"
+    "th": "พักยาวเมื่อพิมพ์เสร็จ",
+    "de": "Lange Pause nach dem Tippen",
+    "ja": "長めの休憩 · 入力後に開始",
+    "uk": "Довга перерва після набору"
   },
   "prebreak.postpone": {
     "zh-Hans": "稍后 %d 分钟",
@@ -977,7 +1268,10 @@
     "ru": "Через %d мин",
     "fr": "Dans %d min",
     "vi": "Hoãn %d phút",
-    "th": "เลื่อน %d นาที"
+    "th": "เลื่อน %d นาที",
+    "de": "%d Min. später",
+    "ja": "%d分後",
+    "uk": "За %d хв"
   },
   "prebreak.postponeUsedUp": {
     "zh-Hans": "不能再延后",
@@ -987,7 +1281,10 @@
     "ru": "Откладывать больше нельзя",
     "fr": "Plus de report possible",
     "vi": "Đã hết lượt hoãn",
-    "th": "เลื่อนไม่ได้แล้ว"
+    "th": "เลื่อนไม่ได้แล้ว",
+    "de": "Nicht mehr aufschiebbar",
+    "ja": "これ以上延期できません",
+    "uk": "Відкладати більше не можна"
   },
   "prebreak.skip": {
     "zh-Hans": "跳过休息",
@@ -997,7 +1294,10 @@
     "ru": "Пропустить перерыв",
     "fr": "Passer la pause",
     "vi": "Bỏ qua lần nghỉ",
-    "th": "ข้ามการพัก"
+    "th": "ข้ามการพัก",
+    "de": "Überspringen",
+    "ja": "休憩をスキップ",
+    "uk": "Пропустити перерву"
   },
   "prebreak.setting.card": {
     "en": "Show reminder at top of screen",
@@ -1007,7 +1307,10 @@
     "th": "แสดงการแจ้งเตือนที่ด้านบนของหน้าจอ",
     "vi": "Hiển thị lời nhắc ở đầu màn hình",
     "zh-Hans": "在屏幕顶部显示提醒",
-    "zh-Hant": "在螢幕頂部顯示提醒"
+    "zh-Hant": "在螢幕頂部顯示提醒",
+    "de": "Erinnerung am oberen Bildschirmrand zeigen",
+    "ja": "画面上部にリマインダーを表示",
+    "uk": "Показувати нагадування вгорі екрана"
   },
   "prebreak.setting.header": {
     "en": "Before a break",
@@ -1017,7 +1320,10 @@
     "th": "ก่อนถึงเวลาพัก",
     "vi": "Trước giờ nghỉ",
     "zh-Hans": "休息前提醒",
-    "zh-Hant": "休息前提醒"
+    "zh-Hant": "休息前提醒",
+    "de": "Vor einer Pause",
+    "ja": "休憩前の予告",
+    "uk": "Перед перервою"
   },
   "prebreak.setting.pill": {
     "en": "Show countdown near the pointer",
@@ -1027,7 +1333,10 @@
     "th": "แสดงการนับถอยหลังข้างตัวชี้เมาส์",
     "vi": "Hiển thị đếm ngược bên cạnh con trỏ",
     "zh-Hans": "在指针旁显示倒计时",
-    "zh-Hant": "在指標旁顯示倒數"
+    "zh-Hant": "在指標旁顯示倒數",
+    "de": "Countdown neben dem Zeiger zeigen",
+    "ja": "ポインタの近くにカウントダウンを表示",
+    "uk": "Показувати відлік поруч із вказівником"
   },
   "prebreak.startsIn.long": {
     "zh-Hans": "长休息将在 %d 秒后开始",
@@ -1037,7 +1346,10 @@
     "ru": "Длинный перерыв начнётся через %d с",
     "fr": "La pause longue commence dans %d s",
     "vi": "Nghỉ dài bắt đầu sau %d giây",
-    "th": "พักยาวจะเริ่มใน %d วินาที"
+    "th": "พักยาวจะเริ่มใน %d วินาที",
+    "de": "Lange Pause in %d s",
+    "ja": "あと %d 秒で長めの休憩",
+    "uk": "Довга перерва почнеться через %d с"
   },
   "prebreak.startsIn.short": {
     "zh-Hans": "短休息将在 %d 秒后开始",
@@ -1047,7 +1359,10 @@
     "ru": "Короткий перерыв начнётся через %d с",
     "fr": "La pause courte commence dans %d s",
     "vi": "Nghỉ ngắn bắt đầu sau %d giây",
-    "th": "พักสั้นจะเริ่มใน %d วินาที"
+    "th": "พักสั้นจะเริ่มใน %d วินาที",
+    "de": "Kurze Pause in %d s",
+    "ja": "あと %d 秒で小休止",
+    "uk": "Коротка перерва почнеться через %d с"
   },
   "preset.custom": {
     "zh-Hans": "自定义",
@@ -1057,7 +1372,10 @@
     "ru": "Свой",
     "fr": "Personnalisé",
     "vi": "Tùy chỉnh",
-    "th": "กำหนดเอง"
+    "th": "กำหนดเอง",
+    "de": "Eigene",
+    "ja": "カスタム",
+    "uk": "Власний"
   },
   "preset.eyes": {
     "zh-Hans": "频繁休息",
@@ -1067,7 +1385,10 @@
     "ru": "Частые перерывы",
     "fr": "Pauses fréquentes",
     "vi": "Nghỉ thường xuyên",
-    "th": "พักบ่อย"
+    "th": "พักบ่อย",
+    "de": "Häufige Pausen",
+    "ja": "こまめに休憩",
+    "uk": "Часті перерви"
   },
   "preset.gentle": {
     "zh-Hans": "较少休息",
@@ -1077,7 +1398,10 @@
     "ru": "Меньше перерывов",
     "fr": "Moins de pauses",
     "vi": "Nghỉ ít hơn",
-    "th": "พักน้อยลง"
+    "th": "พักน้อยลง",
+    "de": "Weniger Pausen",
+    "ja": "ゆったり休憩",
+    "uk": "Менше перерв"
   },
   "preset.standard": {
     "zh-Hans": "标准",
@@ -1087,7 +1411,10 @@
     "ru": "Стандарт",
     "fr": "Standard",
     "vi": "Tiêu chuẩn",
-    "th": "มาตรฐาน"
+    "th": "มาตรฐาน",
+    "de": "Standard",
+    "ja": "標準",
+    "uk": "Стандарт"
   },
   "rhythm.line1": {
     "zh-Hans": "每{1}休息一次，",
@@ -1097,19 +1424,26 @@
     "ru": "Перерыв каждые{1},",
     "fr": "Faites une pause toutes les{1},",
     "vi": "Nghỉ mỗi{1},",
-    "th": "พักทุก{1}"
+    "th": "พักทุก{1}",
+    "de": "Mach alle{1}eine Pause,",
+    "ja": "{1}ごとに休憩し、",
+    "uk": "Перерва кожні{1},"
   },
   "rhythm.line2.few": {
-    "ru": "а длинный — после{1}коротких перерывов."
+    "ru": "а длинный — после{1}коротких перерывов.",
+    "uk": "а довга — після{1}коротких перерв."
   },
   "rhythm.line2.many": {
-    "ru": "а длинный — после{1}коротких перерывов."
+    "ru": "а длинный — после{1}коротких перерывов.",
+    "uk": "а довга — після{1}коротких перерв."
   },
   "rhythm.line2.one": {
     "en": "and a long break after{1}short break.",
     "es": "y haz un descanso largo tras{1}descanso corto.",
     "ru": "а длинный — после{1}короткого перерыва.",
-    "fr": "et une pause longue après{1}pause courte."
+    "fr": "et une pause longue après{1}pause courte.",
+    "de": "und eine lange Pause nach{1}kurzen Pause.",
+    "uk": "а довга — після{1}короткої перерви."
   },
   "rhythm.line2.other": {
     "zh-Hans": "短休息{1}次后进行一次长休息。",
@@ -1119,7 +1453,10 @@
     "ru": "а длинный — после{1}коротких перерывов.",
     "fr": "et une pause longue après{1}pauses courtes.",
     "vi": "nghỉ dài sau{1}lần nghỉ ngắn.",
-    "th": "และพักยาวหลังพักสั้นครบ{1}ครั้ง"
+    "th": "และพักยาวหลังพักสั้นครบ{1}ครั้ง",
+    "de": "und eine lange Pause nach{1}kurzen Pausen.",
+    "ja": "小休止{1}回のあとに長めの休憩をとる。",
+    "uk": "а довга — після{1}коротких перерв."
   },
   "schedule.active": {
     "zh-Hans": "提醒时段",
@@ -1129,7 +1466,10 @@
     "ru": "Активные часы",
     "fr": "Heures actives",
     "vi": "Khung giờ nhắc",
-    "th": "ช่วงเวลาเตือน"
+    "th": "ช่วงเวลาเตือน",
+    "de": "Aktive Zeiten",
+    "ja": "リマインド時間帯",
+    "uk": "Активні години"
   },
   "schedule.activeOnly": {
     "zh-Hans": "仅在指定时段提醒",
@@ -1139,7 +1479,10 @@
     "ru": "Напоминать только в активные часы",
     "fr": "Rappeler seulement pendant les heures actives",
     "vi": "Chỉ nhắc trong khung giờ đã đặt",
-    "th": "เตือนเฉพาะในช่วงเวลาเตือน"
+    "th": "เตือนเฉพาะในช่วงเวลาเตือน",
+    "de": "Nur in aktiven Zeiten erinnern",
+    "ja": "指定した時間帯のみリマインド",
+    "uk": "Нагадувати лише в активні години"
   },
   "schedule.allDay": {
     "zh-Hans": "全天",
@@ -1149,7 +1492,10 @@
     "ru": "Весь день",
     "fr": "Toute la journée",
     "vi": "Cả ngày",
-    "th": "ทั้งวัน"
+    "th": "ทั้งวัน",
+    "de": "Ganztägig",
+    "ja": "終日",
+    "uk": "Увесь день"
   },
   "schedule.crossesMidnight": {
     "zh-Hans": "结束时间早于开始时间，表示跨过午夜。",
@@ -1159,7 +1505,10 @@
     "ru": "Конец раньше начала: часы переходят через полночь.",
     "fr": "La fin précède le début : les heures passent minuit.",
     "vi": "Giờ kết thúc sớm hơn giờ bắt đầu: khung giờ qua nửa đêm.",
-    "th": "เวลาสิ้นสุดอยู่ก่อนเวลาเริ่ม: ช่วงเวลานี้ข้ามเที่ยงคืน"
+    "th": "เวลาสิ้นสุดอยู่ก่อนเวลาเริ่ม: ช่วงเวลานี้ข้ามเที่ยงคืน",
+    "de": "Liegt das Ende vor dem Beginn, reicht der Zeitraum über Mitternacht.",
+    "ja": "終了時刻が開始時刻より前の場合、翌日へまたぐ時間帯として扱われます。",
+    "uk": "Кінець раніше за початок означає перехід через північ."
   },
   "schedule.date": {
     "zh-Hans": "日期",
@@ -1169,7 +1518,10 @@
     "ru": "Дата",
     "fr": "Date",
     "vi": "Ngày",
-    "th": "วันที่"
+    "th": "วันที่",
+    "de": "Datum",
+    "ja": "日付",
+    "uk": "Дата"
   },
   "schedule.dates": {
     "zh-Hans": "特定日期",
@@ -1179,7 +1531,10 @@
     "ru": "Отдельные даты",
     "fr": "Dates précises",
     "vi": "Ngày cụ thể",
-    "th": "วันที่เฉพาะ"
+    "th": "วันที่เฉพาะ",
+    "de": "Bestimmte Tage",
+    "ja": "特定の日",
+    "uk": "Окремі дати"
   },
   "schedule.dates.add": {
     "zh-Hans": "添加日期…",
@@ -1189,7 +1544,10 @@
     "ru": "Добавить дату…",
     "fr": "Ajouter une date…",
     "vi": "Thêm ngày…",
-    "th": "เพิ่มวันที่…"
+    "th": "เพิ่มวันที่…",
+    "de": "Datum hinzufügen…",
+    "ja": "日付を追加…",
+    "uk": "Додати дату…"
   },
   "schedule.dates.delete": {
     "zh-Hans": "删除日期",
@@ -1199,7 +1557,10 @@
     "ru": "Удалить дату",
     "fr": "Supprimer la date",
     "vi": "Xóa ngày",
-    "th": "ลบวันที่"
+    "th": "ลบวันที่",
+    "de": "Datum löschen",
+    "ja": "日付を削除",
+    "uk": "Видалити дату"
   },
   "schedule.dates.footer": {
     "zh-Hans": "特定日期优先于每周设置。",
@@ -1209,7 +1570,10 @@
     "ru": "Отдельные даты важнее недельного расписания.",
     "fr": "Les dates précises priment sur les réglages hebdomadaires.",
     "vi": "Ngày cụ thể được ưu tiên hơn cài đặt hằng tuần.",
-    "th": "วันที่เฉพาะมีผลเหนือการตั้งค่ารายสัปดาห์"
+    "th": "วันที่เฉพาะมีผลเหนือการตั้งค่ารายสัปดาห์",
+    "de": "Bestimmte Tage haben Vorrang vor deinem Wochenplan.",
+    "ja": "特定の日の設定は、毎週のスケジュールより優先されます。",
+    "uk": "Окремі дати мають пріоритет над тижневим розкладом."
   },
   "schedule.day.off": {
     "zh-Hans": "休息",
@@ -1219,7 +1583,10 @@
     "ru": "Выходной",
     "fr": "Jour de congé",
     "vi": "Ngày nghỉ",
-    "th": "วันหยุด"
+    "th": "วันหยุด",
+    "de": "Frei",
+    "ja": "休み",
+    "uk": "Вихідний"
   },
   "schedule.day.work": {
     "zh-Hans": "上班",
@@ -1229,7 +1596,10 @@
     "ru": "Рабочий день",
     "fr": "Jour travaillé",
     "vi": "Ngày làm việc",
-    "th": "วันทำงาน"
+    "th": "วันทำงาน",
+    "de": "Arbeitstag",
+    "ja": "稼働日",
+    "uk": "Робочий день"
   },
   "schedule.dayIs": {
     "zh-Hans": "这一天",
@@ -1239,7 +1609,10 @@
     "ru": "Этот день —",
     "fr": "Ce jour est",
     "vi": "Ngày này là",
-    "th": "วันนี้เป็น"
+    "th": "วันนี้เป็น",
+    "de": "Dieser Tag ist",
+    "ja": "この日は",
+    "uk": "Цей день —"
   },
   "schedule.end": {
     "zh-Hans": "结束",
@@ -1249,7 +1622,10 @@
     "ru": "Конец",
     "fr": "Fin",
     "vi": "Kết thúc",
-    "th": "สิ้นสุด"
+    "th": "สิ้นสุด",
+    "de": "Ende",
+    "ja": "終了",
+    "uk": "Кінець"
   },
   "schedule.hours.add": {
     "zh-Hans": "添加时段…",
@@ -1259,7 +1635,10 @@
     "ru": "Добавить часы…",
     "fr": "Ajouter des heures…",
     "vi": "Thêm khung giờ…",
-    "th": "เพิ่มช่วงเวลา…"
+    "th": "เพิ่มช่วงเวลา…",
+    "de": "Zeitraum hinzufügen…",
+    "ja": "時間帯を追加…",
+    "uk": "Додати години…"
   },
   "schedule.hours.delete": {
     "zh-Hans": "删除时段",
@@ -1269,7 +1648,10 @@
     "ru": "Удалить часы",
     "fr": "Supprimer les heures",
     "vi": "Xóa khung giờ",
-    "th": "ลบช่วงเวลา"
+    "th": "ลบช่วงเวลา",
+    "de": "Zeitraum löschen",
+    "ja": "時間帯を削除",
+    "uk": "Видалити години"
   },
   "schedule.quiet": {
     "zh-Hans": "免打扰时段",
@@ -1279,7 +1661,10 @@
     "ru": "Тихие часы",
     "fr": "Heures calmes",
     "vi": "Khung giờ yên lặng",
-    "th": "ช่วงเวลาห้ามรบกวน"
+    "th": "ช่วงเวลาห้ามรบกวน",
+    "de": "Ruhezeiten",
+    "ja": "おやすみ時間帯",
+    "uk": "Тихі години"
   },
   "schedule.repeat": {
     "zh-Hans": "重复",
@@ -1289,7 +1674,10 @@
     "ru": "Повтор",
     "fr": "Répéter",
     "vi": "Lặp lại",
-    "th": "ทำซ้ำ"
+    "th": "ทำซ้ำ",
+    "de": "Wiederholen",
+    "ja": "繰り返し",
+    "uk": "Повторення"
   },
   "schedule.repeat.everyDay": {
     "zh-Hans": "每天",
@@ -1299,7 +1687,10 @@
     "ru": "Каждый день",
     "fr": "Tous les jours",
     "vi": "Hằng ngày",
-    "th": "ทุกวัน"
+    "th": "ทุกวัน",
+    "de": "Täglich",
+    "ja": "毎日",
+    "uk": "Щодня"
   },
   "schedule.repeat.never": {
     "zh-Hans": "从不",
@@ -1309,7 +1700,10 @@
     "ru": "Никогда",
     "fr": "Jamais",
     "vi": "Không bao giờ",
-    "th": "ไม่ทำซ้ำ"
+    "th": "ไม่ทำซ้ำ",
+    "de": "Nie",
+    "ja": "しない",
+    "uk": "Ніколи"
   },
   "schedule.repeat.weekdays": {
     "zh-Hans": "工作日",
@@ -1319,7 +1713,10 @@
     "ru": "Будни",
     "fr": "Jours ouvrés",
     "vi": "Ngày làm việc",
-    "th": "วันธรรมดา"
+    "th": "วันธรรมดา",
+    "de": "Werktags",
+    "ja": "平日",
+    "uk": "У будні"
   },
   "schedule.repeat.weekends": {
     "zh-Hans": "周末",
@@ -1329,7 +1726,10 @@
     "ru": "Выходные",
     "fr": "Le week-end",
     "vi": "Cuối tuần",
-    "th": "วันหยุดสุดสัปดาห์"
+    "th": "วันหยุดสุดสัปดาห์",
+    "de": "Am Wochenende",
+    "ja": "週末",
+    "uk": "У вихідні"
   },
   "schedule.start": {
     "zh-Hans": "开始",
@@ -1339,7 +1739,10 @@
     "ru": "Начало",
     "fr": "Début",
     "vi": "Bắt đầu",
-    "th": "เริ่ม"
+    "th": "เริ่ม",
+    "de": "Beginn",
+    "ja": "開始",
+    "uk": "Початок"
   },
   "settings.tab.about": {
     "zh-Hans": "关于",
@@ -1349,7 +1752,10 @@
     "ru": "О программе",
     "fr": "À propos",
     "vi": "Giới thiệu",
-    "th": "เกี่ยวกับ"
+    "th": "เกี่ยวกับ",
+    "de": "Über",
+    "ja": "情報",
+    "uk": "Про застосунок"
   },
   "settings.tab.breaks": {
     "zh-Hans": "休息",
@@ -1359,7 +1765,10 @@
     "ru": "Перерывы",
     "fr": "Pauses",
     "vi": "Nghỉ",
-    "th": "การพัก"
+    "th": "การพัก",
+    "de": "Pausen",
+    "ja": "休憩",
+    "uk": "Перерви"
   },
   "settings.tab.general": {
     "zh-Hans": "通用",
@@ -1369,7 +1778,10 @@
     "ru": "Основные",
     "fr": "Général",
     "vi": "Cài đặt chung",
-    "th": "ทั่วไป"
+    "th": "ทั่วไป",
+    "de": "Allgemein",
+    "ja": "一般",
+    "uk": "Загальні"
   },
   "settings.tab.stats": {
     "zh-Hans": "统计",
@@ -1379,19 +1791,26 @@
     "ru": "Статистика",
     "fr": "Statistiques",
     "vi": "Thống kê",
-    "th": "สถิติ"
+    "th": "สถิติ",
+    "de": "Statistik",
+    "ja": "統計",
+    "uk": "Статистика"
   },
   "stats.appSkipped.few": {
-    "ru": "%d пропуска"
+    "ru": "%d пропуска",
+    "uk": "%d пропуски"
   },
   "stats.appSkipped.many": {
-    "ru": "%d пропусков"
+    "ru": "%d пропусков",
+    "uk": "%d пропусків"
   },
   "stats.appSkipped.one": {
     "en": "%d skip",
     "es": "%d omitido",
     "ru": "%d пропуск",
-    "fr": "%d ignorée"
+    "fr": "%d ignorée",
+    "de": "%d übersprungen",
+    "uk": "%d пропуск"
   },
   "stats.appSkipped.other": {
     "zh-Hans": "跳过 %d 次",
@@ -1401,7 +1820,10 @@
     "ru": "%d пропуска",
     "fr": "%d ignorées",
     "vi": "Bỏ qua %d",
-    "th": "ข้าม %d ครั้ง"
+    "th": "ข้าม %d ครั้ง",
+    "de": "%d übersprungen",
+    "ja": "スキップ %d回",
+    "uk": "%d пропуски"
   },
   "stats.backToToday": {
     "zh-Hans": "回到今天",
@@ -1411,7 +1833,10 @@
     "ru": "На сегодня",
     "fr": "Aujourd’hui",
     "vi": "Về hôm nay",
-    "th": "กลับไปวันนี้"
+    "th": "กลับไปวันนี้",
+    "de": "Zurück zu heute",
+    "ja": "今日に戻る",
+    "uk": "До сьогодні"
   },
   "stats.clear.confirm": {
     "zh-Hans": "清除",
@@ -1421,7 +1846,10 @@
     "ru": "Удалить",
     "fr": "Effacer",
     "vi": "Xóa",
-    "th": "ล้าง"
+    "th": "ล้าง",
+    "de": "Löschen",
+    "ja": "消去",
+    "uk": "Очистити"
   },
   "stats.clear.message": {
     "zh-Hans": "这台 Mac 上的休息记录将永久删除。",
@@ -1431,7 +1859,10 @@
     "ru": "История перерывов на этом Mac будет удалена. Это действие нельзя отменить.",
     "fr": "L’historique des pauses enregistré sur ce Mac sera supprimé. Cette action est irréversible.",
     "vi": "Lịch sử nghỉ trên máy Mac này sẽ bị xóa và không thể khôi phục.",
-    "th": "ประวัติการพักใน Mac เครื่องนี้จะถูกลบและกู้คืนไม่ได้"
+    "th": "ประวัติการพักใน Mac เครื่องนี้จะถูกลบและกู้คืนไม่ได้",
+    "de": "Der Pausenverlauf auf diesem Mac wird dauerhaft gelöscht.",
+    "ja": "この Mac に保存されている休憩履歴を完全に消去します。",
+    "uk": "Історію перерв на цьому Mac буде остаточно видалено."
   },
   "stats.clear.title": {
     "zh-Hans": "清除所有休息记录？",
@@ -1441,7 +1872,10 @@
     "ru": "Удалить всю статистику?",
     "fr": "Effacer toutes les statistiques ?",
     "vi": "Xóa toàn bộ thống kê?",
-    "th": "ล้างสถิติทั้งหมดใช่ไหม"
+    "th": "ล้างสถิติทั้งหมดใช่ไหม",
+    "de": "Gesamten Pausenverlauf löschen?",
+    "ja": "すべての休憩履歴を消去しますか？",
+    "uk": "Очистити всю історію перерв?"
   },
   "stats.data.clear": {
     "zh-Hans": "清除记录…",
@@ -1451,7 +1885,10 @@
     "ru": "Удалить данные…",
     "fr": "Effacer les données…",
     "vi": "Xóa dữ liệu…",
-    "th": "ล้างข้อมูล…"
+    "th": "ล้างข้อมูล…",
+    "de": "Verlauf löschen…",
+    "ja": "履歴を消去…",
+    "uk": "Очистити історію…"
   },
   "stats.empty.message": {
     "zh-Hans": "完成第一次休息后，这里会显示您每天的工作时长和休息情况。",
@@ -1461,7 +1898,10 @@
     "ru": "После первого перерыва здесь появится ваше время работы и перерывы за каждый день.",
     "fr": "Après votre première pause, vous verrez ici votre temps de travail et vos pauses de chaque jour.",
     "vi": "Sau lần nghỉ đầu tiên, bạn sẽ thấy thời gian làm việc và các lần nghỉ mỗi ngày ở đây.",
-    "th": "หลังจากพักครั้งแรก คุณจะเห็นเวลาทำงานและการพักของแต่ละวันที่นี่"
+    "th": "หลังจากพักครั้งแรก คุณจะเห็นเวลาทำงานและการพักของแต่ละวันที่นี่",
+    "de": "Nach deiner ersten Pause siehst du hier deine tägliche Bildschirmzeit und deine Pausen.",
+    "ja": "最初の休憩を終えると、日々の作業時間と休憩の記録がここに表示されます。",
+    "uk": "Після першої перерви тут з’явиться ваш щоденний час роботи та статистика перерв."
   },
   "stats.empty.title": {
     "zh-Hans": "还没有休息记录",
@@ -1471,7 +1911,10 @@
     "ru": "Перерывов пока нет",
     "fr": "Aucune pause pour l’instant",
     "vi": "Chưa có lần nghỉ nào",
-    "th": "ยังไม่มีการพัก"
+    "th": "ยังไม่มีการพัก",
+    "de": "Noch keine Pausen",
+    "ja": "まだ休憩の記録がありません",
+    "uk": "Перерв поки немає"
   },
   "stats.footer.retention": {
     "zh-Hans": "本地保留最近 30 天记录",
@@ -1481,7 +1924,10 @@
     "ru": "Хранится локально 30 дней",
     "fr": "Conservé localement 30 jours",
     "vi": "Lưu cục bộ trong 30 ngày",
-    "th": "เก็บไว้ในเครื่อง 30 วันล่าสุด"
+    "th": "เก็บไว้ในเครื่อง 30 วันล่าสุด",
+    "de": "Lokal für 30 Tage gespeichert",
+    "ja": "直近30日間をこのMac内に保存",
+    "uk": "Зберігається локально 30 днів"
   },
   "stats.longestStretch": {
     "zh-Hans": "最长连续",
@@ -1491,7 +1937,10 @@
     "ru": "Макс. подряд",
     "fr": "Plus longue session",
     "vi": "Liên tục lâu nhất",
-    "th": "ต่อเนื่องนานสุด"
+    "th": "ต่อเนื่องนานสุด",
+    "de": "Längster Abschnitt",
+    "ja": "最長連続",
+    "uk": "Найдовше поспіль"
   },
   "stats.range.30d": {
     "zh-Hans": "30 天",
@@ -1501,7 +1950,10 @@
     "ru": "30 дн",
     "fr": "30 j",
     "vi": "30 ngày",
-    "th": "30 วัน"
+    "th": "30 วัน",
+    "de": "30 T",
+    "ja": "30日",
+    "uk": "30 дн"
   },
   "stats.range.7d": {
     "zh-Hans": "7 天",
@@ -1511,7 +1963,10 @@
     "ru": "7 дн",
     "fr": "7 j",
     "vi": "7 ngày",
-    "th": "7 วัน"
+    "th": "7 วัน",
+    "de": "7 T",
+    "ja": "7日",
+    "uk": "7 дн"
   },
   "stats.score": {
     "zh-Hans": "护眼节律分",
@@ -1521,7 +1976,10 @@
     "ru": "Ритм отдыха",
     "fr": "Score de rythme",
     "vi": "Điểm nhịp nghỉ",
-    "th": "คะแนนจังหวะพักสายตา"
+    "th": "คะแนนจังหวะพักสายตา",
+    "de": "Rhythmuswert",
+    "ja": "リズムスコア",
+    "uk": "Оцінка ритму"
   },
   "stats.screenTime": {
     "zh-Hans": "屏幕用眼",
@@ -1531,7 +1989,10 @@
     "ru": "Экранное время",
     "fr": "Temps d’écran",
     "vi": "Thời gian nhìn màn hình",
-    "th": "เวลาหน้าจอ"
+    "th": "เวลาหน้าจอ",
+    "de": "Bildschirmzeit",
+    "ja": "画面時間",
+    "uk": "Екранний час"
   },
   "stats.section.apps": {
     "zh-Hans": "应用用眼",
@@ -1541,7 +2002,10 @@
     "ru": "Приложения",
     "fr": "Applications",
     "vi": "Ứng dụng",
-    "th": "แอปที่ใช้"
+    "th": "แอปที่ใช้",
+    "de": "Apps",
+    "ja": "アプリ別",
+    "uk": "Програми"
   },
   "stats.section.stretches": {
     "zh-Hans": "用眼分段",
@@ -1551,7 +2015,10 @@
     "ru": "Отрезки работы",
     "fr": "Sessions d’écran",
     "vi": "Chặng nhìn màn hình",
-    "th": "ช่วงการใช้สายตา"
+    "th": "ช่วงการใช้สายตา",
+    "de": "Arbeitsabschnitte",
+    "ja": "連続作業の区間",
+    "uk": "Відрізки роботи"
   },
   "stats.section.trend": {
     "zh-Hans": "用眼趋势",
@@ -1561,7 +2028,10 @@
     "ru": "Динамика",
     "fr": "Tendance",
     "vi": "Xu hướng",
-    "th": "แนวโน้มการใช้สายตา"
+    "th": "แนวโน้มการใช้สายตา",
+    "de": "Verlauf",
+    "ja": "推移",
+    "uk": "Динаміка"
   },
   "stats.stretch.tip": {
     "zh-Hans": "连续用眼 %@",
@@ -1571,7 +2041,10 @@
     "ru": "Непрерывно у экрана: %@",
     "fr": "Écran en continu : %@",
     "vi": "Nhìn màn hình liên tục: %@",
-    "th": "ใช้หน้าจอต่อเนื่อง %@"
+    "th": "ใช้หน้าจอต่อเนื่อง %@",
+    "de": "Ununterbrochen am Bildschirm: %@",
+    "ja": "連続画面時間：%@",
+    "uk": "Безперервно біля екрана: %@"
   },
   "stats.stretches.over40": {
     "zh-Hans": "深色 > 40m",
@@ -1581,10 +2054,14 @@
     "ru": "Тёмный > 40m",
     "fr": "Foncé > 40m",
     "vi": "Đậm > 40m",
-    "th": "สีเข้ม > 40m"
+    "th": "สีเข้ม > 40m",
+    "de": "Dunkel > 40m",
+    "ja": "濃色 > 40分",
+    "uk": "Темний > 40m"
   },
   "stats.summary.one": {
-    "en": "Last 7 days: %@ of work, %d break taken, %@ on break, %d skipped."
+    "en": "Last 7 days: %@ of work, %d break taken, %@ on break, %d skipped.",
+    "de": "Letzte 7 Tage: %@ Arbeit, %d Pause gemacht, %@ Pausenzeit, %d übersprungen."
   },
   "stats.summary.other": {
     "zh-Hans": "7 天共工作 %@，完成 %d 次休息，休息 %@，跳过 %d 次。",
@@ -1594,7 +2071,10 @@
     "ru": "За 7 дней: работа — %@, сделано перерывов: %d, время перерывов — %@, пропущено: %d.",
     "fr": "7 derniers jours : temps de travail %@, pauses prises %d, temps de pause %@, ignorées %d.",
     "vi": "7 ngày qua: làm việc %@, nghỉ %d lần, tổng thời gian nghỉ %@, bỏ qua %d lần.",
-    "th": "7 วันที่ผ่านมา: ทำงาน %@ พักครบ %d ครั้ง พักรวม %@ ข้าม %d ครั้ง"
+    "th": "7 วันที่ผ่านมา: ทำงาน %@ พักครบ %d ครั้ง พักรวม %@ ข้าม %d ครั้ง",
+    "de": "Letzte 7 Tage: %@ Arbeit, %d Pausen gemacht, %@ Pausenzeit, %d übersprungen.",
+    "ja": "直近7日間：作業 %@、完了した休憩 %d回、休憩時間 %@、スキップ %d回。",
+    "uk": "За 7 днів: робота — %@, зроблено перерв: %d, час перерв — %@, пропущено: %d."
   },
   "stats.taken": {
     "zh-Hans": "完成休息",
@@ -1604,10 +2084,14 @@
     "ru": "Перерывы",
     "fr": "Pauses prises",
     "vi": "Lần nghỉ hoàn tất",
-    "th": "พักครบ"
+    "th": "พักครบ",
+    "de": "Pausen gemacht",
+    "ja": "完了した休憩",
+    "uk": "Зроблено перерв"
   },
   "stats.tip.one": {
-    "en": "%@: %@ of work, %d break taken, %@ on break, %d skipped"
+    "en": "%@: %@ of work, %d break taken, %@ on break, %d skipped",
+    "de": "%@: %@ Arbeit, %d Pause gemacht, %@ Pausenzeit, %d übersprungen"
   },
   "stats.tip.other": {
     "zh-Hans": "%@：工作 %@，完成 %d 次休息，休息 %@，跳过 %d 次",
@@ -1617,7 +2101,10 @@
     "ru": "%@: работа — %@, сделано перерывов: %d, время перерывов — %@, пропущено: %d",
     "fr": "%@ : temps de travail %@, pauses prises %d, temps de pause %@, ignorées %d",
     "vi": "%@: làm việc %@, nghỉ %d lần, thời gian nghỉ %@, bỏ qua %d lần",
-    "th": "%@: ทำงาน %@ พักครบ %d ครั้ง พักรวม %@ ข้าม %d ครั้ง"
+    "th": "%@: ทำงาน %@ พักครบ %d ครั้ง พักรวม %@ ข้าม %d ครั้ง",
+    "de": "%@: %@ Arbeit, %d Pausen gemacht, %@ Pausenzeit, %d übersprungen",
+    "ja": "%@：作業 %@、完了した休憩 %d回、休憩 %@、スキップ %d回",
+    "uk": "%@: робота — %@, зроблено перерв: %d, час перерв — %@, пропущено: %d"
   },
   "stats.today": {
     "zh-Hans": "今天",
@@ -1627,7 +2114,10 @@
     "ru": "Сегодня",
     "fr": "Aujourd’hui",
     "vi": "Hôm nay",
-    "th": "วันนี้"
+    "th": "วันนี้",
+    "de": "Heute",
+    "ja": "今日",
+    "uk": "Сьогодні"
   },
   "status.away": {
     "zh-Hans": "您已离开电脑",
@@ -1637,7 +2127,10 @@
     "ru": "Вы отошли от компьютера",
     "fr": "Vous êtes loin de l’ordinateur",
     "vi": "Bạn đang rời khỏi máy tính",
-    "th": "คุณไม่ได้อยู่หน้าคอมพิวเตอร์"
+    "th": "คุณไม่ได้อยู่หน้าคอมพิวเตอร์",
+    "de": "Du bist nicht am Mac",
+    "ja": "離席中",
+    "uk": "Ви відійшли від комп’ютера"
   },
   "status.longIn": {
     "zh-Hans": "长休息：%@ 后",
@@ -1647,7 +2140,10 @@
     "ru": "Длинный перерыв через %@",
     "fr": "Longue pause dans %@",
     "vi": "Nghỉ dài sau %@",
-    "th": "พักยาวในอีก %@"
+    "th": "พักยาวในอีก %@",
+    "de": "Lange Pause in %@",
+    "ja": "長めの休憩まで %@",
+    "uk": "Довга перерва через %@"
   },
   "status.nextStart": {
     "zh-Hans": "下次开始 %@",
@@ -1657,7 +2153,10 @@
     "ru": "Начало в %@",
     "fr": "Reprend à %@",
     "vi": "Bắt đầu lúc %@",
-    "th": "เริ่มครั้งถัดไป %@"
+    "th": "เริ่มครั้งถัดไป %@",
+    "de": "Beginnt um %@",
+    "ja": "次回開始 %@",
+    "uk": "Початок о %@"
   },
   "status.onLongBreak": {
     "zh-Hans": "长休息中",
@@ -1667,7 +2166,10 @@
     "ru": "Идёт длинный перерыв",
     "fr": "Longue pause en cours",
     "vi": "Đang nghỉ dài",
-    "th": "กำลังพักยาว"
+    "th": "กำลังพักยาว",
+    "de": "Lange Pause läuft",
+    "ja": "長めの休憩中",
+    "uk": "Триває довга перерва"
   },
   "status.onShortBreak": {
     "zh-Hans": "短休息中",
@@ -1677,7 +2179,10 @@
     "ru": "Идёт короткий перерыв",
     "fr": "Courte pause en cours",
     "vi": "Đang nghỉ ngắn",
-    "th": "กำลังพักสั้น"
+    "th": "กำลังพักสั้น",
+    "de": "Kurze Pause läuft",
+    "ja": "小休止中",
+    "uk": "Триває коротка перерва"
   },
   "status.outsideHours": {
     "zh-Hans": "时段外",
@@ -1687,7 +2192,10 @@
     "ru": "Вне рабочих часов",
     "fr": "Hors des heures actives",
     "vi": "Ngoài khung giờ",
-    "th": "นอกช่วงเวลาเตือน"
+    "th": "นอกช่วงเวลาเตือน",
+    "de": "Außerhalb aktiver Zeiten",
+    "ja": "リマインド時間外",
+    "uk": "Поза активними годинами"
   },
   "status.paused": {
     "zh-Hans": "提醒已暂停",
@@ -1697,7 +2205,10 @@
     "ru": "Напоминания приостановлены",
     "fr": "Rappels suspendus",
     "vi": "Đã tạm dừng nhắc",
-    "th": "การแจ้งเตือนหยุดชั่วคราว"
+    "th": "การแจ้งเตือนหยุดชั่วคราว",
+    "de": "Erinnerungen pausiert",
+    "ja": "リマインダー一時停止中",
+    "uk": "Нагадування призупинено"
   },
   "status.pausedFor": {
     "zh-Hans": "提醒已暂停 %@",
@@ -1707,7 +2218,10 @@
     "ru": "Напоминания приостановлены уже %@",
     "fr": "Rappels suspendus depuis %@",
     "vi": "Đã tạm dừng nhắc được %@",
-    "th": "การแจ้งเตือนหยุดชั่วคราว %@"
+    "th": "การแจ้งเตือนหยุดชั่วคราว %@",
+    "de": "Erinnerungen pausiert seit %@",
+    "ja": "リマインダー一時停止中（%@）",
+    "uk": "Нагадування призупинено вже %@"
   },
   "status.shortIn": {
     "zh-Hans": "短休息：%@ 后",
@@ -1717,7 +2231,10 @@
     "ru": "Короткий перерыв через %@",
     "fr": "Courte pause dans %@",
     "vi": "Nghỉ ngắn sau %@",
-    "th": "พักสั้นในอีก %@"
+    "th": "พักสั้นในอีก %@",
+    "de": "Kurze Pause in %@",
+    "ja": "小休止まで %@",
+    "uk": "Коротка перерва через %@"
   },
   "status.tomorrow": {
     "zh-Hans": "明天 %@",
@@ -1727,7 +2244,10 @@
     "ru": "Завтра %@",
     "fr": "Demain %@",
     "vi": "Ngày mai %@",
-    "th": "พรุ่งนี้ %@"
+    "th": "พรุ่งนี้ %@",
+    "de": "Morgen %@",
+    "ja": "明日 %@",
+    "uk": "Завтра %@"
   },
   "systemWallpaper.openPrivacy": {
     "zh-Hans": "打开系统设置",
@@ -1737,7 +2257,10 @@
     "ru": "Открыть Системные настройки",
     "fr": "Ouvrir Réglages Système",
     "vi": "Mở Cài đặt Hệ thống",
-    "th": "เปิดการตั้งค่าระบบ"
+    "th": "เปิดการตั้งค่าระบบ",
+    "de": "Systemeinstellungen öffnen",
+    "ja": "システム設定を開く",
+    "uk": "Відкрити Системні параметри"
   },
   "systemWallpaper.permission.body": {
     "zh-Hans": "请在「系统设置 › 隐私与安全性 › 文件与文件夹」中允许 Pausa 访问该文件夹，或改用「我的照片…」导入单张图片。",
@@ -1747,7 +2270,10 @@
     "ru": "Разрешите доступ для Pausa в «Системные настройки › Конфиденциальность и безопасность › Файлы и папки» или выберите файл через «Моё фото…».",
     "fr": "Autorisez Pausa dans Réglages Système › Confidentialité et sécurité › Fichiers et dossiers, ou importez une image via Ma photo….",
     "vi": "Hãy cấp quyền cho Pausa trong Cài đặt Hệ thống › Quyền riêng tư & Bảo mật › Tệp và thư mục, hoặc nhập ảnh qua Ảnh của tôi….",
-    "th": "อนุญาต Pausa ใน การตั้งค่าระบบ › ความเป็นส่วนตัวและความปลอดภัย › ไฟล์และโฟลเดอร์ หรือนำเข้ารูปภาพผ่าน รูปภาพของฉัน…"
+    "th": "อนุญาต Pausa ใน การตั้งค่าระบบ › ความเป็นส่วนตัวและความปลอดภัย › ไฟล์และโฟลเดอร์ หรือนำเข้ารูปภาพผ่าน รูปภาพของฉัน…",
+    "de": "Erlaube Pausa den Zugriff unter „Systemeinstellungen › Datenschutz & Sicherheit › Dateien & Ordner“ oder importiere ein Bild über „Eigenes Foto…“.",
+    "ja": "「システム設定 › プライバシーとセキュリティ › ファイルとフォルダ」で Pausa にアクセスを許可するか、「自分の写真…」から画像を読み込んでください。",
+    "uk": "Надайте доступ для Pausa в меню «Системні параметри › Приватність і безпека › Файли та папки» або імпортуйте зображення через «Моє фото…»."
   },
   "systemWallpaper.permission.title": {
     "zh-Hans": "需要文件夹访问权限才能读取当前系统壁纸",
@@ -1757,7 +2283,10 @@
     "ru": "Нужен доступ к папке для чтения текущих обоев",
     "fr": "L'accès au dossier est requis pour lire votre fond d'écran actuel",
     "vi": "Cần quyền truy cập thư mục để đọc hình nền hiện tại",
-    "th": "ต้องได้รับสิทธิ์เข้าถึงโฟลเดอร์เพื่ออ่านภาพพื้นหลังปัจจุบัน"
+    "th": "ต้องได้รับสิทธิ์เข้าถึงโฟลเดอร์เพื่ออ่านภาพพื้นหลังปัจจุบัน",
+    "de": "Ordnerzugriff nötig, um dein aktuelles Hintergrundbild zu lesen",
+    "ja": "現在の壁紙を読み取るにはフォルダへのアクセス権が必要です",
+    "uk": "Потрібен доступ до папки, щоб прочитати поточні шпалери"
   },
   "systemWallpaper.photos.body": {
     "zh-Hans": "来自系统「照片」的壁纸受 macOS 沙盒保护。你可以通过「我的照片…」导入喜欢的图片，或使用「模糊桌面」。",
@@ -1767,7 +2296,10 @@
     "ru": "Обои из приложения «Фото» изолированы macOS. Выберите снимок через «Моё фото…» или используйте «Размытый рабочий стол».",
     "fr": "Les fonds d'écran issus de Photos sont isolés par macOS. Choisissez une image via Ma photo… ou utilisez Bureau flouté.",
     "vi": "Hình nền từ ứng dụng Ảnh được macOS cô lập. Hãy chọn ảnh qua Ảnh của tôi… hoặc dùng Màn hình nền mờ.",
-    "th": "macOS แยกส่วนภาพพื้นหลังจากแอปรูปภาพ โปรดเลือกรูปผ่าน รูปภาพของฉัน… หรือใช้ เดสก์ท็อปแบบเบลอ"
+    "th": "macOS แยกส่วนภาพพื้นหลังจากแอปรูปภาพ โปรดเลือกรูปผ่าน รูปภาพของฉัน… หรือใช้ เดสก์ท็อปแบบเบลอ",
+    "de": "Hintergrundbilder aus „Fotos“ sind von macOS abgeschirmt. Wähle ein Bild über „Eigenes Foto…“ oder nutze „Weichgezeichneter Schreibtisch“.",
+    "ja": "「写真」アプリの壁紙は macOS により保護されています。「自分の写真…」から画像を選ぶか、「ぼかしたデスクトップ」をご利用ください。",
+    "uk": "Шпалери з програми «Фотографії» ізольовано macOS. Оберіть знімок через «Моє фото…» або скористайтеся опцією «Розмитий робочий стіл»."
   },
   "systemWallpaper.photos.title": {
     "zh-Hans": "无法直接读取系统「照片」图库壁纸",
@@ -1777,7 +2309,10 @@
     "ru": "Не удаётся напрямую прочитать обои из медиатеки «Фото»",
     "fr": "Impossible de lire directement un fond d'écran de la photothèque",
     "vi": "Không thể đọc trực tiếp hình nền từ thư viện Ảnh",
-    "th": "ไม่สามารถอ่านภาพพื้นหลังจากคลังรูปภาพโดยตรงได้"
+    "th": "ไม่สามารถอ่านภาพพื้นหลังจากคลังรูปภาพโดยตรงได้",
+    "de": "Hintergrundbilder aus der Fotos-Mediathek können nicht direkt gelesen werden",
+    "ja": "「写真」ライブラリの壁紙は直接読み取れません",
+    "uk": "Не вдається напряму прочитати шпалери з медіатеки «Фотографії»"
   },
   "theme.forest": {
     "zh-Hans": "森林",
@@ -1787,7 +2322,10 @@
     "ru": "Лес",
     "fr": "Forêt",
     "vi": "Rừng",
-    "th": "ป่า"
+    "th": "ป่า",
+    "de": "Wald",
+    "ja": "森",
+    "uk": "Ліс"
   },
   "theme.night": {
     "zh-Hans": "夜空",
@@ -1797,7 +2335,10 @@
     "ru": "Ночное небо",
     "fr": "Ciel nocturne",
     "vi": "Bầu trời đêm",
-    "th": "ฟ้ายามค่ำ"
+    "th": "ฟ้ายามค่ำ",
+    "de": "Nachthimmel",
+    "ja": "夜空",
+    "uk": "Нічне небо"
   },
   "theme.ocean": {
     "zh-Hans": "大海",
@@ -1807,7 +2348,10 @@
     "ru": "Океан",
     "fr": "Océan",
     "vi": "Biển",
-    "th": "ทะเล"
+    "th": "ทะเล",
+    "de": "Meer",
+    "ja": "海",
+    "uk": "Океан"
   },
   "theme.photo": {
     "zh-Hans": "我的照片…",
@@ -1817,7 +2361,10 @@
     "ru": "Моё фото…",
     "fr": "Ma photo…",
     "vi": "Ảnh của tôi…",
-    "th": "รูปภาพของฉัน…"
+    "th": "รูปภาพของฉัน…",
+    "de": "Eigenes Foto…",
+    "ja": "自分の写真…",
+    "uk": "Моє фото…"
   },
   "theme.random": {
     "zh-Hans": "随机",
@@ -1827,7 +2374,10 @@
     "ru": "Случайно",
     "fr": "Aléatoire",
     "vi": "Ngẫu nhiên",
-    "th": "สุ่ม"
+    "th": "สุ่ม",
+    "de": "Zufällig",
+    "ja": "ランダム",
+    "uk": "Випадково"
   },
   "theme.softDesktop": {
     "zh-Hans": "模糊桌面",
@@ -1837,7 +2387,10 @@
     "ru": "Размытый рабочий стол",
     "fr": "Bureau flouté",
     "vi": "Màn hình nền mờ",
-    "th": "เดสก์ท็อปแบบเบลอ"
+    "th": "เดสก์ท็อปแบบเบลอ",
+    "de": "Weichgezeichneter Schreibtisch",
+    "ja": "ぼかしたデスクトップ",
+    "uk": "Розмитий робочий стіл"
   },
   "theme.sunset": {
     "zh-Hans": "晚霞",
@@ -1847,7 +2400,10 @@
     "ru": "Закат",
     "fr": "Coucher de soleil",
     "vi": "Hoàng hôn",
-    "th": "แสงเย็น"
+    "th": "แสงเย็น",
+    "de": "Abendrot",
+    "ja": "夕焼け",
+    "uk": "Захід сонця"
   },
   "theme.systemWallpaper": {
     "zh-Hans": "系统壁纸",
@@ -1857,7 +2413,10 @@
     "ru": "Обои системы",
     "fr": "Fond d'écran système",
     "vi": "Hình nền hệ thống",
-    "th": "ภาพพื้นหลังระบบ"
+    "th": "ภาพพื้นหลังระบบ",
+    "de": "System-Hintergrundbild",
+    "ja": "システムの壁紙",
+    "uk": "Системні шпалери"
   },
   "unit.count": {
     "zh-Hans": "%d 次",
@@ -1867,7 +2426,10 @@
     "ru": "%d",
     "fr": "%d",
     "vi": "%d",
-    "th": "%d"
+    "th": "%d",
+    "de": "%d",
+    "ja": "%d回",
+    "uk": "%d"
   },
   "unit.hours": {
     "zh-Hans": "%d 小时",
@@ -1877,7 +2439,10 @@
     "ru": "%d ч",
     "fr": "%d h",
     "vi": "%d giờ",
-    "th": "%d ชม."
+    "th": "%d ชม.",
+    "de": "%d Std.",
+    "ja": "%d時間",
+    "uk": "%d год"
   },
   "unit.minutes": {
     "zh-Hans": "%d 分钟",
@@ -1887,7 +2452,10 @@
     "ru": "%d мин",
     "fr": "%d min",
     "vi": "%d phút",
-    "th": "%d นาที"
+    "th": "%d นาที",
+    "de": "%d Min.",
+    "ja": "%d分",
+    "uk": "%d хв"
   },
   "unit.seconds": {
     "zh-Hans": "%d 秒",
@@ -1897,7 +2465,10 @@
     "ru": "%d с",
     "fr": "%d s",
     "vi": "%d giây",
-    "th": "%d วินาที"
+    "th": "%d วินาที",
+    "de": "%d Sek.",
+    "ja": "%d秒",
+    "uk": "%d с"
   },
   "update.afterBreak": {
     "zh-Hans": "休息结束后安装",
@@ -1907,7 +2478,10 @@
     "ru": "Установится после перерыва",
     "fr": "S'installera après la pause",
     "vi": "Sẽ cài sau khi nghỉ xong",
-    "th": "จะติดตั้งหลังพักเสร็จ"
+    "th": "จะติดตั้งหลังพักเสร็จ",
+    "de": "Wird nach der Pause installiert",
+    "ja": "休憩が終わったらインストールします",
+    "uk": "Буде встановлено після перерви"
   },
   "update.auto": {
     "zh-Hans": "自动更新已开启",
@@ -1917,7 +2491,10 @@
     "ru": "Автообновление включено",
     "fr": "Les mises à jour automatiques sont activées",
     "vi": "Đã bật cập nhật tự động",
-    "th": "เปิดการอัปเดตอัตโนมัติแล้ว"
+    "th": "เปิดการอัปเดตอัตโนมัติแล้ว",
+    "de": "Automatische Updates sind aktiv",
+    "ja": "自動アップデートはオンです",
+    "uk": "Автооновлення увімкнено"
   },
   "update.available": {
     "zh-Hans": "有新版本 %@",
@@ -1927,7 +2504,10 @@
     "ru": "Новая версия %@",
     "fr": "Nouvelle version %@",
     "vi": "Có phiên bản mới %@",
-    "th": "มีเวอร์ชันใหม่ %@"
+    "th": "มีเวอร์ชันใหม่ %@",
+    "de": "Neue Version %@",
+    "ja": "新しいバージョン %@",
+    "uk": "Нова версія %@"
   },
   "update.check": {
     "zh-Hans": "检查更新",
@@ -1937,7 +2517,10 @@
     "ru": "Проверить обновления",
     "fr": "Rechercher les mises à jour",
     "vi": "Kiểm tra cập nhật",
-    "th": "ตรวจหาอัปเดต"
+    "th": "ตรวจหาอัปเดต",
+    "de": "Nach Updates suchen",
+    "ja": "アップデートを確認",
+    "uk": "Перевірити оновлення"
   },
   "update.checking": {
     "zh-Hans": "正在检查…",
@@ -1947,7 +2530,10 @@
     "ru": "Проверка…",
     "fr": "Recherche…",
     "vi": "Đang kiểm tra…",
-    "th": "กำลังตรวจหา…"
+    "th": "กำลังตรวจหา…",
+    "de": "Prüfen…",
+    "ja": "確認中…",
+    "uk": "Перевірка…"
   },
   "update.downloading": {
     "zh-Hans": "正在下载 %@",
@@ -1957,7 +2543,10 @@
     "ru": "Загрузка %@",
     "fr": "Téléchargement de %@",
     "vi": "Đang tải %@",
-    "th": "กำลังดาวน์โหลด %@"
+    "th": "กำลังดาวน์โหลด %@",
+    "de": "%@ wird geladen",
+    "ja": "%@ をダウンロード中",
+    "uk": "Завантаження %@"
   },
   "update.failed": {
     "zh-Hans": "暂时无法检查更新",
@@ -1967,7 +2556,10 @@
     "ru": "Сейчас не удаётся проверить обновления",
     "fr": "Impossible de rechercher les mises à jour pour le moment",
     "vi": "Tạm thời không kiểm tra được bản cập nhật",
-    "th": "ยังตรวจหาอัปเดตไม่ได้ในขณะนี้"
+    "th": "ยังตรวจหาอัปเดตไม่ได้ในขณะนี้",
+    "de": "Updates können gerade nicht geprüft werden",
+    "ja": "現在アップデートを確認できません",
+    "uk": "Зараз не вдається перевірити оновлення"
   },
   "update.ready": {
     "zh-Hans": "%@ 已就绪，重启后生效",
@@ -1977,7 +2569,10 @@
     "ru": "Версия %@ готова и заработает после перезапуска",
     "fr": "La version %@ est prête et s'appliquera au redémarrage",
     "vi": "Bản %@ đã sẵn sàng, có hiệu lực sau khi khởi động lại",
-    "th": "%@ พร้อมแล้ว จะมีผลหลังเปิดแอปใหม่"
+    "th": "%@ พร้อมแล้ว จะมีผลหลังเปิดแอปใหม่",
+    "de": "%@ ist bereit und wird nach einem Neustart aktiv",
+    "ja": "%@ の準備ができました。再起動後に反映されます",
+    "uk": "Версія %@ готова й набуде чинності після перезапуску"
   },
   "update.restart": {
     "zh-Hans": "立即重启",
@@ -1987,7 +2582,10 @@
     "ru": "Перезапустить",
     "fr": "Redémarrer maintenant",
     "vi": "Khởi động lại ngay",
-    "th": "เปิดใหม่ตอนนี้"
+    "th": "เปิดใหม่ตอนนี้",
+    "de": "Jetzt neu starten",
+    "ja": "今すぐ再起動",
+    "uk": "Перезапустити зараз"
   },
   "update.upToDate": {
     "zh-Hans": "已是最新版本",
@@ -1997,6 +2595,9 @@
     "ru": "Установлена последняя версия",
     "fr": "Pausa est à jour",
     "vi": "Đã là phiên bản mới nhất",
-    "th": "เป็นเวอร์ชันล่าสุดแล้ว"
+    "th": "เป็นเวอร์ชันล่าสุดแล้ว",
+    "de": "Pausa ist auf dem neuesten Stand",
+    "ja": "Pausa は最新です",
+    "uk": "Установлено найновішу версію Pausa"
   }
 }

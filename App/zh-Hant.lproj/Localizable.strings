@@ -1,0 +1,5 @@
+/* Focus filter (System Settings › Focus › Add Filter). Keys are the English text in FocusFilter.swift. */
+"Pause Pausa's break reminders while this Focus is on. Pausa Settings › Breaks chooses which breaks." = "開啟此專注模式時，暫停 Pausa 的休息提醒。暫停哪些休息，在 Pausa 設定的「休息」頁選擇。";
+"Pause Break Reminders" = "暫停休息提醒";
+"Break reminders paused" = "休息提醒已暫停";
+"Break reminders on" = "休息提醒照常";

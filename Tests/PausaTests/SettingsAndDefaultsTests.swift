@@ -85,4 +85,34 @@ final class SettingsAndDefaultsTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(clock.uptimeNow(), u1)
         XCTAssertGreaterThanOrEqual(clock.wallNow().timeIntervalSince(w1), -0.01)
     }
+
+    func testL10nSystemResolutionAndPluralRules() {
+        XCTAssertEqual(AppLanguage.fromSystem(["de-DE", "en-US"]), .de)
+        XCTAssertEqual(AppLanguage.fromSystem(["ja-JP"]), .ja)
+        XCTAssertEqual(AppLanguage.fromSystem(["uk-UA", "ru-RU"]), .uk)
+        XCTAssertEqual(AppLanguage.fromSystem(["zh-Hant-HK"]), .zhHant)
+        XCTAssertEqual(AppLanguage.fromSystem(["zh-CN"]), .zhHans)
+        XCTAssertEqual(AppLanguage.fromSystem(["ko-KR", "fr-FR"]), .fr)
+
+        // German: one vs other
+        XCTAssertEqual(Plural.category(1, .de), "one")
+        XCTAssertEqual(Plural.category(0, .de), "other")
+        XCTAssertEqual(Plural.category(2, .de), "other")
+
+        // Japanese: always other
+        XCTAssertEqual(Plural.category(1, .ja), "other")
+        XCTAssertEqual(Plural.category(5, .ja), "other")
+
+        // Ukrainian: East Slavic one / few / many
+        XCTAssertEqual(Plural.category(1, .uk), "one")
+        XCTAssertEqual(Plural.category(21, .uk), "one")
+        XCTAssertEqual(Plural.category(11, .uk), "many")
+        XCTAssertEqual(Plural.category(2, .uk), "few")
+        XCTAssertEqual(Plural.category(4, .uk), "few")
+        XCTAssertEqual(Plural.category(23, .uk), "few")
+        XCTAssertEqual(Plural.category(12, .uk), "many")
+        XCTAssertEqual(Plural.category(14, .uk), "many")
+        XCTAssertEqual(Plural.category(0, .uk), "many")
+        XCTAssertEqual(Plural.category(5, .uk), "many")
+    }
 }

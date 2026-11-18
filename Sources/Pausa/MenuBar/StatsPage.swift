@@ -68,7 +68,16 @@ final class StatsModel: ObservableObject {
         let (records, work, open, apps) = load()
         let openLive = open.flatMap { $0.end > $0.start ? $0 : nil }
         let all = work + (openLive.map { [$0] } ?? [])
-        monthDays = Stats.days(records, work: all, appUsage: apps, endingAt: now(), count: Self.monthDayCount, calendar: calendar)
+        monthDays = Stats.days(
+            records,
+            work: all,
+            appUsage: apps,
+            endingAt: now(),
+            count: Self.monthDayCount,
+            calendar: calendar,
+            intervalMinutes: Double(Settings.shared.shortEveryMin),
+            hardLineMinutes: Double(Settings.shared.hardLineMinutes)
+        )
         hasData = !records.isEmpty || !work.isEmpty || (openLive.map { $0.end.timeIntervalSince($0.start) >= 60 } ?? false)
         if !hasData { selectedDay = nil }
         onContentChange?()

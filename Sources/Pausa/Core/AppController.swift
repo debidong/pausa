@@ -27,9 +27,9 @@ final class AppController {
     private var pauseCap = PauseCap()
     private var rawReasons: Set<PauseReason> = []
     private(set) var reasons: [PausaCore.PauseReason: String] = [:]   // reason -> full 「已暂停：…」 line
-    /// 暂停提醒 (spec-hardline: no expiry): projected directly from `scheduler.manualPause`.
+    /// 暂停提醒 (auto-expires at end of day or next PausaSchedule window): projected directly from `scheduler.manualPause`.
     var manualPausedSince: Date? {
-        if case .paused(let sinceWall) = scheduler.manualPause {
+        if case .paused(let sinceWall, _) = scheduler.manualPause {
             return Date(timeIntervalSince1970: sinceWall)
         }
         return nil
@@ -228,36 +228,63 @@ final class AppController {
     /// True while any break or full-screen preview is up: blocks Sparkle relaunches.
     var blocksRelaunch: Bool { isOnBreak || overlay.presentation.isPresenting }
 
+    /// Raw physical engagement (call, video, fullscreen, screen share) independent of user auto-pause toggles.
+    var isScreenEngaged: Bool {
+        if let override = detector.screenEngagedOverride { return override }
+        return detector.isScreenEngaged || !rawReasons.isEmpty
+    }
+
     // MARK: driving the scheduler
 
     func tick() {
         let now = clock.continuousNow()
         if now - lastSave >= 60 { saveState() }
-        if scheduler.isAway { return }
+        if scheduler.isLockedAway { return }
 
         let active = !outsideHours
         let idle = inputIdleProvider()
-        if scheduler.isManuallyPaused {   // until 恢复提醒; away freezes the clock without ending the pause
-            _ = scheduler.tick(now: now, reasons: [], deferrals: [], inputIdle: idle)
-            refreshPreBreak()
-            trackWork(now: now, idle: idle, inHours: active, holding: false)   // 暂停提醒 while present is still work
-            onChange?()   // refresh every tick; 「提醒已暂停 N 分钟」 updates each whole minute
-            return
+        let engaged = isScreenEngaged
+        let wall = wallClock()
+
+        // Entering an active PausaSchedule window starts fresh and clears any lingering manual pause.
+        if hoursGate.update(active) {
+            if scheduler.isManuallyPaused { _ = scheduler.resumeManually(now: now) }
+            scheduler.startFresh(now: now)
+            saveState()
         }
 
-        if hoursGate.update(active) { scheduler.startFresh(now: now) }   // a window just opened
+        if scheduler.isManuallyPaused {   // until 恢复提醒 or auto-expiry; away freezes the clock without ending the pause
+            let cmds = scheduler.tick(now: now, reasons: active ? [] : [.outsideHours], deferrals: [],
+                                      inputIdle: idle, screenEngaged: engaged, wallNow: wall)
+            if !cmds.isEmpty || !scheduler.isManuallyPaused {
+                saveState()
+                if !cmds.isEmpty { apply(cmds) }
+            }
+            if scheduler.isManuallyPaused {
+                refreshPreBreak()
+                trackWork(now: now, idle: idle, inHours: active, pauseHolding: false, presenceHolding: engaged, unboundedHold: false)
+                onChange?()   // refresh every tick; 「提醒已暂停 N 分钟」 updates each whole minute
+                return
+            }
+        }
+
         var rs = pauseCap.filter(Set(reasons.keys), now: now)   // 2 h cap (video/fullscreen drop)
         if !active { rs.insert(.outsideHours) }
 
-        // No input is not rest, and not getting up either: only a locked screen counts (away).
-        apply(scheduler.tick(now: now, reasons: rs, deferrals: detector.allDeferrals, inputIdle: idle))
-        trackWork(now: now, idle: idle, inHours: active, holding: !rs.isDisjoint(with: Self.holds))
+        apply(scheduler.tick(now: now, reasons: rs, deferrals: detector.allDeferrals,
+                             inputIdle: idle, screenEngaged: engaged, wallNow: wall))
+        let pauseHolding = !rs.isDisjoint(with: Self.holds)
+        let presenceHolding = engaged || pauseHolding
+        let unboundedHold = !rs.isDisjoint(with: Self.unboundedHolds)
+        trackWork(now: now, idle: idle, inHours: active,
+                  pauseHolding: pauseHolding, presenceHolding: presenceHolding, unboundedHold: unboundedHold)
         onChange?()
     }
 
     // MARK: work time (stats)
 
     private var work = WorkClock()
+    private var openSpanIsHold = false
     /// The stats page refreshes at once when a break ends or data is cleared.
     var onStatsChanged: (() -> Void)?
     private var lastWorkCheckpoint: Double = 0
@@ -267,6 +294,7 @@ final class AppController {
     private var lastAppSampleAt: Double?
     private var lastActiveApp: (bundleID: String, name: String)?
     private var breakTriggerApp: (bundleID: String, name: String)?
+    private var recentAppSlices: [(at: Double, day: Date, bundleID: String, seconds: Double)] = []
 
     nonisolated static func systemFrontmostApp() -> (bundleID: String, name: String)? {
         guard let app = NSWorkspace.shared.frontmostApplication,
@@ -277,19 +305,37 @@ final class AppController {
     }
 
     private static let holds: Set<PausaCore.PauseReason> = [.meeting, .micInUse, .screenSharing, .video, .fullscreen]
+    private static let unboundedHolds: Set<PausaCore.PauseReason> = [.meeting, .micInUse, .screenSharing]
 
     /// After the scheduler has moved, so a break that just started ends the span at its start.
     /// Hours come from `isActive` directly, not from the phase: a meeting outside hours shows as .paused(.meeting).
-    private func trackWork(now: Double, idle: Double, inHours: Bool, holding: Bool) {
-        var counting = inHours
+    private func trackWork(now: Double, idle: Double, inHours: Bool,
+                           pauseHolding: Bool, presenceHolding: Bool, unboundedHold: Bool) {
+        let idleLimit = scheduler.config.idleFreezeThreshold
+        var counting = inHours && !scheduler.isAway
         if case .onBreak = scheduler.phase { counting = false }
-        let activeWorking = counting && !holding && idle < scheduler.config.longLength
+
+        if !presenceHolding && idle >= idleLimit && !recentAppSlices.isEmpty {
+            let idleStart = now - idle
+            for slice in recentAppSlices where slice.at >= idleStart {
+                log.subtractAppUsage(bundleID: slice.bundleID, seconds: slice.seconds, on: slice.day)
+            }
+            recentAppSlices.removeAll(keepingCapacity: true)
+        } else if idle < scheduler.config.typingIdle || presenceHolding {
+            recentAppSlices.removeAll(keepingCapacity: true)
+        }
+
+        let activeWorking = counting && !pauseHolding && (presenceHolding || idle < idleLimit)
         if activeWorking {
             if let prev = lastAppSampleAt {
                 let dt = min(max(0, now - prev), 5.0)
                 if dt > 0, let app = frontmostAppProvider() {
                     lastActiveApp = app
-                    log.recordAppUsage(bundleID: app.bundleID, appName: app.name, seconds: dt, at: clock.wallNow())
+                    let wall = clock.wallNow()
+                    log.recordAppUsage(bundleID: app.bundleID, appName: app.name, seconds: dt, at: wall)
+                    if !presenceHolding && idle >= scheduler.config.typingIdle {
+                        recentAppSlices.append((at: now, day: cal.startOfDay(for: wall), bundleID: app.bundleID, seconds: dt))
+                    }
                 }
             } else if let app = frontmostAppProvider() {
                 lastActiveApp = app
@@ -299,13 +345,27 @@ final class AppController {
             lastAppSampleAt = nil
         }
 
-        if let s = work.update(now: now, counting: counting, holding: holding, inputIdle: idle, idleLimit: scheduler.config.longLength) {
-            log.append(span(s))
+        let willKeepOpen = counting && (presenceHolding || idle < idleLimit)
+        if work.openedAt != nil, willKeepOpen, openSpanIsHold != unboundedHold {
+            if let closed = work.close(at: now) {
+                log.append(span(closed, isHold: openSpanIsHold))
+            }
+        }
+
+        let wasOpen = work.openedAt != nil
+        if let s = work.update(now: now, counting: counting, holding: presenceHolding, inputIdle: idle, idleLimit: idleLimit) {
+            log.append(span(s, isHold: openSpanIsHold))
+            openSpanIsHold = false
             log.flushAppUsage(now: clock.wallNow())
-        } else if let open = work.openedAt, now - lastWorkCheckpoint >= Self.workCheckpointEvery {
-            log.checkpoint(span((open, now)))
-            log.flushAppUsage(now: clock.wallNow())
-            lastWorkCheckpoint = now
+        } else {
+            if !wasOpen, work.openedAt != nil {
+                openSpanIsHold = unboundedHold
+            }
+            if let open = work.openedAt, now - lastWorkCheckpoint >= Self.workCheckpointEvery {
+                log.checkpoint(span((open, now), isHold: openSpanIsHold))
+                log.flushAppUsage(now: clock.wallNow())
+                lastWorkCheckpoint = now
+            }
         }
     }
 
@@ -313,29 +373,35 @@ final class AppController {
     func clearStats() {
         log.clear()
         if work.openedAt != nil { _ = work.close(at: clock.continuousNow()) }
+        openSpanIsHold = false
         lastWorkCheckpoint = 0
         lastAppSampleAt = nil
         lastActiveApp = nil
         breakTriggerApp = nil
+        recentAppSlices.removeAll()
         onStatsChanged?()
     }
 
     /// The span running now, up to this moment (not in the log until it closes). For today's numbers.
-    var openWorkSpan: WorkSpan? { work.openedAt.map { span(($0, clock.continuousNow())) } }
+    var openWorkSpan: WorkSpan? { work.openedAt.map { span(($0, clock.continuousNow()), isHold: openSpanIsHold) } }
 
     /// Lock, quit.
     func endWork() { endWork(at: clock.continuousNow()) }
 
     private func endWork(at now: Double) {
         lastAppSampleAt = nil
-        if let s = work.close(at: now) { log.append(span(s)) }
+        recentAppSlices.removeAll()
+        if let s = work.close(at: now) { log.append(span(s, isHold: openSpanIsHold)) }
+        openSpanIsHold = false
         log.flushAppUsage(now: clock.wallNow())
     }
 
     /// Monotonic seconds to dates, through the current offset between the two clocks.
-    private func span(_ s: (start: Double, end: Double)) -> WorkSpan {
+    private func span(_ s: (start: Double, end: Double), isHold: Bool = false) -> WorkSpan {
         let now = clock.continuousNow(), wall = clock.wallNow()
-        return WorkSpan(start: wall.addingTimeInterval(s.start - now), end: wall.addingTimeInterval(s.end - now))
+        return WorkSpan(start: wall.addingTimeInterval(s.start - now),
+                        end: wall.addingTimeInterval(s.end - now),
+                        isHold: isHold)
     }
 
     /// `chime: false` when coming back from a lock: a break that ran out meanwhile ends quietly.
@@ -346,10 +412,14 @@ final class AppController {
             case .showWarning:
                 break   // 面板由 `effectivePreBreak` 驱动 (refreshPreBreak below); the menu bar icon reflects .warning on the next refresh
             case .recorded(let kind, let planned, let result):
+                let wall = clock.wallNow()
                 let skipApp = (result == .skipped) ? (breakTriggerApp ?? frontmostAppProvider() ?? lastActiveApp) : nil
-                log.append(BreakRecord(start: breakStart ?? clock.wallNow(), kind: kind, planned: planned, result: result,
+                if result == .completed {
+                    _ = log.redeemRecentSkip(by: kind, at: wall)
+                }
+                log.append(BreakRecord(start: breakStart ?? wall, kind: kind, planned: planned, result: result,
                                        appBundleID: skipApp?.bundleID, appName: skipApp?.name))
-                log.flushAppUsage(now: clock.wallNow())
+                log.flushAppUsage(now: wall)
                 breakStart = nil
                 breakTriggerApp = nil
                 onStatsChanged?()
@@ -357,28 +427,34 @@ final class AppController {
                 breakStart = clock.wallNow()
                 breakTriggerApp = frontmostAppProvider() ?? lastActiveApp
                 overlay.showShort(duration: len,
+                                  holdDuration: scheduler.skipHoldDuration,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
                                   onFinish: { [weak self] in self?.finish(.completed) })
             case .startBreak(.long, let len):
                 breakStart = clock.wallNow()
                 breakTriggerApp = frontmostAppProvider() ?? lastActiveApp
                 overlay.showLong(duration: len,
+                                 holdDuration: scheduler.skipHoldDuration,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },
                                  onSkip: { [weak self] in self?.finish(.skipped) },
                                  onFinish: { [weak self] in self?.finish(.completed) },
+                                 can5: scheduler.canSnoozeOnBreak,
                                  show15: scheduler.postponeBudget(.long) >= Self.postponeLong,
                                  can15: scheduler.deferralLeft >= Self.postponeLong,
                                  mustNotDefer: scheduler.longMustNotDefer,
                                  onUrgent: { [weak self] in self?.urgentPause() })
             case .resumeBreak(.short, let left):
                 overlay.showShort(duration: left,
+                                  holdDuration: scheduler.skipHoldDuration,
                                   onSkip: { [weak self] in self?.finish(.skipped) },
                                   onFinish: { [weak self] in self?.finish(.completed) })
             case .resumeBreak(.long, let left):
                 overlay.showLong(duration: left,
+                                 holdDuration: scheduler.skipHoldDuration,
                                  onSnooze: { [weak self] m in self?.snooze(minutes: m) },
                                  onSkip: { [weak self] in self?.finish(.skipped) },
                                  onFinish: { [weak self] in self?.finish(.completed) },
+                                 can5: scheduler.canSnoozeOnBreak,
                                  show15: scheduler.postponeBudget(.long) >= Self.postponeLong,
                                  can15: scheduler.deferralLeft >= Self.postponeLong,
                                  mustNotDefer: scheduler.longMustNotDefer,
@@ -450,7 +526,18 @@ final class AppController {
             overlay.dismiss(animated: false)
             if showUI { preBreak.update(nil, removal: .immediate) }
         case .end:
+            let awaySecs: Double = switch scheduler.presence {
+            case .away(_, let since): max(0, now - since)
+            case .awaitingReturn(_, let bStart, _): max(0, now - bStart)
+            case .active: 0
+            }
             apply(scheduler.exitAway(.locked, now: now), chime: false)
+            if awaySecs >= scheduler.config.shortLength {
+                let kind: BreakKind = awaySecs >= scheduler.config.longLength ? .long : .short
+                if log.redeemRecentSkip(by: kind, at: clock.wallNow()) {
+                    onStatsChanged?()
+                }
+            }
             if timer == nil, wasTimerStarted { startTickTimer() }
             tick()
         }
@@ -484,9 +571,14 @@ final class AppController {
     /// What the detector sees right now, unfiltered by the 自动暂停 switches: a call is a call.
     var chimeReasons: Set<PausaCore.PauseReason> { Set(rawReasons.map(\.core)) }
 
-    /// Menu 暂停提醒: settles any active break (skip or urgent skip at the hard line) and enters `manualPause`.
+    /// Menu 暂停提醒: settles any active break (skip or urgent skip at the hard line) and enters `manualPause`
+    /// bounded to the end of the current day (or at least 1 hour if clicked past 23:00).
     func pause() {
-        let cmds = scheduler.pauseManually(wallNow: wallClock(), now: clock.continuousNow())
+        let nowWall = clock.wallNow()
+        let wallSecs = nowWall.timeIntervalSince1970
+        let nextMidnight = cal.date(byAdding: .day, value: 1, to: cal.startOfDay(for: nowWall))?.timeIntervalSince1970
+        let untilWall = nextMidnight.map { max($0, wallSecs + 3600) }
+        let cmds = scheduler.pauseManually(wallNow: wallSecs, untilWall: untilWall, now: clock.continuousNow())
         saveState()
         apply(cmds)
         overlay.dismiss()

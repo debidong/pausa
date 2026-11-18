@@ -116,7 +116,7 @@ final class Settings: ObservableObject {
     static let shortsBeforeLongOptions = [1, 2, 3, 4, 5]                   // short breaks before a long one (old N − 1); interval × (count+1) ≤ hard line
     static let longLengthOptions = [1, 2, 3, 5, 10]                  // minutes
     static let recommended = (shortEvery: 20, shortLength: 20, longEvery: 60, longLength: 5)
-    static let recommendedCount = 1   // Steve: default 1 short break, then a long one
+    static let recommendedCount = 2   // Preset.standard: 2 short breaks, then a long one (60-min cycle)
     /// count if Config.allows it for this interval, otherwise the largest option it allows (never below 1).
     static func clampedCount(_ n: Int, everyMin: Int, line: Int) -> Int {
         if shortsBeforeLongOptions.contains(n), Config.allows(everyMin: everyMin, count: n, line: line) { return n }

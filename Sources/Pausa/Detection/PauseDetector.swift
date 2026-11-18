@@ -27,6 +27,11 @@ public final class PauseDetector: ObservableObject {
     @Published public private(set) var deferrals: [Deferral] = []
     /// True while locked / asleep. Mirrors onAway.
     @Published public private(set) var isAway = false
+    /// Raw physical screen engagement (call, mic/camera, video playback, fullscreen, screen share/recording),
+    /// independent of user auto-pause switches so hands-off viewing is never mistaken for leaving the desk.
+    @Published public private(set) var isScreenEngaged = false
+    /// Test hook for deterministic engagement simulation without live hardware assertions.
+    var screenEngagedOverride: Bool?
 
     public var onAway: ((AwayEvent) -> Void)?
 
@@ -42,6 +47,7 @@ public final class PauseDetector: ObservableObject {
     private var timerSuspended = false
     private var call = CallHold()                  // mic / camera, monotonic (uptimeNow)
     private var shareTracker = ScreenShareMonitor.Tracker()
+    private var engagedShareTracker = ScreenShareMonitor.Tracker()
     private var awayKinds: Set<AwayKind> = []
     private var observers: [(NotificationCenter, NSObjectProtocol)] = []
 
@@ -102,10 +108,12 @@ public final class PauseDetector: ObservableObject {
     }
 
     private var videoHold = VideoSignal.Hold<NSRunningApplication>()
+    private var engagedVideoHold = VideoSignal.Hold<NSRunningApplication>()
     #if PAUSA_DEV
     private var devVideoPlaying = false
     #endif
     private var lastShare: (reason: PauseReason, app: NSRunningApplication, at: TimeInterval)?
+    private var lastEngagedShare: (reason: PauseReason, app: NSRunningApplication, at: TimeInterval)?
     private var meetingApp: NSRunningApplication?
 
     private func tick() {
@@ -134,14 +142,27 @@ public final class PauseDetector: ObservableObject {
         if let r = callState.reason {
             next.insert(r == .meeting ? .meeting : .micInUse); src[r] = PauseSource(kind: .meeting, app: meetingApp)
         }
-        if let fs = FullscreenMonitor.check(snapshot: snap) {
+        let fs = FullscreenMonitor.check(snapshot: snap)
+        if let fs {
             next.insert(.fullscreen(appName: fs.appName))
             src[.fullscreen] = PauseSource(kind: .fullscreen, appName: fs.appName, bundleID: fs.bundleID)
         }
 
+        // Raw video & screen-share tracking for idle-presence gating (independent of user auto-pause switches).
+        let videoFront = BrowserVideoMonitor.check(snapshot: snap)
+        let rawHeldVideo = engagedVideoHold.update(frontPlaying: videoFront, now: now, grace: meetingGrace) {
+            $0.processIdentifier == $1.processIdentifier
+        }
+        switch ScreenShareMonitor.check(inMeeting: micOrCam || inMeeting, tracker: &engagedShareTracker, snapshot: snap, now: now) {
+        case .sharing(let a)?: lastEngagedShare = (.screenSharing(appName: a.localizedName ?? ""), a, now)
+        case .recording(let a)?: lastEngagedShare = (.recording(appName: a.localizedName ?? ""), a, now)
+        case nil: break
+        }
+        let rawShareActive = lastEngagedShare.map { now - $0.at < meetingGrace } ?? false
+        let engaged = inMeeting || micOrCam || fs != nil || rawHeldVideo != nil || rawShareActive
+
         // §1 browser video, sustained for VideoSignal.Hold.minRun, then 2-min grace after it drops (R5, reuses meetingGrace).
         if flag(DefaultsKey.pauseForBrowserVideo, default: true) {
-            let videoFront = BrowserVideoMonitor.check(snapshot: snap)
             let heldVideo = videoHold.update(frontPlaying: videoFront, now: now, grace: meetingGrace) {
                 $0.processIdentifier == $1.processIdentifier
             }
@@ -193,6 +214,7 @@ public final class PauseDetector: ObservableObject {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.customAppName = custom
+            if self.isScreenEngaged != engaged { self.isScreenEngaged = engaged }
             if self.deferrals != defs { self.deferrals = defs }
             if self.sources != src { self.sources = src }
             if self.reasons != next { self.reasons = next }

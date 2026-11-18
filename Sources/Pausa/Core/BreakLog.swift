@@ -25,9 +25,11 @@ final class BreakLog {
         let result: BreakResult
         let appBundleID: String?
         let appName: String?
+        let redeemed: Bool?
         init(_ r: BreakRecord) {
             start = r.start; kind = r.kind; planned = r.planned; result = r.result
             appBundleID = r.appBundleID; appName = r.appName
+            redeemed = r.redeemed ? true : nil
         }
     }
 
@@ -35,7 +37,11 @@ final class BreakLog {
         let row = RowTag.work
         let start: Date
         let end: Date
-        init(_ w: WorkSpan) { start = w.start; end = w.end }
+        let isHold: Bool?
+        init(_ w: WorkSpan) {
+            start = w.start; end = w.end
+            isHold = w.isHold ? true : nil
+        }
     }
 
     /// Decodes both tagged (`"row"`) and legacy untagged JSONL lines in a single pass.
@@ -48,6 +54,8 @@ final class BreakLog {
         var result: BreakResult?
         var appBundleID: String?
         var appName: String?
+        var redeemed: Bool?
+        var isHold: Bool?
 
         enum Parsed {
             case breakRecord(BreakRecord, agedAt: Date)
@@ -59,17 +67,19 @@ final class BreakLog {
             case .break:
                 guard let kind, let planned, let result else { return nil }
                 return .breakRecord(BreakRecord(start: start, kind: kind, planned: planned, result: result,
-                                                appBundleID: appBundleID, appName: appName), agedAt: start)
+                                                appBundleID: appBundleID, appName: appName,
+                                                redeemed: redeemed ?? false), agedAt: start)
             case .work:
                 guard let end else { return nil }
-                return .workSpan(WorkSpan(start: start, end: end), agedAt: end)
+                return .workSpan(WorkSpan(start: start, end: end, isHold: isHold ?? false), agedAt: end)
             case nil:
                 if let kind, let planned, let result {
                     return .breakRecord(BreakRecord(start: start, kind: kind, planned: planned, result: result,
-                                                    appBundleID: appBundleID, appName: appName), agedAt: start)
+                                                    appBundleID: appBundleID, appName: appName,
+                                                    redeemed: redeemed ?? false), agedAt: start)
                 }
                 if let end {
-                    return .workSpan(WorkSpan(start: start, end: end), agedAt: end)
+                    return .workSpan(WorkSpan(start: start, end: end, isHold: isHold ?? false), agedAt: end)
                 }
                 return nil
             }
@@ -111,6 +121,62 @@ final class BreakLog {
 
     func append(_ r: BreakRecord) { appendLine(TaggedBreak(r)) }
     func append(_ w: WorkSpan) { appendLine(TaggedWork(w)); try? FileManager.default.removeItem(at: openURL) }
+
+    /// Marks the most recent unredeemed skipped break within `window` seconds as `redeemed = true`
+    /// when a break of matching or higher tier (`completedKind == .long || r.kind == .short`) completes.
+    @discardableResult
+    func redeemRecentSkip(by completedKind: BreakKind, at now: Date, window: TimeInterval = 300) -> Bool {
+        guard canWrite, let data = try? Data(contentsOf: url), !data.isEmpty else { return false }
+        let rawLines = data.split(separator: 0x0A)
+        let cut = Stats.keepFrom(now: now, days: Self.keepDays, calendar: calendar)
+        var parsedRows: [DecodedRow.Parsed] = []
+        parsedRows.reserveCapacity(rawLines.count)
+
+        for slice in rawLines {
+            guard let decoded = try? decoder.decode(DecodedRow.self, from: Data(slice)),
+                  let parsed = decoded.parsed else { continue }
+            switch parsed {
+            case .breakRecord(_, let agedAt) where agedAt >= cut:
+                parsedRows.append(parsed)
+            case .workSpan(_, let agedAt) where agedAt >= cut:
+                parsedRows.append(parsed)
+            default:
+                continue
+            }
+        }
+
+        var targetIndex: Int?
+        for i in parsedRows.indices.reversed() {
+            if case .breakRecord(let r, _) = parsedRows[i],
+               r.result == .skipped, !r.redeemed,
+               completedKind == .long || r.kind == .short {
+                let elapsed = now.timeIntervalSince(r.start)
+                if elapsed >= -5 && elapsed <= window + r.planned {
+                    targetIndex = i
+                    break
+                }
+            }
+        }
+        guard let idx = targetIndex, case .breakRecord(var row, let agedAt) = parsedRows[idx] else {
+            return false
+        }
+        row.redeemed = true
+        parsedRows[idx] = .breakRecord(row, agedAt: agedAt)
+
+        var body = Data()
+        for item in parsedRows {
+            let line: Data? = switch item {
+            case .breakRecord(let r, _): try? encoder.encode(TaggedBreak(r))
+            case .workSpan(let w, _): try? encoder.encode(TaggedWork(w))
+            }
+            if let line {
+                body.append(line)
+                body.append(0x0A)
+            }
+        }
+        try? body.write(to: url, options: .atomic)
+        return true
+    }
 
     /// The span still running, as of now. Replaces the previous checkpoint.
     func checkpoint(_ w: WorkSpan) {
@@ -199,6 +265,19 @@ final class BreakLog {
         let key = DayAppKey(day: day, bundleID: bundleID)
         let prev = appBuffer[key]
         appBuffer[key] = (appName.isEmpty ? (prev?.name ?? bundleID) : appName, (prev?.seconds ?? 0) + seconds)
+        appDirty = true
+    }
+
+    func subtractAppUsage(bundleID: String, seconds: Double, on day: Date) {
+        guard seconds > 0, !bundleID.isEmpty else { return }
+        let key = DayAppKey(day: calendar.startOfDay(for: day), bundleID: bundleID)
+        guard let prev = appBuffer[key] else { return }
+        let left = prev.seconds - seconds
+        if left <= 0.001 {
+            appBuffer.removeValue(forKey: key)
+        } else {
+            appBuffer[key] = (prev.name, left)
+        }
         appDirty = true
     }
 
